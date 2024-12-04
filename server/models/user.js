@@ -18,9 +18,17 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  enrolledCourses:[{
+    type: mongoose.Schema.Types.ObjectId,
+    ref : 'Course', 
+  }],
   reviews: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Review',
+    ref : 'Review', 
+  }],
+  createdCourses: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Course'
   }],
 //   likedReviews: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }], 
 //   unlikedReviews: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }],

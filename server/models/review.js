@@ -2,27 +2,27 @@ import mongoose from "mongoose";
 
 const reviewSchema = new mongoose.Schema(
   {
-    Content: {
+    content: {
       type: String, // NVARCHAR (MAX) maps to String
       required: true, // NOT NULL
     },
-    Rating: {
+    rating: {
       type: Number, // INT maps to Number
       required: true, // NOT NULL
       min: 1, // Optional: Ensure rating is within a valid range
       max: 5,
     },
-    CreatedAt: {
+    createdAt: {
       type: Date, // DATETIME2 maps to Date
       required: true, // NOT NULL
       default: Date.now, // Automatically set current timestamp
     },
-    CourseId: {
+    courseId: {
       type: mongoose.Schema.Types.ObjectId, // Foreign key referencing Courses
       required: true, // NOT NULL
       ref: "Course", // Reference to the Courses collection
     },
-    LearnerId: {
+    learnerId: {
       type: mongoose.Schema.Types.ObjectId, // Foreign key referencing Learners
       required: true, // NOT NULL
       ref: "User", // Reference to the Learners collection
