@@ -1,11 +1,13 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+const mediasoup = require('mediasoup');
 const dotenv = require('dotenv');
 const cors = require('cors');
 
-// Load environment variables from .env file
+// Load environment variables
 dotenv.config();
+
 const app = express();
 app.use(cors());
 const server = http.createServer(app);
@@ -16,114 +18,98 @@ const io = socketIo(server, {
   },
 });
 
+let worker, router, producerTransport, consumerTransport;
+let producerTransports = new Map(); // Store producer transports for each lecture
 
+const peerConnections = {};
 
-// Lecture rooms management
-const lectureRooms = new Map();
+// Initialize Mediasoup worker
+async function createMediasoupWorker() {
+  // Create a Mediasoup Worker
+  worker = await mediasoup.createWorker();
 
-io.on('connection', (socket) => {
-  console.log('New client connected');
+  worker.on('died', () => {
+    console.error('Mediasoup worker has died');
+    process.exit(1);
+  });
 
-  socket.on('create-lecture', (lectureDetails) => {
+  router = await worker.createRouter({ mediaCodecs: [
+    { kind: 'audio', mimeType: 'audio/opus', clockRate: 48000, channels: 2 },
+    { kind: 'video', mimeType: 'video/VP8', clockRate: 90000 }
+  ]});
+}
+// WebSocket for socket.io connection
+io.on('connection', socket => {
+  console.log('New client connected:', socket.id);
+  socket.on('create-lecture', async (lectureDetails) => {
+    // Generate a unique lecture ID
     const lectureId = generateUniqueLectureId();
-    
-    // Store lecture details
-    lectureRooms.set(lectureId, {
-      host: socket.id,
-      participants: new Set([socket.id]),
-      details: lectureDetails,
-      createdAt: new Date()
-    });
-
-    // Join the room
-    socket.join(lectureId);
-
-    // Respond with lecture ID
+    console.log('New lecture created: ' + lectureDetails.title);
+  
+    // Generate the RTP capabilities for the lecture room (Mediasoup Router)
+    const rtpCapabilities = router.rtpCapabilities;
+  
+    // Send the transport information along with RTP capabilities to the host
     socket.emit('lecture-created', {
       lectureId: lectureId,
-      message: 'Lecture room created successfully'
+      rtpCapabilities: rtpCapabilities, // Include RTP capabilities
     });
+  
+    // Join the socket to the lecture room
+    socket.join(lectureId);
   });
-
-  // Join lecture room
-  socket.on('join-lecture', (lectureId) => {
-    const lectureRoom = lectureRooms.get(lectureId);
-
-    if (lectureRoom) {
-      // Add participant to the room
-      lectureRoom.participants.add(socket.id);
-      socket.join(lectureId);
-
-      // Notify host about new participant
-      socket.to(lectureRoom.host).emit('participant-joined', {
-        participantId: socket.id,
-        totalParticipants: lectureRoom.participants.size
+    
+  socket.on('create-producer-transport', async (data,callback) => {
+      const transport = await router.createWebRtcTransport({
+        listenIps: [{ ip: '127.0.0.1', announcedIp: null }],
+        enableUdp: true,
+        enableTcp: true,
+        preferUdp: true,
       });
 
-      // Confirm joining to the participant
-      socket.emit('join-lecture-success', {
-        lectureId: lectureId,
-        message: 'Successfully joined the lecture',
-        totalParticipants: lectureRoom.participants.size
+      producerTransports.set(socket.id, transport);
+      await callback({
+        id: transport.id,
+        iceParameters: transport.iceParameters,
+        iceCandidates: transport.iceCandidates,
+        dtlsParameters: transport.dtlsParameters,
       });
-    } else {
-      // Lecture not found
-      socket.emit('join-lecture-error', {
-        message: 'Lecture room not found'
-      });
-    }
   });
-
-  // Leave lecture room
-  socket.on('leave-lecture', (lectureId) => {
-    const lectureRoom = lectureRooms.get(lectureId);
-
-    if (lectureRoom) {
-      lectureRoom.participants.delete(socket.id);
-      socket.leave(lectureId);
-
-      // Notify host about participant leaving
-      socket.to(lectureRoom.host).emit('participant-left', {
-        participantId: socket.id,
-        totalParticipants: lectureRoom.participants.size
-      });
-
-      // If no participants left, remove the lecture room
-      if (lectureRoom.participants.size === 0) {
-        lectureRooms.delete(lectureId);
+  
+  socket.on('connect-transport', async ({ transportId, dtlsParameters },callback) => {
+    const transport = producerTransports.get(socket.id);
+    if (transport && !transport.connected) {
+      await transport.connect({ dtlsParameters }).then(() => {
+        // Emit transport-connected only after a successful connection
+        socket.emit('transport-connected', { transportId });
       }
+      )
     }
   });
-
-  // Disconnect handling
+  
+  
+  // Handle disconnect
   socket.on('disconnect', () => {
-    // Find and remove socket from any lecture rooms
-    for (const [lectureId, lectureRoom] of lectureRooms.entries()) {
-      if (lectureRoom.participants.has(socket.id)) {
-        lectureRoom.participants.delete(socket.id);
-
-        // Notify host about participant leaving
-        socket.to(lectureRoom.host).emit('participant-left', {
-          participantId: socket.id,
-          totalParticipants: lectureRoom.participants.size
-        });
-
-        // Remove lecture if no participants
-        if (lectureRoom.participants.size === 0) {
-          lectureRooms.delete(lectureId);
-        }
-      }
+    console.log('Client disconnected:', socket.id);
+    if (peerConnections[socket.id]) {
+      // Clean up peer connections
+      peerConnections[socket.id].close();
+      delete peerConnections[socket.id];
     }
   });
 });
+
 
 // Utility function to generate unique lecture ID
 function generateUniqueLectureId() {
   return `lecture-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Start server
+// Start the server
 const PORT = process.env.PORT || 8001;
 server.listen(PORT, () => {
   console.log(`Socket server running on port ${PORT}`);
+});
+createMediasoupWorker().then(() => {
+  console.log('Mediasoup worker created and ready.');
 });
