@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* styles.css */
+.btn-custom {
+  @apply btn btn-sm sm:btn-sm md:btn-md lg:btn-md rounded-sm;
+}
