@@ -3,10 +3,10 @@ import User from "../models/user.js";
 // Create a new user
 export const createUser = async (req, res) => {
   try {
-    const userData = {
-      ...req.body,
-      isVerified: false,
-    };
+    const {name,email,password} = req.body;
+    const isInstructor = req.body.role == "instructor"
+    const userData= {name,email,password,isInstructor,isVerified: false}
+    console.log(userData)
     const user = await User.create(userData);
     res.status(201).json(user);
   } catch (error) {
