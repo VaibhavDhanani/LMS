@@ -5,7 +5,8 @@ import CoursePreviewPage from './pages/CoursePreview.page.jsx';
 import CourseForm from './forms/Course/fullcourseform.jsx';
 import { AuthForm } from './forms/Authentication/AuthForm.jsx';
 import UserProfilePage from './pages/UserProfile.page.jsx';
-import VideoChat from './pages/LiveLecture.page.jsx';
+import MyCourses from './pages/MyCourses.jsx';
+// import VideoChat from './pages/LiveLecture.page.jsx';
 
 const AppRoutes = () => (
   <Routes>
@@ -15,7 +16,8 @@ const AppRoutes = () => (
     <Route path="/form" element={<Layout><CourseForm /></Layout>} />
     <Route path="/auth" element={<Layout><AuthForm /></Layout>} />
     <Route path="/user/profile" element={<Layout><UserProfilePage /></Layout>} />
-    <Route path="/chat" element={<Layout><VideoChat /></Layout>} />
+    <Route path="/mycourses" element={<Layout><MyCourses/></Layout>}/>
+    {/* <Route path="/chat" element={<Layout><VideoChat /></Layout>} /> */}
   </Routes>
 );
 export default AppRoutes;

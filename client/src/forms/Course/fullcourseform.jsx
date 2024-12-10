@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import BasicInformationStep from "./BasicInformationStep";
-import InstructorPricingStep from "./InstructorPricingStep";
+import PricingStep from "./PricingStep";
 import CourseDetailsStep from "./CourseDetailsStep";
 import LearnPointsStep from "./LearnPointStep";
 import PrerequisitesStep from "./PrerequisitesStep";
@@ -11,12 +11,12 @@ import FormSidebar from "./FormSidebar";
 
 const formSteps = [
   "Basic Information",
-  "Instructor & Pricing",
   "Course Details",
   "Learn Points & Stack",
   "Prerequisites & Requirements",
   "Curriculum",
   "Target Students",
+  "Pricing",
   "Review & Publish",
 ];
 
@@ -27,25 +27,34 @@ const CourseForm = () => {
     subtitle: "",
     description: "",
     instructor: "",
+    details: { totalHours: "", lectures: "", level: ""},
+    learnPoints: [""],
+    technologies: {
+      available: [""],  // Array of selected predefined tech names
+      new: [{
+        name: "",
+        logo: "",
+      }],
+    },
+    prerequisites: [""],
+    requirements: [""],
+    thumbnail: "",
+    promotionalVideo:"",
+    curriculum: [
+      {
+        lectures: [{ title: "", description:"", video:"", duration: "", preview: false }],
+      },
+    ],
+    targetStudents: [""],
+    topics:[""],
     pricing: {
-        instructor: "",
         price: "",
         discountEnabled: false,
         discount: "",
       },
-    details: { totalHours: "", lectures: "", level: "", lastUpdated: "" },
-    learnPoints: [""],
-    learnStack: [""],
-    prerequisites: [""],
-    curriculum: [
-      {
-        section: "",
-        lectures: [{ title: "", duration: "", preview: false }],
-      },
-    ],
-    requirements: [""],
-    targetStudents: [""],
     isActive: true,
+    lastUpdated:"",
+    createdAt:"",
   });
 
   const updateFormData = (field, value) => {
@@ -78,43 +87,43 @@ const CourseForm = () => {
         );
       case 1:
         return (
-          <InstructorPricingStep
+          <CourseDetailsStep
             formData={formData}
             updateFormData={updateFormData}
           />
         );
       case 2:
         return (
-          <CourseDetailsStep
+          <LearnPointsStep
             formData={formData}
             updateFormData={updateFormData}
           />
         );
       case 3:
         return (
-          <LearnPointsStep
+          <PrerequisitesStep
             formData={formData}
             updateFormData={updateFormData}
           />
         );
       case 4:
         return (
-          <PrerequisitesStep
-            formData={formData}
-            updateFormData={updateFormData}
-          />
-        );
-      case 5:
-        return (
           <CurriculumStep formData={formData} updateFormData={updateFormData} />
         );
-      case 6:
+      case 5:
         return (
           <TargetStudentsStep
             formData={formData}
             updateFormData={updateFormData}
           />
         );
+      case 6:
+          return (
+            <PricingStep
+              formData={formData}
+              updateFormData={updateFormData}
+            />
+          );
       case 7:
         return <ReviewStep formData={formData} />;
       default:
