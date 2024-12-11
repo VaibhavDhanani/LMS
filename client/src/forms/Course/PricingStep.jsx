@@ -1,4 +1,4 @@
-const InstructorPricingStep = ({ formData, updateFormData }) => {
+const PricingStep = ({ formData, updateFormData }) => {
   const handleInputChange = (key, value) => {
     updateFormData("pricing", {
       ...formData.pricing,
@@ -9,20 +9,6 @@ const InstructorPricingStep = ({ formData, updateFormData }) => {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold">Instructor and Pricing Details</h2>
-
-      {/* Instructor Name */}
-      <div className="form-control">
-        <label className="label">
-          <span className="label-text font-semibold">Instructor Name</span>
-        </label>
-        <input
-          type="text"
-          className="input input-bordered"
-          placeholder="Enter instructor name"
-          value={formData.pricing?.instructor || ""}
-          onChange={(e) => handleInputChange("instructor", e.target.value)}
-        />
-      </div>
 
       {/* Course Price */}
       <div className="form-control">
@@ -73,4 +59,4 @@ const InstructorPricingStep = ({ formData, updateFormData }) => {
   );
 };
 
-export default InstructorPricingStep;
+export default PricingStep;
