@@ -59,3 +59,23 @@ export const deleteUser = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// validate user
+export const validateUser = async (req,res) => {
+  try {
+    const users = await User.find();
+    const {email,password} = req.body;
+    const user = users.filter((u)=> u.email===email && u.password===password);
+    if(user){
+      res.status(200).json({
+        data: user,
+        message: "User authenticated successfully"
+      })
+    }
+  } catch (error) {
+    res.status(400).json({
+      data: null,
+      message: error.message
+    })
+  }
+}
