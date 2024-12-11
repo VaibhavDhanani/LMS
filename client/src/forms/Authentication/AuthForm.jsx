@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LoginForm } from './LoginForm';
 import { SignupForm } from './SIgnupForm';
+import { useNavigate } from 'react-router-dom';
 
 export const AuthForm = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -12,9 +13,36 @@ export const AuthForm = () => {
     confirmPassword: '',
     role: '',
   });
+  const navigate = useNavigate();
 
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const URL = import.meta.env.VITE_SERVER_URL
+      const response = await fetch(`${URL}/users/validate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-  const handleSubmit = async (e) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const jsonData = await response.json();
+      console.log("Server response:", jsonData);
+      alert("login successfully")
+      navigate("/")
+
+    } catch (error) {
+      console.error("Error during submission:", error);
+    }
+
+  }
+
+  const handleSignUpSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       alert('Passwords do not match.');
@@ -106,7 +134,7 @@ export const AuthForm = () => {
                 <LoginForm
                   formData={formData}
                   handleChange={handleChange}
-                  handleSubmit={handleSubmit}
+                  handleSubmit={handleLoginSubmit}
                 />
               </motion.div>
             ) : (
@@ -121,7 +149,7 @@ export const AuthForm = () => {
                 <SignupForm
                   formData={formData}
                   handleChange={handleChange}
-                  handleSubmit={handleSubmit}
+                  handleSubmit={handleSignUpSubmit}
                 />
               </motion.div>
             )}
