@@ -11,6 +11,8 @@ import MyCourses from './pages/MyCourses.jsx';
 const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<Layout><HomePage /></Layout>} />
+    <Route path="/success" element={<Layout><h1>Success</h1></Layout>} />
+    <Route path="/cancel" element={<Layout><h1>Cancel</h1></Layout>} />
     <Route path="/courses" exact element={<Layout><HomePage /></Layout>} />
     <Route path="/courses/:id" element={<Layout><CoursePreviewPage /></Layout>} />
     <Route path="/form" element={<Layout><CourseForm /></Layout>} />

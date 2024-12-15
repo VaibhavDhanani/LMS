@@ -1,8 +1,35 @@
 import React from 'react';
 import { Star } from 'lucide-react';
 import VideoPlay from './VideoPlay';
+import { loadStripe } from '@stripe/stripe-js';
+
 
 export const CourseHeader = ({ course }) => {
+  console.log(course)
+  const stripePublishKey = import.meta.env.VITE_STRIPE_PUBLISHKEY
+  const apiUrl = import.meta.env.VITE_SERVER_URL
+  console.log(apiUrl)
+
+  const handleBuyCourse = async () => {
+    const stripe = await loadStripe(stripePublishKey)
+    const response = await fetch(`${apiUrl}/checkout`,{
+      method: 'POST',
+      headers: {
+        'Content-Type': "application/json"
+      },
+      body: JSON.stringify(course)
+    })
+    const session = await response.json();
+
+    const result = stripe.redirectToCheckout({
+      sessionId: session.id
+    })
+    console.log(result)
+    if(result.error){
+      console.log(error.message)
+    }
+  }
+
   return (
     <div className="grid md:grid-cols-2 gap-8 mb-12">
       <div className="bg-gray-200 rounded-lg">
@@ -44,7 +71,7 @@ export const CourseHeader = ({ course }) => {
             <span className="text-3xl font-bold text-primary mr-4">${course.price.discounted}</span>
             <span className="line-through text-gray-500">${course.price.original}</span>
           </div>
-          <button className="btn btn-primary btn-wide mt-4">Enroll Now</button>
+          <button className="btn btn-primary btn-wide mt-4" onClick={handleBuyCourse}>Enroll Now</button>
         </div>
       </div>
     </div>

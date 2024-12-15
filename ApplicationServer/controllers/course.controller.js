@@ -1,4 +1,5 @@
 import Course from "../models/course.js";
+import User from "../models/user.js"
 
 // Create a new course
 export const createCourse = async (req, res) => {
