@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom"; // For extracting ID from URL
 import BasicInformationStep from "./BasicInformationStep";
 import PricingStep from "./PricingStep";
 import CourseDetailsStep from "./CourseDetailsStep";
@@ -8,6 +9,7 @@ import CurriculumStep from "./CurriculumStep";
 import TargetStudentsStep from "./TargetStudentsStep";
 import ReviewStep from "./ReviewStep";
 import FormSidebar from "./FormSidebar";
+import { getDraftById,updateDraft } from "../../services/draft.service.jsx"; // Assuming you have a service for API calls
 
 const formSteps = [
   "Basic Information",
@@ -21,41 +23,60 @@ const formSteps = [
 ];
 
 const CourseForm = () => {
+  const { id } = useParams(); // Get the draft ID from URL
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
     title: "",
     subtitle: "",
     description: "",
     instructor: "",
-    details: { totalHours: "", lectures: "", level: ""},
+    details: { totalHours: "", lectures: "", level: "" },
     learnPoints: [""],
     technologies: {
-      available: [""],  // Array of selected predefined tech names
-      new: [{
-        name: "",
-        logo: "",
-      }],
+      available: [""],
+      new: [
+        {
+          name: "",
+          logo: "",
+        },
+      ],
     },
     prerequisites: [""],
     requirements: [""],
     thumbnail: "",
-    promotionalVideo:"",
+    promotionalVideo: "",
     curriculum: [
       {
-        lectures: [{ title: "", description:"", video:"", duration: "", preview: false }],
+        lectures: [
+          { title: "", description: "", video: "", duration: "", preview: false },
+        ],
       },
     ],
     targetStudents: [""],
-    topics:[""],
+    topics: [""],
     pricing: {
-        price: "",
-        discountEnabled: false,
-        discount: "",
-      },
+      price: "",
+      discountEnabled: false,
+      discount: "",
+    },
     isActive: true,
-    lastUpdated:"",
-    createdAt:"",
+    lastUpdated: "",
+    createdAt: "",
   });
+  const [loading, setLoading] = useState(false);
+
+  // Fetch draft data
+  useEffect(() => {
+    if (id) {
+      setLoading(true);
+      getDraftById(id)
+        .then((data) => {
+          setFormData(data); // Populate form with fetched draft data
+        })
+        .catch((error) => console.error("Error fetching draft:", error))
+        .finally(() => setLoading(false));
+    }
+  }, [id]);
 
   const updateFormData = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -73,6 +94,7 @@ const CourseForm = () => {
 
   const handleSubmit = () => {
     console.log("Final Form Submission:", formData);
+    updateDraft(id,formData);
     // Add submission logic here
   };
 
@@ -108,7 +130,10 @@ const CourseForm = () => {
         );
       case 4:
         return (
-          <CurriculumStep formData={formData} updateFormData={updateFormData} />
+          <CurriculumStep
+            formData={formData}
+            updateFormData={updateFormData}
+          />
         );
       case 5:
         return (
@@ -118,18 +143,22 @@ const CourseForm = () => {
           />
         );
       case 6:
-          return (
-            <PricingStep
-              formData={formData}
-              updateFormData={updateFormData}
-            />
-          );
+        return (
+          <PricingStep
+            formData={formData}
+            updateFormData={updateFormData}
+          />
+        );
       case 7:
         return <ReviewStep formData={formData} />;
       default:
         return <div>Step not found</div>;
     }
   };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="flex min-h-screen bg-base-200">

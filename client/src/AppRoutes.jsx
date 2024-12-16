@@ -13,10 +13,10 @@ const AppRoutes = () => (
     <Route path="/" element={<Layout><HomePage /></Layout>} />
     <Route path="/courses" exact element={<Layout><HomePage /></Layout>} />
     <Route path="/courses/:id" element={<Layout><CoursePreviewPage /></Layout>} />
-    <Route path="/form" element={<Layout><CourseForm /></Layout>} />
     <Route path="/auth" element={<Layout><AuthForm /></Layout>} />
     <Route path="/user/profile" element={<Layout><UserProfilePage /></Layout>} />
     <Route path="/mycourses" element={<Layout><MyCourses/></Layout>}/>
+    <Route path="/courseform/:id" element={<Layout><CourseForm /></Layout>} />
     {/* <Route path="/chat" element={<Layout><VideoChat /></Layout>} /> */}
   </Routes>
 );

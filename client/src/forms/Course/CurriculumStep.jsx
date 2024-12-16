@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { storage, ref, uploadBytes, getDownloadURL } from '../../apis/firebase.config.js'; // Adjust path to your firebase-config file
 
 const CurriculumStep = ({ formData, updateFormData }) => {
   const [expandedIndex, setExpandedIndex] = useState(null); // To manage which lecture is expanded
@@ -11,15 +12,40 @@ const CurriculumStep = ({ formData, updateFormData }) => {
       description: "",
       video: null,
       isPreviewAvailable: false,
+      thumbnail: null,
+      promotionalVideo: null
     });
     updateFormData("curriculum", updatedCurriculum);
   };
 
-  // Update Lecture Details
+  // Update Lecture Details and upload files to Firebase Storage
   const updateLecture = (index, key, value) => {
     const updatedCurriculum = [...formData.curriculum];
-    updatedCurriculum[index][key] = value;
-    updateFormData("curriculum", updatedCurriculum);
+
+    // Add validation logic
+    if (key === "title" && value.length > 100) {
+      alert("Title must be under 100 characters");
+      return;
+    }
+
+    if (key === "video" || key === "thumbnail" || key === "promotionalVideo") {
+      const file = value[0];
+      if (key === "video" && file.size > 5 * 1024 * 1024) { // 5 MB size limit for video
+        alert("Video size must be under 5MB");
+        return;
+      }
+
+      const storageRef = ref(storage, `${key}s/${file.name}`);
+      uploadBytes(storageRef, file).then((snapshot) => {
+        getDownloadURL(snapshot.ref).then((url) => {
+          updatedCurriculum[index][key] = url; // Update the formData with the uploaded URL
+          updateFormData("curriculum", updatedCurriculum); // Update the parent form data
+        });
+      });
+    } else {
+      updatedCurriculum[index][key] = value; // For non-file fields
+      updateFormData("curriculum", updatedCurriculum); // Update the parent form data
+    }
   };
 
   // Toggle expand/collapse for a particular lecture
@@ -48,6 +74,13 @@ const CurriculumStep = ({ formData, updateFormData }) => {
           className="file-input file-input-bordered"
           onChange={(e) => updateFormData("thumbnail", e.target.files[0])}
         />
+        {formData.thumbnail && (
+          <img
+            src={formData.thumbnail}
+            alt="Thumbnail Preview"
+            className="mt-2 w-32 h-32 object-cover"
+          />
+        )}
       </div>
 
       {/* Promotional Video Upload */}
@@ -58,6 +91,12 @@ const CurriculumStep = ({ formData, updateFormData }) => {
           className="file-input file-input-bordered"
           onChange={(e) => updateFormData("promotionalVideo", e.target.files[0])}
         />
+        {formData.promotionalVideo && (
+          <video width="320" height="240" controls>
+            <source src={formData.promotionalVideo} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        )}
       </div>
 
       {/* Curriculum Section */}
@@ -109,6 +148,12 @@ const CurriculumStep = ({ formData, updateFormData }) => {
                   className="file-input file-input-bordered"
                   onChange={(e) => updateLecture(index, "video", e.target.files[0])}
                 />
+                {lesson.video && (
+                  <video width="320" height="240" controls>
+                    <source src={lesson.video} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                )}
               </div>
 
               {/* Preview Toggle (Switch) */}
@@ -149,9 +194,12 @@ const CurriculumStep = ({ formData, updateFormData }) => {
         </div>
       ))}
 
-      {/* Add Lecture Button */}
-      <button className="btn btn-primary mt-4" onClick={() => addLecture(formData.curriculum.length - 1)}>
-        Add Lecture at the End
+      {/* Add New Lecture Button */}
+      <button
+        className="btn btn-secondary mt-4"
+        onClick={() => addLecture(formData.curriculum.length)}
+      >
+        Add New Lecture
       </button>
     </div>
   );

@@ -1,8 +1,13 @@
+import React from 'react';
+
 const PricingStep = ({ formData, updateFormData }) => {
+  // Handle the input change for price and discount
   const handleInputChange = (key, value) => {
-    updateFormData("pricing", {
+    // Ensuring that the value is numeric for price and discount percentage
+    const parsedValue = key === 'price' || key === 'discount' ? parseFloat(value) : value;
+    updateFormData('pricing', {
       ...formData.pricing,
-      [key]: value,
+      [key]: isNaN(parsedValue) ? value : parsedValue,
     });
   };
 
@@ -21,6 +26,8 @@ const PricingStep = ({ formData, updateFormData }) => {
           placeholder="Enter course price"
           value={formData.pricing?.price || ""}
           onChange={(e) => handleInputChange("price", e.target.value)}
+          aria-label="Course Price"
+          min="0"
         />
       </div>
 
@@ -32,19 +39,17 @@ const PricingStep = ({ formData, updateFormData }) => {
             type="checkbox"
             className="toggle toggle-primary"
             checked={formData.pricing?.discountEnabled || false}
-            onChange={(e) =>
-              handleInputChange("discountEnabled", e.target.checked)
-            }
+            onChange={(e) => handleInputChange("discountEnabled", e.target.checked)}
+            aria-label="Enable discount"
           />
         </label>
       </div>
 
+      {/* Discount Percentage */}
       {formData.pricing?.discountEnabled && (
         <div className="form-control">
           <label className="label">
-            <span className="label-text font-semibold">
-              Discount Percentage
-            </span>
+            <span className="label-text font-semibold">Discount Percentage</span>
           </label>
           <input
             type="number"
@@ -52,6 +57,9 @@ const PricingStep = ({ formData, updateFormData }) => {
             placeholder="Enter discount percentage"
             value={formData.pricing?.discount || ""}
             onChange={(e) => handleInputChange("discount", e.target.value)}
+            aria-label="Discount Percentage"
+            min="0"
+            max="100"
           />
         </div>
       )}
