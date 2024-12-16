@@ -1,6 +1,47 @@
+import React from "react";
+
+// Reusable EditableList Component
+const EditableList = ({ items, onAdd, onUpdate, onRemove, placeholder }) => {
+  return (
+    <div>
+      {items.map((item, index) => (
+        <div key={index} className="flex gap-2 items-center">
+          <input
+            type="text"
+            className="input input-bordered flex-1"
+            placeholder={`${placeholder} ${index + 1}`}
+            value={item}
+            onChange={(e) => onUpdate(index, e.target.value)}
+            aria-label={`${placeholder} ${index + 1}`}
+          />
+          <button
+            className="btn btn-error btn-sm"
+            onClick={() => onRemove(index)}
+            aria-label={`Remove ${placeholder.toLowerCase()} ${index + 1}`}
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+      <button
+        className="btn btn-primary mt-2"
+        onClick={onAdd}
+        aria-label={`Add ${placeholder.toLowerCase()}`}
+      >
+        Add {placeholder}
+      </button>
+    </div>
+  );
+};
+
+// Main Component
 const TargetStudentsStep = ({ formData, updateFormData }) => {
-  // Functions for Target Students
+  // Add, Update, Remove functions for Target Students
   const addTargetStudent = () => {
+    if (formData.targetStudents.some((student) => student.trim() === "")) {
+      alert("Please fill in all target students before adding more.");
+      return;
+    }
     updateFormData("targetStudents", [...formData.targetStudents, ""]);
   };
 
@@ -11,14 +52,18 @@ const TargetStudentsStep = ({ formData, updateFormData }) => {
   };
 
   const removeTargetStudent = (index) => {
-    const updatedStudents = formData.targetStudents.filter(
-      (_, i) => i !== index
-    );
-    updateFormData("targetStudents", updatedStudents);
+    if (window.confirm("Are you sure you want to remove this entry?")) {
+      const updatedStudents = formData.targetStudents.filter((_, i) => i !== index);
+      updateFormData("targetStudents", updatedStudents);
+    }
   };
 
-  // Functions for Topics
+  // Add, Update, Remove functions for Topics
   const addTopic = () => {
+    if (formData.topics.some((topic) => topic.trim() === "")) {
+      alert("Please fill in all topics before adding more.");
+      return;
+    }
     updateFormData("topics", [...formData.topics, ""]);
   };
 
@@ -29,57 +74,33 @@ const TargetStudentsStep = ({ formData, updateFormData }) => {
   };
 
   const removeTopic = (index) => {
-    const updatedTopics = formData.topics.filter((_, i) => i !== index);
-    updateFormData("topics", updatedTopics);
+    if (window.confirm("Are you sure you want to remove this entry?")) {
+      const updatedTopics = formData.topics.filter((_, i) => i !== index);
+      updateFormData("topics", updatedTopics);
+    }
   };
 
   return (
     <div className="space-y-6">
       {/* Target Students Section */}
       <h2 className="text-xl font-bold">Who is this course for?</h2>
-      {formData.targetStudents.map((student, index) => (
-        <div key={index} className="flex gap-2 items-center">
-          <input
-            type="text"
-            className="input input-bordered flex-1"
-            placeholder={`Target Student ${index + 1}`}
-            value={student}
-            onChange={(e) => updateTargetStudent(index, e.target.value)}
-          />
-          <button
-            className="btn btn-error btn-sm"
-            onClick={() => removeTargetStudent(index)}
-          >
-            Remove
-          </button>
-        </div>
-      ))}
-      <button className="btn btn-primary" onClick={addTargetStudent}>
-        Add Target Student
-      </button>
+      <EditableList
+        items={formData.targetStudents}
+        onAdd={addTargetStudent}
+        onUpdate={updateTargetStudent}
+        onRemove={removeTargetStudent}
+        placeholder="Target Student"
+      />
 
       {/* Topics Section */}
       <h2 className="text-xl font-bold mt-6">Course Topics</h2>
-      {formData.topics.map((topic, index) => (
-        <div key={index} className="flex gap-2 items-center">
-          <input
-            type="text"
-            className="input input-bordered flex-1"
-            placeholder={`Topic ${index + 1}`}
-            value={topic}
-            onChange={(e) => updateTopic(index, e.target.value)}
-          />
-          <button
-            className="btn btn-error btn-sm"
-            onClick={() => removeTopic(index)}
-          >
-            Remove
-          </button>
-        </div>
-      ))}
-      <button className="btn btn-primary" onClick={addTopic}>
-        Add Topic
-      </button>
+      <EditableList
+        items={formData.topics}
+        onAdd={addTopic}
+        onUpdate={updateTopic}
+        onRemove={removeTopic}
+        placeholder="Topic"
+      />
     </div>
   );
 };

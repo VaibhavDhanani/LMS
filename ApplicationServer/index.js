@@ -6,6 +6,7 @@ import userRoutes from "./router/user.routes.js";
 import courseRoutes from "./router/course.routes.js";
 import enrollmentRoutes from "./router/enrollment.routes.js";
 import reviewRoutes from "./router/reviews.routes.js";
+import courseDraft from "./router/courseDraft.routes.js";
 configDotenv();
 const app=express();
 connectDB();
@@ -18,7 +19,7 @@ app.use(cors({
 const port = process.env.PORT || 5000;
 
 
-app.use("/api",userRoutes,courseRoutes,enrollmentRoutes,reviewRoutes);
+app.use("/api",userRoutes,courseDraft,courseRoutes,enrollmentRoutes,reviewRoutes);
 
 app.listen(port,()=>{
     

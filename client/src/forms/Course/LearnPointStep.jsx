@@ -39,8 +39,13 @@ const LearnPointsStep = ({ formData, updateFormData }) => {
 
   // Learn Points handlers
   const addLearnPoint = () => {
+    if (formData.learnPoints.some((point) => point === "")) {
+      alert("Please complete existing learn points before adding a new one.");
+      return;
+    }
     updateFormData('learnPoints', [...formData.learnPoints, '']);
   };
+  
 
   const updateLearnPoint = (index, value) => {
     const updatedPoints = [...formData.learnPoints];

@@ -1,14 +1,19 @@
-import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  createDraft,
+  getDrafts,
+  deleteDraft, // Add a function to delete drafts
+} from '../services/draft.service.jsx'; // Update the import path as necessary
 
 const MyCourses = () => {
   const [draftCourses, setDraftCourses] = useState([]);
@@ -16,32 +21,69 @@ const MyCourses = () => {
   const [newCourseTitle, setNewCourseTitle] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleAddCourse = () => {
+  // Fetch Draft Courses and Published Courses
+  const fetchCourses = async () => {
+    try {
+      const drafts = await getDrafts();
+      const published = await getDrafts(); // Replace with actual endpoint for published courses
+      setDraftCourses(drafts);
+      setPublishedCourses(published);
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  const handleAddCourse = async () => {
     if (newCourseTitle.trim()) {
-      const newCourse = {
-        id: Date.now(),
-        title: newCourseTitle,
-        createdAt: new Date().toISOString(),
-      };
-      setDraftCourses([...draftCourses, newCourse]);
-      setNewCourseTitle('');
-      setIsModalOpen(false);
+      const newCourse = { title: newCourseTitle };
+      try {
+        await createDraft(newCourse);
+        setNewCourseTitle('');
+        setIsModalOpen(false);
+        fetchCourses(); // Re-fetch courses to ensure UI sync
+      } catch (error) {
+        console.error('Error creating draft course:', error);
+      }
+    }
+  };
+
+  const handleDeleteDraft = async (courseId) => {
+    try {
+      await deleteDraft(courseId); // Assume this deletes the draft by ID
+      fetchCourses(); // Re-fetch courses to reflect the change
+    } catch (error) {
+      console.error('Error deleting draft course:', error);
     }
   };
 
   const CourseCard = ({ course, isDraft }) => (
-    <div
-      onClick={() => window.location.href = `/course-form/${course.id}`}
-      className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow duration-200"
-    >
-      <h3 className="text-lg font-semibold mb-2">{course.title}</h3>
-      <p className="text-sm text-gray-500">
-        Created: {new Date(course.createdAt).toLocaleDateString()}
-      </p>
+    <div className="relative bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200">
+      <div
+        onClick={() => window.location.href = `/courseform/${course._id}`}
+        className="cursor-pointer"
+      >
+        <h3 className="text-lg font-semibold mb-2">{course.title}</h3>
+        <p className="text-sm text-gray-500">
+          Created: {new Date(course.createdAt).toLocaleDateString()}
+        </p>
+      </div>
       {isDraft && (
-        <span className="inline-block mt-2 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
-          Draft
-        </span>
+        <>
+          <span className="inline-block mt-2 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
+            Draft
+          </span>
+          <button
+            onClick={() => handleDeleteDraft(course._id)}
+            className="absolute top-2 right-2 text-gray-400 hover:text-red-600"
+            title="Delete Draft"
+          >
+            <Trash className="w-5 h-5" />
+          </button>
+        </>
       )}
     </div>
   );
@@ -88,7 +130,7 @@ const MyCourses = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {draftCourses.map(course => (
               <CourseCard
-                key={course.id}
+                key={course._id}
                 course={course}
                 isDraft={true}
               />
@@ -102,7 +144,7 @@ const MyCourses = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {publishedCourses.map(course => (
               <CourseCard
-                key={course.id}
+                key={course._id}
                 course={course}
                 isDraft={false}
               />
