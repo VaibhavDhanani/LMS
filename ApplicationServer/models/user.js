@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -8,39 +8,44 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true, 
+    unique: true,
   },
   password: {
     type: String,
     required: true,
   },
-  isInstructor:{
+  isInstructor: {
     type: Boolean,
     default: false,
   },
-  enrolledCourses:[{
-    type: mongoose.Schema.Types.ObjectId,
-    ref : 'Course', 
-  }],
-  reviews: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref : 'Review', 
-  }],
-  createdCourses: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Course'
-  }],
-//   likedReviews: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }], 
-//   unlikedReviews: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }],
-  isVerified: { 
+  enrolledCourses: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course',
+    },
+  ],
+  reviews: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Review',
+    },
+  ],
+  createdCourses: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course',
+    },
+  ],
+  //   likedReviews: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }],
+  //   unlikedReviews: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }],
+  isVerified: {
     type: mongoose.Schema.Types.Boolean,
     default: false,
-  } ,
+  },
   profilePicture: {
     type: String, // Store a URL or a file path
     default: '',
   },
-  
 });
 
 const User = mongoose.model('User', userSchema);
