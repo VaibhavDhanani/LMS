@@ -1,205 +1,286 @@
-import { useState } from 'react';
-import { storage, ref, uploadBytes, getDownloadURL } from '../../apis/firebase.config.js'; // Adjust path to your firebase-config file
+import { useState } from "react";
+import {
+  storage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from "../../apis/firebase.config.js";
+import { Loader2, Plus, X, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+
+const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime", "video/x-m4v"];
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const CurriculumStep = ({ formData, updateFormData }) => {
-  const [expandedIndex, setExpandedIndex] = useState(null); // To manage which lecture is expanded
+  const [expandedIndex, setExpandedIndex] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState({});
+  const [errors, setErrors] = useState({});
 
-  // Add Lecture after a specific index
-  const addLecture = (index) => {
-    const updatedCurriculum = [...formData.curriculum];
-    updatedCurriculum.splice(index + 1, 0, {
+  // Validate file
+  const validateFile = (file, type) => {
+    const allowedTypes = type === "video" ? ALLOWED_VIDEO_TYPES : ALLOWED_IMAGE_TYPES;
+    const maxSize = type === "video" ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+
+    if (!allowedTypes.includes(file.type)) {
+      return `Only ${type === "video" ? "MP4, WebM, MOV, M4V" : "JPEG, PNG, WebP"} files are allowed`;
+    }
+    if (file.size > maxSize) {
+      return `File size should be less than ${maxSize / (1024 * 1024)}MB`;
+    }
+    return null;
+  };
+
+  // Handle file upload
+  const handleFileUpload = async (file, type, lectureIndex) => {
+    if (!file) return;
+
+    const uploadKey = `${type}-${lectureIndex ?? 'main'}`;
+    setUploadStatus({ ...uploadStatus, [uploadKey]: true });
+    setErrors({ ...errors, [uploadKey]: null });
+
+    try {
+      const uniqueName = `${type}-${Date.now()}-${file.name}`;
+      const storageRef = ref(storage, `${type}s/${uniqueName}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snapshot.ref);
+
+      if (lectureIndex !== undefined) {
+        // Update lecture video
+        const updatedLectures = [...formData.lectures];
+        updatedLectures[lectureIndex].video = url;
+        updateFormData("lectures", updatedLectures);
+      } else {
+        // Update thumbnail or promotional video
+        updateFormData(type, url);
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      setErrors({ ...errors, [uploadKey]: "Error uploading file" });
+    } finally {
+      setUploadStatus({ ...uploadStatus, [uploadKey]: false });
+    }
+  };
+
+  // Remove file
+  const handleRemoveFile = async (url, type, lectureIndex) => {
+    try {
+      const fileRef = ref(storage, url);
+      await deleteObject(fileRef);
+
+      if (lectureIndex !== undefined) {
+        // Remove lecture video
+        const updatedLectures = [...formData.lectures];
+        updatedLectures[lectureIndex].video = "";
+        updateFormData("lectures", updatedLectures);
+      } else {
+        // Remove thumbnail or promotional video
+        updateFormData(type, "");
+      }
+    } catch (error) {
+      console.error("Error removing file:", error);
+    }
+  };
+
+  // Add new lecture at a specific index
+  const addLectureAtIndex = (index) => {
+    const newLecture = {
       title: "",
       description: "",
-      video: null,
-      isPreviewAvailable: false,
-      thumbnail: null,
-      promotionalVideo: null
-    });
-    updateFormData("curriculum", updatedCurriculum);
+      video: "",
+      duration: "",
+      preview: false,
+    };
+
+    const updatedLectures = [...formData.lectures];
+    updatedLectures.splice(index + 1, 0, newLecture); // Add lecture after the current one
+    updateFormData("lectures", updatedLectures);
   };
 
-  // Update Lecture Details and upload files to Firebase Storage
-  const updateLecture = (index, key, value) => {
-    const updatedCurriculum = [...formData.curriculum];
-
-    // Add validation logic
-    if (key === "title" && value.length > 100) {
-      alert("Title must be under 100 characters");
-      return;
-    }
-
-    if (key === "video" || key === "thumbnail" || key === "promotionalVideo") {
-      const file = value[0];
-      if (key === "video" && file.size > 5 * 1024 * 1024) { // 5 MB size limit for video
-        alert("Video size must be under 5MB");
-        return;
-      }
-
-      const storageRef = ref(storage, `${key}s/${file.name}`);
-      uploadBytes(storageRef, file).then((snapshot) => {
-        getDownloadURL(snapshot.ref).then((url) => {
-          updatedCurriculum[index][key] = url; // Update the formData with the uploaded URL
-          updateFormData("curriculum", updatedCurriculum); // Update the parent form data
-        });
-      });
-    } else {
-      updatedCurriculum[index][key] = value; // For non-file fields
-      updateFormData("curriculum", updatedCurriculum); // Update the parent form data
-    }
-  };
-
-  // Toggle expand/collapse for a particular lecture
-  const toggleLectureDetails = (index) => {
-    setExpandedIndex(expandedIndex === index ? null : index);
-  };
-
-  // Remove Lecture
+  // Remove lecture
   const removeLecture = (index) => {
-    const updatedCurriculum = formData.curriculum.filter((_, i) => i !== index);
-    updateFormData("curriculum", updatedCurriculum);
+    const updatedLectures = [...formData.lectures];
+    updatedLectures.splice(index, 1);
+    
+    updateFormData("lectures", updatedLectures);
+
+    if (expandedIndex === index) {
+      setExpandedIndex(null);
+    }
+  };
+
+  // Update lecture details
+  const updateLecture = (index, field, value) => {
+    const updatedLectures = [...formData.lectures];
+    updatedLectures[index][field] = value;
+    
+    updateFormData("lectures", updatedLectures);
   };
 
   return (
     <div className="space-y-6">
-      {/* Total Lectures Title */}
-      <div>
-        <h2 className="text-2xl font-bold">Curriculum</h2>
-      </div>
+      <h2 className="text-2xl font-bold">Create Course</h2>
 
       {/* Thumbnail Upload */}
-      <div>
-        <h3 className="text-lg font-bold">Course Thumbnail</h3>
-        <input
-          type="file"
-          className="file-input file-input-bordered"
-          onChange={(e) => updateFormData("thumbnail", e.target.files[0])}
-        />
-        {formData.thumbnail && (
-          <img
-            src={formData.thumbnail}
-            alt="Thumbnail Preview"
-            className="mt-2 w-32 h-32 object-cover"
+      <div className="space-y-2">
+        <label className="text-sm font-semibold">Course Thumbnail</label>
+        <div className="flex items-center gap-2">
+          <input
+            type="file"
+            accept=".jpg,.jpeg,.png,.webp"
+            className="file-input file-input-bordered w-full"
+            onChange={(e) => handleFileUpload(e.target.files[0], 'thumbnail')}
           />
+          {uploadStatus['thumbnail-main'] && (
+            <Loader2 className="animate-spin" size={24} />
+          )}
+        </div>
+        {errors['thumbnail-main'] && (
+          <p className="text-red-500 text-sm">{errors['thumbnail-main']}</p>
+        )}
+        {formData.thumbnail && (
+          <div className="relative inline-block">
+            <img
+              src={formData.thumbnail}
+              alt="Thumbnail"
+              className="w-32 h-32 object-cover rounded"
+            />
+            <button
+              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+              onClick={() => handleRemoveFile(formData.thumbnail, 'thumbnail')}
+            >
+              <X size={16} />
+            </button>
+          </div>
         )}
       </div>
 
       {/* Promotional Video Upload */}
-      <div>
-        <h3 className="text-lg font-bold">Promotional Video</h3>
-        <input
-          type="file"
-          className="file-input file-input-bordered"
-          onChange={(e) => updateFormData("promotionalVideo", e.target.files[0])}
-        />
+      <div className="space-y-2">
+        <label className="text-sm font-semibold">Promotional Video</label>
+        <div className="flex items-center gap-2">
+          <input
+            type="file"
+            accept=".mp4,.webm,.mov,.m4v"
+            className="file-input file-input-bordered w-full"
+            onChange={(e) => handleFileUpload(e.target.files[0], 'promotionalVideo')}
+          />
+          {uploadStatus['promotionalVideo-main'] && (
+            <Loader2 className="animate-spin" size={24} />
+          )}
+        </div>
+        {errors['promotionalVideo-main'] && (
+          <p className="text-red-500 text-sm">{errors['promotionalVideo-main']}</p>
+        )}
         {formData.promotionalVideo && (
-          <video width="320" height="240" controls>
-            <source src={formData.promotionalVideo} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
+          <div className="relative inline-block">
+            <video width="320" height="240" controls className="rounded">
+              <source src={formData.promotionalVideo} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+            <button
+              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+              onClick={() => handleRemoveFile(formData.promotionalVideo, 'promotionalVideo')}
+            >
+              <X size={16} />
+            </button>
+          </div>
         )}
       </div>
 
-      {/* Curriculum Section */}
-      <h2 className="text-xl font-bold mt-6">Total Lectures: {formData.curriculum.length}</h2>
-      {formData.curriculum.map((lesson, index) => (
-        <div
-          key={index}
-          className="border-2 p-4 rounded-lg relative space-y-4"
-        >
-          {/* Section Title (Clickable) */}
-          <div
-            className="cursor-pointer flex items-center gap-2"
-            onClick={() => toggleLectureDetails(index)}
-          >
-            <span className="text-lg font-semibold">Lecture {index + 1}</span>
-          </div>
+      {/* Lectures Section */}
+      <div className="space-y-4">
+        <h3 className="text-xl font-bold">
+          Lectures ({formData.lectures.length})
+        </h3>
+        
+        {formData.lectures.map((lecture, index) => (
+          <div key={index} className="border rounded-lg p-4 relative group">
+            {/* Lecture Header */}
+            <div
+              className="flex items-center gap-2 cursor-pointer"
+              onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
+            >
+              {expandedIndex === index ? (
+                <ChevronDown size={20} />
+              ) : (
+                <ChevronRight size={20} />
+              )}
+              <span className="font-semibold">Lecture {index + 1}</span>
+            </div>
 
-          {/* Expandable Lecture Details */}
-          {expandedIndex === index && (
-            <div className="space-y-4 pl-4">
-              {/* Lesson Title */}
-              <div className="flex flex-col">
-                <label className="text-sm font-semibold">Lesson Title</label>
-                <input
-                  type="text"
-                  className="input input-bordered"
-                  placeholder="Lesson Title"
-                  value={lesson.title}
-                  onChange={(e) => updateLecture(index, "title", e.target.value)}
-                />
-              </div>
+            {/* Expanded Content */}
+            {expandedIndex === index && (
+              <div className="mt-4 space-y-4 pl-6">
+                {/* Title */}
+                <div>
+                  <label className="text-sm font-semibold">Title</label>
+                  <input
+                    type="text"
+                    className="input input-bordered w-full mt-1"
+                    value={lecture.title}
+                    onChange={(e) => updateLecture(index, 'title', e.target.value)}
+                  />
+                </div>
 
-              {/* Lesson Description */}
-              <div className="flex flex-col">
-                <label className="text-sm font-semibold">Lesson Description</label>
-                <textarea
-                  className="textarea textarea-bordered"
-                  placeholder="Lesson Description"
-                  value={lesson.description}
-                  onChange={(e) => updateLecture(index, "description", e.target.value)}
-                ></textarea>
-              </div>
+                {/* Description */}
+                <div>
+                  <label className="text-sm font-semibold">Description</label>
+                  <textarea
+                    className="textarea textarea-bordered w-full mt-1"
+                    value={lecture.description}
+                    onChange={(e) => updateLecture(index, 'description', e.target.value)}
+                  />
+                </div>
 
-              {/* Video Upload */}
-              <div className="flex flex-col">
-                <label className="text-sm font-semibold">Upload Video</label>
-                <input
-                  type="file"
-                  className="file-input file-input-bordered"
-                  onChange={(e) => updateLecture(index, "video", e.target.files[0])}
-                />
-                {lesson.video && (
-                  <video width="320" height="240" controls>
-                    <source src={lesson.video} type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
+                {/* Video */}
+                <div>
+                  <label className="text-sm font-semibold">Video</label>
+                  <input
+                    type="file"
+                    accept=".mp4,.webm,.mov,.m4v"
+                    className="file-input file-input-bordered w-full mt-1"
+                    onChange={(e) => handleFileUpload(e.target.files[0], 'video', index)}
+                  />
+                  {uploadStatus[`video-${index}`] && <Loader2 className="animate-spin" size={24} />}
+                </div>
+
+                {/* Remove Video Button */}
+                {lecture.video && (
+                  <div className="relative inline-block">
+                    <video width="320" height="240" controls className="rounded">
+                      <source src={lecture.video} type="video/mp4" />
+                      Your browser does not support the video tag.
+                    </video>
+                    <button
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                      onClick={() => handleRemoveFile(lecture.video, 'video', index)}
+                    >
+                      <X size={16} />
+                    </button>
+                </div>
                 )}
               </div>
+            )}
 
-              {/* Preview Toggle (Switch) */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-semibold">Available for Preview</label>
-                <div className="form-control">
-                  <label className="label cursor-pointer">
-                    <span className="label-text">Preview Available</span>
-                    <input
-                      type="checkbox"
-                      className="toggle toggle-primary"
-                      checked={lesson.isPreviewAvailable}
-                      onChange={() =>
-                        updateLecture(index, "isPreviewAvailable", !lesson.isPreviewAvailable)
-                      }
-                    />
-                  </label>
-                </div>
-              </div>
-
-              {/* Remove Button */}
-              <button
-                className="btn btn-error btn-sm"
-                onClick={() => removeLecture(index)}
-              >
-                Remove Lesson
-              </button>
-            </div>
-          )}
-
-          {/* + Icon to Add Lecture After This */}
-          <div
-            className="absolute bottom-4 right-4 p-2 bg-blue-500 text-white rounded-full cursor-pointer"
-            onClick={() => addLecture(index)}
-          >
-            +
+            {/* Hover Remove Button */}
+            <button
+              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={() => removeLecture(index)}
+            >
+              <Trash2 size={20} />
+            </button>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
 
-      {/* Add New Lecture Button */}
+      {/* Add Lecture Button */}
       <button
-        className="btn btn-secondary mt-4"
-        onClick={() => addLecture(formData.curriculum.length)}
+        className="btn btn-primary mt-4"
+        onClick={() => addLectureAtIndex(formData.lectures.length - 1)}
       >
-        Add New Lecture
+        Add Lecture
       </button>
     </div>
   );
