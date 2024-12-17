@@ -1,5 +1,4 @@
 const ReviewStep = ({ formData }) => {
-  console.dir(formData); // For debugging purposes
 
   return (
     <div className="space-y-4">
@@ -15,7 +14,7 @@ const ReviewStep = ({ formData }) => {
       {/* Instructor Pricing Section */}
       <div className="space-y-2">
         <h3 className="font-semibold">Instructor Pricing</h3>
-        <p>Instructor: {formData.pricing?.instructor || "N/A"}</p>
+        <p>Instructor: {formData.instructor || "N/A"}</p>
         <p>Price: ${formData.pricing?.price || "N/A"}</p>
       </div>
 
@@ -23,24 +22,37 @@ const ReviewStep = ({ formData }) => {
       <div className="space-y-2">
         <h3 className="font-semibold">Course Details</h3>
         <p>Total Hours: {formData.details?.totalHours || "N/A"}</p>
-        <p>Lectures: {formData.details?.lectures || "N/A"}</p>
+        <p>Lectures: {formData.lectures.length || 0}</p>
         <p>Level: {formData.details?.level || "N/A"}</p>
-        <p>Last Updated: {formData.details?.lastUpdated || "N/A"}</p>
+        <p>Last Updated: {formData.lastUpdated || "N/A"}</p>
       </div>
 
-      {/* Learn Points Section */}
-      <div className="space-y-2">
-        <h3 className="font-semibold">Learn Points</h3>
-        <ul>
-          {formData.learnPoints?.length > 0 ? (
-            formData.learnPoints.map((point, index) => (
-              <li key={index}>{point}</li>
-            ))
-          ) : (
-            <li>No learn points available.</li>
-          )}
-        </ul>
-      </div>
+{/* Learn Points Section */}
+<div className="space-y-2">
+  <h3 className="font-semibold">Learn Points</h3>
+  <ul>
+    {formData.learnPoints?.length > 0 ? (
+      formData.learnPoints.map((point, index) => (
+        <li key={index}>{point}</li>
+      ))
+    ) : (
+      <li>No learn points available.</li>
+    )}
+  </ul>
+
+  <h4 className="font-semibold">Tech Stack</h4>
+<ul>
+  {formData.technologies?.length > 0 ? (
+    formData.technologies.map((tech, index) => (
+      <li key={index}>{tech}</li>
+    ))
+  ) : (
+    <li>No tech stack listed.</li>
+  )}
+</ul>
+
+</div>
+
 
       {/* Prerequisites Section */}
       <div className="space-y-2">
@@ -60,10 +72,12 @@ const ReviewStep = ({ formData }) => {
       <div className="space-y-2">
         <h3 className="font-semibold">Curriculum</h3>
         <ul>
-          {formData.curriculum?.length > 0 ? (
-            formData.curriculum.map((lesson, index) => (
+          {formData.lectures?.length > 0 ? (
+            formData.lectures.map((lesson, index) => (
               <li key={index}>
-                {lesson.title}: {lesson.description}
+                <strong>{index+1} {lesson.title}:</strong> {lesson.description} <br />
+                {/* Duration: {lesson.duration} <br />
+                Preview: {lesson.preview ? "Yes" : "No"} */}
               </li>
             ))
           ) : (

@@ -7,39 +7,28 @@ const courseSchema = new mongoose.Schema({
   instructor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: true
+    required: false
   },
   details: {
-    totalHours: { type: Number, required: true },
-    lectures: { type: Number, required: true },
+    totalHours: { type: Number, required: false },
     level: { type: String, required: true }
   },
   learnPoints: [String],
-  technologies: {
-    available: [String], 
-    new: [{
-      name: { type: String, required: true },
-      logo: { type: String, required: true },
-    }],
-  },
+  technologies: [String],
   prerequisites: [String],
   requirements: [String],
-  thumbnail: { type: String, required: true },
-  promotionalVideo: { type: String, required: true },
-  curriculum: [
-    {
-      section: { type: String, required: true },
+  thumbnail: { type: String, required: false },
+  promotionalVideo: { type: String, required: false },
+  
       lectures: [
         {
-          title: { type: String, required: true },
-          description: { type: String, required: true },
-          video: { type: String, required: true },
-          duration: { type: String, required: true },
+          title: { type: String, required: false },
+          description: { type: String, required: false },
+          video: { type: String, required: false },
+          duration: { type: String, required: false },
           preview: { type: Boolean, default: false }
         }
-      ]
-    }
-  ],
+      ],
   targetStudents: [String],
   topics: [String],
   pricing: {
