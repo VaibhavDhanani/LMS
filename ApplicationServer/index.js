@@ -10,6 +10,7 @@ import reviewRoutes from './router/reviews.routes.js';
 import userRoutes from './router/user.routes.js';
 import connectDB from './utills/dbConnection.js';
 
+import courseDraft from "./router/courseDraft.routes.js";
 configDotenv();
 const app = express();
 connectDB();
@@ -53,8 +54,7 @@ app.use('/api/checkout', authenticateToken, async (req, res) => {
       quantity: 1,
     },
   ];
-
-  const session = await stripe.checkout.sessions.create({
+const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: lineItems,
     mode: 'payment',
@@ -63,6 +63,7 @@ app.use('/api/checkout', authenticateToken, async (req, res) => {
   });
   res.json({ id: session.id });
 });
+app.use("/api",userRoutes,courseDraft,courseRoutes,enrollmentRoutes,reviewRoutes);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

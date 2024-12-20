@@ -35,6 +35,7 @@ const AppRoutes = () => (
       <Route path="/form" element={<CourseForm />} />
       <Route path="/user/profile" element={<UserProfilePage />} />
       <Route path="/mycourses" element={<MyCourses />} />
+    <Route path="/courseform/:id" element={<Layout><CourseForm /></Layout>} />
     </Route>
 
     {/* Placeholder for future chat feature */}

@@ -1,35 +1,41 @@
+import { useCallback } from "react";
+
 const PrerequisitesStep = ({ formData, updateFormData }) => {
   // Functions for Prerequisites
-  const addPrerequisite = () => {
-    updateFormData("prerequisites", [...formData.prerequisites, ""]);
-  };
+  const addPrerequisite = useCallback(() => {
+    if (!formData.prerequisites.includes("") && !formData.prerequisites.some(item => item === "")) {
+      updateFormData("prerequisites", [...formData.prerequisites, ""]);
+    }
+  }, [formData, updateFormData]);
 
-  const updatePrerequisite = (index, value) => {
+  const updatePrerequisite = useCallback((index, value) => {
     const updatedPrereqs = [...formData.prerequisites];
     updatedPrereqs[index] = value;
     updateFormData("prerequisites", updatedPrereqs);
-  };
+  }, [formData, updateFormData]);
 
-  const removePrerequisite = (index) => {
+  const removePrerequisite = useCallback((index) => {
     const updatedPrereqs = formData.prerequisites.filter((_, i) => i !== index);
     updateFormData("prerequisites", updatedPrereqs);
-  };
+  }, [formData, updateFormData]);
 
-  // Functions for Requirements
-  const addRequirement = () => {
-    updateFormData("requirements", [...formData.requirements, ""]);
-  };
+  // Functions for Requirements (similar logic)
+  const addRequirement = useCallback(() => {
+    if (!formData.requirements.includes("") && !formData.requirements.some(item => item === "")) {
+      updateFormData("requirements", [...formData.requirements, ""]);
+    }
+  }, [formData, updateFormData]);
 
-  const updateRequirement = (index, value) => {
+  const updateRequirement = useCallback((index, value) => {
     const updatedReqs = [...formData.requirements];
     updatedReqs[index] = value;
     updateFormData("requirements", updatedReqs);
-  };
+  }, [formData, updateFormData]);
 
-  const removeRequirement = (index) => {
+  const removeRequirement = useCallback((index) => {
     const updatedReqs = formData.requirements.filter((_, i) => i !== index);
     updateFormData("requirements", updatedReqs);
-  };
+  }, [formData, updateFormData]);
 
   return (
     <div className="space-y-6">
