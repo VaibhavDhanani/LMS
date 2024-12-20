@@ -1,26 +1,26 @@
-import React, { useState } from "react";
+import { useState } from 'react';
 
 export const SignupForm = ({ formData, handleChange, handleSubmit }) => {
   const [isPasswordEntering, setIsPasswordEntering] = useState(false);
 
   // Password validation rules
   const passwordRules = [
-    { 
-      rule: formData.password.length >= 8, 
-      message: "At least 8 characters long" 
+    {
+      rule: formData.password.length >= 8,
+      message: 'At least 8 characters long',
     },
-    { 
-      rule: /[A-Z]/.test(formData.password), 
-      message: "Contains at least one capital letter" 
+    {
+      rule: /[A-Z]/.test(formData.password),
+      message: 'Contains at least one capital letter',
     },
-    { 
-      rule: /[0-9]/.test(formData.password), 
-      message: "Contains at least one number" 
+    {
+      rule: /[0-9]/.test(formData.password),
+      message: 'Contains at least one number',
     },
-    { 
-      rule: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password), 
-      message: "Contains at least one special symbol" 
-    }
+    {
+      rule: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password),
+      message: 'Contains at least one special symbol',
+    },
   ];
 
   return (
@@ -31,7 +31,7 @@ export const SignupForm = ({ formData, handleChange, handleSubmit }) => {
         </label>
         <input
           type="text"
-          name="name"
+          name="username"
           placeholder="Enter username"
           className="input input-bordered"
           value={formData.name}
@@ -67,21 +67,25 @@ export const SignupForm = ({ formData, handleChange, handleSubmit }) => {
         />
         <div className="absolute left-0 right-0 top-full">
           {isPasswordEntering && formData.password && (
-            <div 
+            <div
               className="mt-1 text-sm bg-white border border-gray-200 rounded-b-md p-2 shadow-md"
-              style={{ 
-                position: 'absolute', 
+              style={{
+                position: 'absolute',
                 zIndex: 10,
-                maxHeight: '120px', 
-                overflowY: 'auto' 
+                maxHeight: '120px',
+                overflowY: 'auto',
               }}
             >
-              <p className="text-gray-600 font-semibold mb-1">Password Requirements:</p>
+              <p className="text-gray-600 font-semibold mb-1">
+                Password Requirements:
+              </p>
               <ul className="space-y-1">
                 {passwordRules.map((rule, index) => (
-                  <li 
-                    key={index} 
-                    className={`text-xs ${rule.rule ? 'text-green-600' : 'text-red-600'}`}
+                  <li
+                    key={index}
+                    className={`text-xs ${
+                      rule.rule ? 'text-green-600' : 'text-red-600'
+                    }`}
                   >
                     {rule.message}
                   </li>
