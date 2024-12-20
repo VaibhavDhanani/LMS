@@ -49,6 +49,7 @@ export const createCourseDraft = async (req, res) => {
   }
 };
 
+
 // Get all course drafts
 export const getAllCourseDrafts = async (req, res) => {
   try {
@@ -57,6 +58,16 @@ export const getAllCourseDrafts = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching course drafts", error });
+  }
+};
+
+export const getUserCourseDrafts = async (req, res) => {
+  const { instructorId } = req.params;
+  try {
+      const drafts = await CourseDraft.find({ instructorId }).populate("instructor", "username email");
+      res.status(200).json(drafts);
+  } catch (error) {
+      res.status(500).json({ error: 'Unable to fetch drafts for user' });
   }
 };
 

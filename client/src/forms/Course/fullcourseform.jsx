@@ -10,12 +10,13 @@ import CurriculumStep from "./CurriculumStep";
 import TargetStudentsStep from "./TargetStudentsStep";
 import ReviewStep from "./ReviewStep";
 import { getDraftById, updateDraft, publishDraft } from "../../services/draft.service.jsx";
-
+import { useAuth } from "@/context/AuthContext";
 const CourseForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const {user ,token} =useAuth();
   const [formData, setFormData] = useState({
     title: "",
     subtitle: "",
@@ -53,7 +54,7 @@ const CourseForm = () => {
   useEffect(() => {
     if (id) {
       setLoading(true);
-      getDraftById(id)
+      getDraftById(id,token)
         .then((data) => setFormData(data))
         .catch((error) => setError("Error fetching draft. Please try again later."))
         .finally(() => setLoading(false));

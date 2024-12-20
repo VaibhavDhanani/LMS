@@ -95,7 +95,6 @@ const course = {
   createdAt: new Date(1688812200000)
 };
 
-// Course Details Page Component
 const CoursePreviewPage = () => {
     const [activeTab, setActiveTab] = useState('overview');
   

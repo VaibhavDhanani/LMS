@@ -5,10 +5,8 @@ import { loadStripe } from '@stripe/stripe-js';
 
 
 export const CourseHeader = ({ course }) => {
-  console.log(course)
   const stripePublishKey = import.meta.env.VITE_STRIPE_PUBLISHKEY
   const apiUrl = import.meta.env.VITE_SERVER_URL
-  console.log(apiUrl)
 
   const handleBuyCourse = async () => {
     const stripe = await loadStripe(stripePublishKey)
@@ -24,7 +22,6 @@ export const CourseHeader = ({ course }) => {
     const result = stripe.redirectToCheckout({
       sessionId: session.id
     })
-    console.log(result)
     if(result.error){
       console.log(error.message)
     }
