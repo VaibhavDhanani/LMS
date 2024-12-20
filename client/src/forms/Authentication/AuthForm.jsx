@@ -103,6 +103,7 @@ export const AuthForm = () => {
       setIsLogin(true); // Switch to login form
     } catch (error) {
       setError(error.message || 'An unexpected error occurred.');
+    
     } finally {
       setLoading(false);
     }

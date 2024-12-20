@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes,Outlet  } from 'react-router-dom';
 import Layout from './components/General/Layout.jsx';
 import ProtectedRoute from './context/protectedRoute.jsx';
 import { AuthForm } from './forms/Authentication/AuthForm.jsx';
@@ -7,9 +7,9 @@ import CoursePreviewPage from './pages/CoursePreview.page.jsx';
 import HomePage from './pages/Home.page.jsx';
 import MyCourses from './pages/MyCourses.jsx';
 import UserProfilePage from './pages/UserProfile.page.jsx';
-
 const AppRoutes = () => (
   <Routes>
+    {/* Public Routes */}
     <Route
       path="/"
       element={
@@ -27,18 +27,27 @@ const AppRoutes = () => (
       }
     />
 
+    {/* Protected Routes */}
     <Route element={<ProtectedRoute />}>
-      <Route path="/courses/:id" element={<CoursePreviewPage />} />
-      <Route path="/success" element={<h1>Success</h1>} />
-      <Route path="/cancel" element={<h1>Cancel</h1>} />
-      <Route path="/courses" element={<HomePage />} />
-      <Route path="/form" element={<CourseForm />} />
-      <Route path="/user/profile" element={<UserProfilePage />} />
-      <Route path="/mycourses" element={<MyCourses />} />
-    <Route path="/courseform/:id" element={<Layout><CourseForm /></Layout>} />
+      <Route
+        element={
+          <Layout>
+            <Outlet />
+          </Layout>
+        }
+      >
+        <Route path="/courses/:id" element={<CoursePreviewPage />} />
+        <Route path="/success" element={<h1>Success</h1>} />
+        <Route path="/cancel" element={<h1>Cancel</h1>} />
+        <Route path="/courses" element={<HomePage />} />
+        <Route path="/form" element={<CourseForm />} />
+        <Route path="/user/profile" element={<UserProfilePage />} />
+        <Route path="/mycourses" element={<MyCourses />} />
+        <Route path="/courseform/:id" element={<CourseForm />} />
+      </Route>
     </Route>
 
-    {/* Placeholder for future chat feature */}
+    {/* Future Feature Placeholder */}
     {/* <Route path="/chat" element={<Layout><VideoChat /></Layout>} /> */}
   </Routes>
 );

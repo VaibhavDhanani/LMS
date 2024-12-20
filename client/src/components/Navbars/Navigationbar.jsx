@@ -1,13 +1,24 @@
 import React, { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 const Navigationbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, logout } = useAuth(); // Destructure user and logout from AuthContext
 
   return (
     <div className="navbar bg-base-100 border border-black">
       <div className="flex-1">
         <a className="btn btn-ghost text-xl">LMS</a>
       </div>
+
+      {/* Conditional Rendering for User Role */}
+      {user && (
+        <div className="flex-1">
+          <a className="btn btn-ghost text-xl">
+            {user.IsInstructer ? "My Courses (Instructor)" : "My Courses"}
+          </a>
+        </div>
+      )}
 
       <div className="flex-none gap-2">
         <div className="form-control">
@@ -18,6 +29,7 @@ const Navigationbar = () => {
           />
         </div>
 
+        {/* Mobile Dropdown Menu */}
         <div className="dropdown dropdown-end md:hidden">
           <label
             tabIndex={0}
@@ -54,6 +66,7 @@ const Navigationbar = () => {
           )}
         </div>
 
+        {/* Desktop Menu */}
         <div className="hidden md:flex">
           <ul className="menu menu-horizontal px-1">
             <li>
@@ -65,6 +78,7 @@ const Navigationbar = () => {
           </ul>
         </div>
 
+        {/* Profile Dropdown */}
         <div className="dropdown dropdown-end">
           <div
             tabIndex={0}
@@ -73,7 +87,7 @@ const Navigationbar = () => {
           >
             <div className="w-10 rounded-full">
               <img
-                alt="Tailwind CSS Navbar component"
+                alt="User Avatar"
                 src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
               />
             </div>
@@ -82,20 +96,43 @@ const Navigationbar = () => {
             tabIndex={0}
             className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow"
           >
-            <li>
-              <a href="/user/profile" className="justify-between">
-                Profile
-                <span className="badge">New</span>
-              </a>
-            </li>
-            <li>
-              <a>Settings</a>
-            </li>
-            <li>
-              <a>Logout</a>
-            </li>
+            {user ? (
+              <>
+                <li>
+                  <a href="/user/profile" className="justify-between">
+                    Profile
+                    <span className="badge">New</span>
+                  </a>
+                </li>
+                <li>
+                  <a>Settings</a>
+                </li>
+                <li>
+                  <button onClick={logout}>Logout</button>
+                </li>
+              </>
+            ) : (
+              <>
+                <li>
+                  <a href="/auth">Login</a>
+                </li>
+                <li>
+                  <a href="/auth">Sign Up</a>
+                </li>
+              </>
+            )}
           </ul>
         </div>
+
+        {/* Logout Button for Desktop */}
+        {user && (
+          <button
+            onClick={logout}
+            className="btn btn-error ml-4 hidden md:block"
+          >
+            Logout
+          </button>
+        )}
       </div>
     </div>
   );

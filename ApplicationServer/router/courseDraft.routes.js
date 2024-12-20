@@ -6,12 +6,14 @@ import {
     updateCourseDraft,
   deleteCourseDraft,
   publishCourseDraft,
+  getUserCourseDrafts
 } from "../controllers/courseDraft.controller.js";
 
 const router = express.Router();
 
 router.post("/drafts", createCourseDraft);
-router.get("/drafts", getAllCourseDrafts);
+router.get("/drafts",getAllCourseDrafts);
+router.get("/drafts/users/:id", getUserCourseDrafts);
 router.get("/drafts/:id", getCourseDraftById);
 router.put("/drafts/:id", updateCourseDraft);
 router.delete("/drafts/:id", deleteCourseDraft);
