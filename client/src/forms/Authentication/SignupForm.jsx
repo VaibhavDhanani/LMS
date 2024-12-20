@@ -121,8 +121,8 @@ export const SignupForm = ({ formData, handleChange, handleSubmit }) => {
           <option value="" disabled>
             Select your role
           </option>
-          <option value="student">Student</option>
-          <option value="instructor">Instructor</option>
+          <option value="false">Student</option>
+          <option value="true">Instructor</option>
         </select>
       </div>
       <div className="form-control mt-6">
