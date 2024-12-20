@@ -1,21 +1,32 @@
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from 'react-router-dom';
 
 const Navigationbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout } = useAuth(); // Destructure user and logout from AuthContext
-
+  const navigate = useNavigate();
   return (
     <div className="navbar bg-base-100 border border-black">
       <div className="flex-1">
         <a className="btn btn-ghost text-xl">LMS</a>
       </div>
 
-      {/* Conditional Rendering for User Role */}
-      {user && (
+      {user && user.isInstructor &&(
         <div className="flex-1">
-          <a className="btn btn-ghost text-xl">
-            {user.IsInstructer ? "My Courses (Instructor)" : "My Courses"}
+          <a className="btn btn-ghost text-xl"
+            onClick={() => navigate('/mycourses')} 
+          >
+            My Courses
+          </a>
+        </div>
+      )}
+      {user && !user.isInstructor &&(
+        <div className="flex-1">
+          <a className="btn btn-ghost text-xl"
+            onClick={() => navigate('/mylearnings')} 
+          >
+            My Learnings
           </a>
         </div>
       )}

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LoginForm } from './LoginForm';
 import { SignupForm } from './SignupForm';
-
+import { login as loginService,register as registerService  } from '@/services/auth.service';
 export const AuthForm = () => {
   const { login } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
@@ -36,33 +36,13 @@ export const AuthForm = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
-
-    try {
-      const URL = import.meta.env.VITE_SERVER_URL;
-      const response = await fetch(`${URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`,
-        );
-      }
-
-      const jsonData = await response.json();
-      login(jsonData.token);
-      localStorage.setItem('authToken', jsonData.token);
-      Cookies.set('authToken', jsonData.token, { expires: 1 });
+    try{
+    const response = await loginService(formData);
+      login(response.token);
+      localStorage.setItem('authToken', response.token);
+      Cookies.set('authToken', response.token, { expires: 1 });
       alert('Login successful');
-      navigate('/'); // Redirect to home page
+      navigate('/'); 
     } catch (error) {
       setError(error.message || 'An unexpected error occurred.');
     } finally {
@@ -82,28 +62,11 @@ export const AuthForm = () => {
     }
 
     try {
-      const URL = import.meta.env.VITE_SERVER_URL;
-      const response = await fetch(`${URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`,
-        );
-      }
-
-      const jsonData = await response.json();
+      await registerService(formData);
       alert('Signup successful! Please log in.');
       setIsLogin(true); // Switch to login form
     } catch (error) {
       setError(error.message || 'An unexpected error occurred.');
-    
     } finally {
       setLoading(false);
     }

@@ -16,12 +16,11 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, username: user.username, email: user.email },
+      { id: user.id, username: user.username, email: user.email, isInstructor: user.isInstructor},
       process.env.JWT_SECRET_KEY,
       { expiresIn: '1h' }
     );
-    console.log(token);
-
+    
     res.json({ token }); // Send the token in the response
   } catch (error) {
     res.status(500).json({ message: 'Internal server error', error: error.message });
@@ -31,8 +30,8 @@ router.post('/login', async (req, res) => {
 // Register Route
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password, isInstructor } = req.body;
-
+    const { username, email, password, role } = req.body;
+    const isInstructor = (role === 'true')? true : false;
     const existingUser = await User.findOne({ username });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
@@ -47,19 +46,11 @@ router.post('/register', async (req, res) => {
       isInstructor,
     });
     await newUser.save();
-
     const token = jwt.sign(
       { id: newUser.id, username: newUser.username, email: newUser.email, isInstructor: newUser.isInstructor},
       process.env.JWT_SECRET_KEY,
       { expiresIn: '1h' },
     );
-    // Set token as HTTP-only cookie
-    res.cookie('authToken', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 3600000, // 1 hour
-    });
 
     res.status(201).json({ token });
   } catch (error) {
