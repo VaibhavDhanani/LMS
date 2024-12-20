@@ -1,5 +1,4 @@
 const ReviewStep = ({ formData }) => {
-
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-bold">Review Your Course</h2>
@@ -14,7 +13,7 @@ const ReviewStep = ({ formData }) => {
       {/* Instructor Pricing Section */}
       <div className="space-y-2">
         <h3 className="font-semibold">Instructor Pricing</h3>
-        <p>Instructor: {formData.instructor || "N/A"}</p>
+        <p>Instructor: {formData.instructor?.username || "N/A"}</p> {/* Changed this line */}
         <p>Price: ${formData.pricing?.price || "N/A"}</p>
       </div>
 
@@ -27,32 +26,30 @@ const ReviewStep = ({ formData }) => {
         <p>Last Updated: {formData.lastUpdated || "N/A"}</p>
       </div>
 
-{/* Learn Points Section */}
-<div className="space-y-2">
-  <h3 className="font-semibold">Learn Points</h3>
-  <ul>
-    {formData.learnPoints?.length > 0 ? (
-      formData.learnPoints.map((point, index) => (
-        <li key={index}>{point}</li>
-      ))
-    ) : (
-      <li>No learn points available.</li>
-    )}
-  </ul>
+      {/* Learn Points Section */}
+      <div className="space-y-2">
+        <h3 className="font-semibold">Learn Points</h3>
+        <ul>
+          {formData.learnPoints?.length > 0 ? (
+            formData.learnPoints.map((point, index) => (
+              <li key={index}>{point}</li>
+            ))
+          ) : (
+            <li>No learn points available.</li>
+          )}
+        </ul>
 
-  <h4 className="font-semibold">Tech Stack</h4>
-<ul>
-  {formData.technologies?.length > 0 ? (
-    formData.technologies.map((tech, index) => (
-      <li key={index}>{tech}</li>
-    ))
-  ) : (
-    <li>No tech stack listed.</li>
-  )}
-</ul>
-
-</div>
-
+        <h4 className="font-semibold">Tech Stack</h4>
+        <ul>
+          {formData.technologies?.length > 0 ? (
+            formData.technologies.map((tech, index) => (
+              <li key={index}>{tech}</li>
+            ))
+          ) : (
+            <li>No tech stack listed.</li>
+          )}
+        </ul>
+      </div>
 
       {/* Prerequisites Section */}
       <div className="space-y-2">
@@ -75,7 +72,8 @@ const ReviewStep = ({ formData }) => {
           {formData.lectures?.length > 0 ? (
             formData.lectures.map((lesson, index) => (
               <li key={index}>
-                <strong>{index+1} {lesson.title}:</strong> {lesson.description} <br />
+                <strong>{index + 1} {lesson.title}:</strong> {lesson.description} <br />
+                {/* You can uncomment and display additional lesson details if needed */}
                 {/* Duration: {lesson.duration} <br />
                 Preview: {lesson.preview ? "Yes" : "No"} */}
               </li>

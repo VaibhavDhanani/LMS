@@ -36,7 +36,7 @@ const VideoPlay = ({ src }) => {
         ref={playerRef}
         url={src}
         controls
-        autoplay
+        autoPlay
         onProgress={handleProgress}
         width="100%"
       />

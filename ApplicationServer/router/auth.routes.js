@@ -9,8 +9,8 @@ const router = Router();
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
     const user = await User.findOne({ email });
+
     if (!user || !bcrypt.compareSync(password, user.password)) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -18,22 +18,13 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { id: user.id, username: user.username, email: user.email },
       process.env.JWT_SECRET_KEY,
-      { expiresIn: '1h' },
+      { expiresIn: '1h' }
     );
+    console.log(token);
 
-    // Set token as HTTP-only cookie
-    res.cookie('authToken', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Ensure secure in production
-      sameSite: 'strict',
-      maxAge: 3600000, // 1 hour
-    });
-
-    res.json({ token });
+    res.json({ token }); // Send the token in the response
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: 'Internal server error', error: error.message });
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
 
@@ -58,11 +49,10 @@ router.post('/register', async (req, res) => {
     await newUser.save();
 
     const token = jwt.sign(
-      { id: newUser.id, username: newUser.username, email: newUser.email },
+      { id: newUser.id, username: newUser.username, email: newUser.email, isInstructor: newUser.isInstructor},
       process.env.JWT_SECRET_KEY,
       { expiresIn: '1h' },
     );
-
     // Set token as HTTP-only cookie
     res.cookie('authToken', token, {
       httpOnly: true,
