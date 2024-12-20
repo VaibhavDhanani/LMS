@@ -12,20 +12,22 @@ import { Input } from '@/components/ui/input';
 import {
   createDraft,
   getDrafts,
-  deleteDraft, // Add a function to delete drafts
+  deleteDraft,
 } from '../services/draft.service.jsx'; // Update the import path as necessary
+import { useAuth } from '@/context/AuthContext.jsx';
 
 const MyCourses = () => {
   const [draftCourses, setDraftCourses] = useState([]);
   const [publishedCourses, setPublishedCourses] = useState([]);
   const [newCourseTitle, setNewCourseTitle] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const { user, token } = useAuth(); // Destructure user and token from AuthContext
+  
   // Fetch Draft Courses and Published Courses
   const fetchCourses = async () => {
     try {
-      const drafts = await getDrafts();
-      const published = await getDrafts(); // Replace with actual endpoint for published courses
+      const drafts = await getDrafts(user.id, token);
+      const published = []; // Replace with actual endpoint for published courses
       setDraftCourses(drafts);
       setPublishedCourses(published);
     } catch (error) {
@@ -34,17 +36,19 @@ const MyCourses = () => {
   };
 
   useEffect(() => {
-    fetchCourses();
-  }, []);
-
+    if (user?.id && token) {
+      fetchCourses();
+    }
+  }, [user, token]);
+ 
   const handleAddCourse = async () => {
     if (newCourseTitle.trim()) {
-      const newCourse = { title: newCourseTitle };
+      const newCourse = { title: newCourseTitle, instructor: user.id };
       try {
-        await createDraft(newCourse);
+        await createDraft(newCourse,token);
         setNewCourseTitle('');
         setIsModalOpen(false);
-        fetchCourses(); // Re-fetch courses to ensure UI sync
+        fetchCourses();
       } catch (error) {
         console.error('Error creating draft course:', error);
       }
@@ -53,7 +57,7 @@ const MyCourses = () => {
 
   const handleDeleteDraft = async (courseId) => {
     try {
-      await deleteDraft(courseId); // Assume this deletes the draft by ID
+      await deleteDraft(courseId,token); // Assume this deletes the draft by ID
       fetchCourses(); // Re-fetch courses to reflect the change
     } catch (error) {
       console.error('Error deleting draft course:', error);
@@ -127,29 +131,29 @@ const MyCourses = () => {
         {/* Draft Courses Section */}
         <div>
           <h2 className="text-xl font-semibold mb-4">Draft Courses</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {draftCourses.map(course => (
-              <CourseCard
-                key={course._id}
-                course={course}
-                isDraft={true}
-              />
-            ))}
-          </div>
+          {draftCourses.length === 0 ? (
+            <p>No draft courses available.</p> // Show message if no drafts
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {draftCourses.map(course => (
+                <CourseCard key={course._id} course={course} isDraft={true} />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Published Courses Section */}
         <div>
           <h2 className="text-xl font-semibold mb-4">Published Courses</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {publishedCourses.map(course => (
-              <CourseCard
-                key={course._id}
-                course={course}
-                isDraft={false}
-              />
-            ))}
-          </div>
+          {publishedCourses.length === 0 ? (
+            <p>No published courses available.</p> // Show message if no published courses
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {publishedCourses.map(course => (
+                <CourseCard key={course._id} course={course} isDraft={false} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
