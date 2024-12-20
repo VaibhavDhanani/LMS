@@ -10,25 +10,15 @@ const courseDraftSchema = new mongoose.Schema({
   },
   details: {
     totalHours: Number,
-    lectures: Number,
     level: String
   },
   learnPoints: [String],
-  technologies: {
-    available: [String],  // Array of selected predefined tech names
-    new: [{
-      name: String,
-      logo: String,
-    }],
-  },
+  technologies: [],
   prerequisites: [String],
   requirements: [String],
   thumbnail: String,
   promotionalVideo: String,
-  curriculum: [
-    {
-      section: String,
-      lectures: [
+  lectures: [
         {
           title: String,
           description: String,
@@ -36,9 +26,8 @@ const courseDraftSchema = new mongoose.Schema({
           duration: String,
           preview: Boolean
         }
-      ]
-    }
-  ],
+  ]
+   ,
   targetStudents: [String],
   topics: [String],
   pricing: {
@@ -46,7 +35,6 @@ const courseDraftSchema = new mongoose.Schema({
     discountEnabled: Boolean,
     discount: Number,
   },
-  isActive: Boolean,
   createdAt: { type: Date, default: Date.now },
   lastUpdated: { type: Date, default: Date.now },
 });
