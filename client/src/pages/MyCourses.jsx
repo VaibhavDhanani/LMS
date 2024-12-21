@@ -13,7 +13,8 @@ import {
   createDraft,
   getDrafts,
   deleteDraft,
-} from '../services/draft.service.jsx'; // Update the import path as necessary
+} from '../services/draft.service.jsx'; 
+import {getInstructorCourse} from '../services/course.service.jsx';
 import { useAuth } from '@/context/AuthContext.jsx';
 
 const MyCourses = () => {
@@ -27,7 +28,7 @@ const MyCourses = () => {
   const fetchCourses = async () => {
     try {
       const drafts = await getDrafts(user.id, token);
-      const published = []; // Replace with actual endpoint for published courses
+      const published = await getInstructorCourse(user.id,token); // Replace with actual endpoint for published courses
       setDraftCourses(drafts);
       setPublishedCourses(published);
     } catch (error) {

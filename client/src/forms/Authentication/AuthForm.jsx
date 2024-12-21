@@ -64,7 +64,7 @@ export const AuthForm = () => {
     try {
       await registerService(formData);
       alert('Signup successful! Please log in.');
-      setIsLogin(true); // Switch to login form
+      setIsLogin(true); 
     } catch (error) {
       setError(error.message || 'An unexpected error occurred.');
     } finally {

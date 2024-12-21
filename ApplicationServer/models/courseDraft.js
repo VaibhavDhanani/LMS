@@ -9,7 +9,6 @@ const courseDraftSchema = new mongoose.Schema({
     ref: "User"
   },
   details: {
-    totalHours: Number,
     level: String
   },
   learnPoints: [String],
@@ -22,7 +21,8 @@ const courseDraftSchema = new mongoose.Schema({
         {
           title: String,
           description: String,
-          video: String,
+          thumbnailUrl: String,
+          videoUrl: String,
           duration: String,
           preview: Boolean
         }

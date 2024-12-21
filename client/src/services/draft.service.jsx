@@ -30,14 +30,18 @@ export const getDraftById = async (id,token)=>{
     return response.data;
 }
 
-export const updateDraft = async (id,draft)=>{
-    const response = await db.put(`/drafts/${id}`,draft);
+export const updateDraft = async (id,draft,token)=>{
+    const response = await db.put(`/drafts/${id}`,draft, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return response.data;
 }
 
-export const publishDraft = async (id, draft) => {
+export const publishDraft = async (id, draft,token) => {
     try {
-      const response = await db.post(`/publishdrafts/${id}`, draft);
+      const response = await db.post(`/publishdrafts/${id}`, draft, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       
       // Check if the response contains an error
       if (response.error) {
@@ -53,8 +57,10 @@ export const publishDraft = async (id, draft) => {
   };
   
 
-export const deleteDraft = async (id)=>{
-    const response = await db.delete(`/drafts/${id}`);
+export const deleteDraft = async (id,token)=>{
+    const response = await db.delete(`/drafts/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return response.data;
 }
 

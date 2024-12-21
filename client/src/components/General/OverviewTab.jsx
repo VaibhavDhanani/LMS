@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Clock, BarChart, FileText, Users } from 'lucide-react';
 import { CheckIcon } from './CheckIcon';
 import { 
@@ -21,16 +21,31 @@ const techIcons = {
 };
 
 export const OverviewTab = ({ course }) => {
+  // Memoizing total seconds calculation
+  const totalSeconds = useMemo(() => {
+    return course.lectures?.reduce((total, lecture) => total + lecture.duration, 0) || 0;
+  }, [course.lectures]);
+
+  // Convert total seconds into hours and minutes
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.round((totalSeconds % 3600) / 60);
+  const formattedTotalTime = hours > 0 
+    ? `${hours} hours ${minutes} minutes` 
+    : `${minutes} minutes`;
+
+  // Format last updated date
+  const formattedLastUpdated = new Date(course.lastUpdated).toLocaleDateString();
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
       {/* What You'll Learn Section */}
       <div>
         <h2 className="text-2xl font-bold mb-4">What You'll Learn</h2>
         <ul className="space-y-2">
-          {course.whatYouWillLearn.map((item, index) => (
+          {course.learnpoints?.map((item, index) => (
             <li key={index} className="flex items-start">
               <CheckIcon className="mr-2 text-primary" />
-              <span className='prose'>{item}</span>
+              <span className="prose">{item}</span>
             </li>
           ))}
         </ul>
@@ -40,8 +55,9 @@ export const OverviewTab = ({ course }) => {
       <div>
         <h2 className="text-2xl font-bold mb-4">Tech Stack You'll Learn</h2>
         <div className="flex flex-wrap gap-4 justify-center">
-          {course.whichTechStackYouwillLearn.map((tech, index) => {
-            const TechIcon = techIcons[tech.toLowerCase()];
+          {course.technologies?.map((tech, index) => {
+            const techLower = tech.toLowerCase();
+            const TechIcon = techIcons[techLower];
             return (
               <div 
                 key={index} 
@@ -67,7 +83,7 @@ export const OverviewTab = ({ course }) => {
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center">
             <Clock className="mr-2 text-primary" />
-            <span>{course.details.totalHours} total hours</span>
+            <span>{formattedTotalTime}</span> {/* Display formatted total time */}
           </div>
           <div className="flex items-center">
             <BarChart className="mr-2 text-primary" />
@@ -75,16 +91,15 @@ export const OverviewTab = ({ course }) => {
           </div>
           <div className="flex items-center">
             <FileText className="mr-2 text-primary" />
-            <span>{course.details.lectures} lectures</span>
+            <span>{course.lectures.length} lectures</span>
           </div>
           <div className="flex items-center">
             <Users className="mr-2 text-primary" />
-            <span>Last Updated: {course.details.lastUpdated.toLocaleDateString()}</span>
+            <span>Last Updated: {formattedLastUpdated}</span> {/* Display formatted last updated date */}
           </div>
         </div>
       </div>
-
-      
     </div>
   );
 };
+  
