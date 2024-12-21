@@ -42,7 +42,7 @@ export const OverviewTab = ({ course }) => {
       <div>
         <h2 className="text-2xl font-bold mb-4">What You'll Learn</h2>
         <ul className="space-y-2">
-          {course.learnpoints?.map((item, index) => (
+          {course.learnPoints?.map((item, index) => (
             <li key={index} className="flex items-start">
               <CheckIcon className="mr-2 text-primary" />
               <span className="prose">{item}</span>
@@ -52,30 +52,32 @@ export const OverviewTab = ({ course }) => {
       </div>
 
       {/* Tech Stack Section */}
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Tech Stack You'll Learn</h2>
-        <div className="flex flex-wrap gap-4 justify-center">
-          {course.technologies?.map((tech, index) => {
-            const techLower = tech.toLowerCase();
-            const TechIcon = techIcons[techLower];
-            return (
-              <div 
-                key={index} 
-                className="flex flex-col items-center p-2 bg-base-100 rounded-lg shadow-md w-24"
-              >
-                {TechIcon ? (
-                  <TechIcon className="w-8 h-8 mb-2 text-primary" />
-                ) : (
-                  <div className="w-10 h-10 mb-2 bg-gray-200 rounded-full flex items-center justify-center">
-                    {tech.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <span className="text-sm">{tech.toUpperCase()}</span>
-              </div>
-            );
-          })}
+      {course.technologies && course.technologies.length > 0 && (
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Tech Stack You'll Learn</h2>
+          <div className="flex flex-wrap gap-4 justify-center">
+            {course.technologies.map((tech, index) => {
+              const techLower = tech.toLowerCase();
+              const TechIcon = techIcons[techLower];
+              return (
+                <div 
+                  key={index} 
+                  className="flex flex-col items-center p-2 bg-base-100 rounded-lg shadow-md w-24"
+                >
+                  {TechIcon ? (
+                    <TechIcon className="w-8 h-8 mb-2 text-primary" />
+                  ) : (
+                    <div className="w-10 h-10 mb-2 bg-gray-200 rounded-full flex items-center justify-center">
+                      {tech.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="text-sm">{tech.toUpperCase()}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Course Details Section */}
       <div>
@@ -102,4 +104,3 @@ export const OverviewTab = ({ course }) => {
     </div>
   );
 };
-  

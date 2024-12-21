@@ -2,7 +2,8 @@ import { Route, Routes,Outlet  } from 'react-router-dom';
 import Layout from './components/General/Layout.jsx';
 import ProtectedRoute from './context/protectedRoute.jsx';
 import { AuthForm } from './forms/Authentication/AuthForm.jsx';
-import CourseForm from './forms/Course/fullcourseform.jsx';
+import CourseForm from './forms/Course/CourseForm.jsx';
+import DraftForm from './forms/Course/DraftForm.jsx';
 import CoursePreviewPage from './pages/CoursePreview.page.jsx';
 import HomePage from './pages/Home.page.jsx';
 import MyCourses from './pages/MyCourses.jsx';
@@ -43,6 +44,7 @@ const AppRoutes = () => (
         <Route path="/form" element={<CourseForm />} />
         <Route path="/user/profile" element={<UserProfilePage />} />
         <Route path="/mycourses" element={<MyCourses />} />
+        <Route path="/draft/:id" element={<DraftForm />} />
         <Route path="/courseform/:id" element={<CourseForm />} />
       </Route>
     </Route>

@@ -9,25 +9,26 @@ const courseDraftSchema = new mongoose.Schema({
     ref: "User"
   },
   details: {
-    level: String
+    level: String,
+    language: String,
   },
   learnPoints: [String],
-  technologies: [],
+  technologies: [String],
   prerequisites: [String],
   requirements: [String],
   thumbnail: String,
   promotionalVideo: String,
   lectures: [
-        {
-          title: String,
-          description: String,
-          thumbnailUrl: String,
-          videoUrl: String,
-          duration: String,
-          preview: Boolean
-        }
+    {
+      title: String,
+      description: String,
+      thumbnailUrl: String,
+      videoUrl: String,
+      duration: String,
+      preview: Boolean
+    }
   ]
-   ,
+  ,
   targetStudents: [String],
   topics: [String],
   pricing: {

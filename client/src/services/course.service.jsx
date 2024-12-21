@@ -37,3 +37,26 @@ export const getInstructorCourse = async (instructorId, token) => {
     }
   };
   
+export const getCourseById = async  (courseId,token) => {
+  try {
+    const response = await db.get(`/courses/${courseId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching course:", error);
+    throw error; // Re-throw the error for further handling
+  }
+};
+
+export const updateCourse = async (course,token) => {
+  try {
+    const response = await db.put(`/courses`,course, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error updating course:", error);
+    throw error; // Re-throw the error for further handling
+  } 
+}
