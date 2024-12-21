@@ -97,14 +97,24 @@ export const getInstructorCourse = async (req, res) => {
 // Update a course
 export const updateCourse = async (req, res) => {
   try {
-    const course = await Course.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
+    // Create updated data, including the lastUpdated field
+    const updateData = { ...req.body, lastUpdated: new Date() };
+
+    // Use updateData instead of req.body directly
+    const course = await Course.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,          // Return the updated document
+      runValidators: true // Ensure that validation occurs during update
     });
-    if (!course) return res.status(404).json({ message: "Course not found" });
+
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    // Return the updated course
     res.status(200).json(course);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    // Improved error message
+    res.status(400).json({ error: `Failed to update course: ${error.message}` });
   }
 };
 
