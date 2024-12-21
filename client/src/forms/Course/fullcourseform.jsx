@@ -29,7 +29,7 @@ const CourseForm = () => {
     requirements: [""],
     thumbnail: "",
     promotionalVideo: "",
-    lectures: [{ title: "", description: "", video: "", duration: "", preview: false }],
+    lectures: [{ title: "", description: "", videoUrl: "",thumbnailUrl: "" , duration: "", preview: false }],
     targetStudents: [""],
     topics: [""],
     pricing: { price: "", discountEnabled: false, discount: "" },
@@ -66,7 +66,7 @@ const CourseForm = () => {
   };
 
   const handleSaveChanges = () => {
-    updateDraft(id, formData)
+    updateDraft(id, formData,token)
       .then(() => {
         console.log("Draft saved successfully!");
         setError(""); // Clear error if successful
@@ -77,8 +77,8 @@ const CourseForm = () => {
   const confirmPublish = () => {
     setShowConfirmModal(false);
     setLoading(true);
-    updateDraft(id, formData)
-      .then(() => publishDraft(id, formData))
+    updateDraft(id, formData,token)
+      .then(() => publishDraft(id, formData,token))
       .then(() => {
         console.log("Draft published successfully!");
         setError(""); // Clear error if successful

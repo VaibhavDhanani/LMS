@@ -9,7 +9,9 @@ const Navigationbar = () => {
   return (
     <div className="navbar bg-base-100 border border-black">
       <div className="flex-1">
-        <a className="btn btn-ghost text-xl">LMS</a>
+        <a className="btn btn-ghost text-xl"
+        onClick={()=> navigate('/')}
+        >LMS</a>
       </div>
 
       {user && user.isInstructor &&(

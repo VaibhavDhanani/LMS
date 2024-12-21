@@ -1,22 +1,39 @@
 import React from "react";
 
 const CourseCard = ({ course }) => {
+  const { title, description, pricing, _id } = course;
+
   return (
-    <div
-      className="card card-compact bg-base-100 w-60 shadow-xl flex-shrink-0"
-    >
+    <div className="card card-compact bg-base-100 w-60 shadow-xl flex-shrink-0">
+      {/* Course Thumbnail */}
       <figure>
         <img
-          src="https://img.daisyui.com/images/stock/photo-1606107557195-0e29a4b5b4aa.webp"
-          alt="Course"
+          src={course.thumbnail}
+          alt={title || "Course Thumbnail"}
           className="h-40 w-full object-cover"
         />
       </figure>
+
+      {/* Course Details */}
       <div className="card-body">
-        <h2 className="card-title">{course}</h2>
-        <p>Enhance your skills with this amazing course.</p>
+        {/* Course Title */}
+        <h2 className="card-title">{title || "Untitled Course"}</h2>
+
+        {/* Course Description */}
+        <p>{description || "No description available for this course."}</p>
+
+        {/* Pricing Information */}
+        {pricing?.price && (
+          <p className="text-sm font-medium text-gray-600">
+            Price: ${pricing.price}
+          </p>
+        )}
+
+        {/* Explore Button */}
         <div className="card-actions justify-end">
-          <a className="btn-custom btn-active btn-accent" href="/courses/1">Explore</a>
+          <a className="btn btn-accent" href={`/courses/${_id}`}>
+            Explore
+          </a>
         </div>
       </div>
     </div>

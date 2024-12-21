@@ -10,7 +10,6 @@ const courseSchema = new mongoose.Schema({
     required: false
   },
   details: {
-    totalHours: { type: Number, required: false },
     level: { type: String, required: true }
   },
   learnPoints: [String],
@@ -24,7 +23,8 @@ const courseSchema = new mongoose.Schema({
         {
           title: { type: String, required: false },
           description: { type: String, required: false },
-          video: { type: String, required: false },
+          videourl: { type: String, required: false },
+          thumbnailurl: { type:String, required: false },
           duration: { type: String, required: false },
           preview: { type: Boolean, default: false }
         }
