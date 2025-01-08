@@ -8,6 +8,8 @@ import CoursePreviewPage from './pages/CoursePreview.page.jsx';
 import HomePage from './pages/Home.page.jsx';
 import MyCourses from './pages/MyCourses.jsx';
 import UserProfilePage from './pages/UserProfile.page.jsx';
+import LectureRoom from './components/lectureRoom.jsx';
+import LectureRoom1 from './components/demo.jsx';
 const AppRoutes = () => (
   <Routes>
     {/* Public Routes */}
@@ -48,6 +50,8 @@ const AppRoutes = () => (
         <Route path="/courseform/:id" element={<CourseForm />} />
       </Route>
     </Route>
+        <Route path="/lectureroom" element={<LectureRoom />} />
+        <Route path="/lectureroom1" element={<LectureRoom1 />} />
 
     {/* Future Feature Placeholder */}
     {/* <Route path="/chat" element={<Layout><VideoChat /></Layout>} /> */}
