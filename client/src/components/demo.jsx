@@ -1,185 +1,209 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import io from 'socket.io-client';
-import { Device } from 'mediasoup-client';
+import React, { useRef, useState, useEffect } from "react";
+import io from "socket.io-client";
+import { Device } from "mediasoup-client";
 
+const socket = io("http://localhost:3000");
 
-function LectureRoom() {
-  const [lectureId, setLectureId] = useState(null);
-  const [isHost, setIsHost] = useState(false);
-  const [participants, setParticipants] = useState(0);
-  const [error, setError] = useState(null);
-  const [transportOptions, setTransportOptions] = useState(null);
-  const [consumerOptions, setConsumerOptions] = useState([]);
-  const videoRef = useRef(null); // Reference for the host's video element
-  const [peerConnection, setPeerConnection] = useState(null);
-  
-  const socket = io('http://localhost:8000');
+const LectureRoom1 = () => {
+  const [device, setDevice] = useState(null);
+  const [producerTransport, setProducerTransport] = useState(null);
+  const [consumerTransport, setConsumerTransport] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
 
   useEffect(() => {
-    if (!peerConnection) {
-      const pc = new RTCPeerConnection({
-        iceServers: [{
-          urls: [
-            "stun:stun.l.google.com:19302",
-            "stun:global.l.twilio.com:3478",
-          ],
-        }],
-      });
-      setPeerConnection(pc);
-    }
-  
+    // Handle socket connection status
+    socket.on("connect", () => setIsConnected(true));
+    socket.on("disconnect", () => setIsConnected(false));
+
     return () => {
-      if (peerConnection) {
-        peerConnection.close();
-      }
+      if (producerTransport) producerTransport.close();
+      if (consumerTransport) consumerTransport.close();
+      socket.off("connect");
+      socket.off("disconnect");
     };
   }, []);
-  
 
-  // Create lecture room
-  const createLecture = async () => {
-    socket.emit('create-lecture', {
-      title: 'Demo Lecture',
-      subject: 'Introduction to WebRTC'
-    },peerConnection);
-    setIsHost(true);
-  };
+  useEffect(() => {
+    console.log("Device initialized:", device);
+  }, [device]);
 
-  // Join lecture room
-  const joinLecture = () => {
-    const inputLectureId = prompt('Enter Lecture ID:');
-    if (inputLectureId) {
-      socket.emit('join-lecture', inputLectureId);
+  useEffect(() => {
+    console.log("Producer Transport:", producerTransport);
+    console.log("Consumer Transport:", consumerTransport);
+  }, [producerTransport, consumerTransport]);
+
+  useEffect(() => {
+    console.log("Socket connection status:", isConnected ? "Connected" : "Disconnected");
+  }, [isConnected]);
+
+  useEffect(() => {
+    const initMediasoup = async () => {
+      try {
+        const rtpCapabilities = await new Promise((resolve) => {
+          socket.emit("get-rtp-capabilities", resolve);
+        });
+
+        const device = new Device();
+        await device.load({ routerRtpCapabilities: rtpCapabilities });
+        setDevice(device);
+        console.log("Mediasoup device initialized:", device.loaded);
+      } catch (error) {
+        console.error("Failed to initialize mediasoup device:", error);
+      }
+    };
+
+    if (isConnected) {
+      initMediasoup();
     }
-  };
+  }, [isConnected]);
 
-  // Capture the host's video stream
-  const startVideoStream = async () => {
+  const createLecture = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ // Corrected method name
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
       });
-      videoRef.current.srcObject = stream; // Set the video element's source to the stream
 
-      // Emit the stream to the server
-      const rtpParameters = await extractRtpParameters(stream); // Extract RTP parameters from the stream
-      console.log(rtpParameters);
-      socket.emit('send-producer-stream', rtpParameters);
-    } catch (err) {
-      console.error('Error accessing media devices.', err);
-      setError('Error accessing media devices.');
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+
+      // Produce both video and audio tracks
+      const tracks = stream.getTracks();
+      for (const track of tracks) {
+        try {
+          const producer = await transport.produce({ track });
+          console.log(`${track.kind} producer created:`, producer.id);
+        } catch (error) {
+          console.error(`Failed to produce ${track.kind}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to create lecture:", error);
     }
   };
 
+  const joinLecture = async () => {
+    try {
+      const transportOptions = await new Promise((resolve) => {
+        socket.emit("create-consumer-transport", resolve);
+      });
 
-const extractRtpParameters = async (stream) => {
-  try {
-    // Step 1: Fetch Router RTP Capabilities from the Server
-    const routerRtpCapabilities = await fetch('http://localhost:8000/routerRtpCapabilities')
-    .then((res) => res.json());
-    console.log(routerRtpCapabilities);
+      const transport = device.createRecvTransport(transportOptions);
+      setConsumerTransport(transport);
 
-    // Step 2: Create a Mediasoup Device
-    // const device = new Device();
-    // await device.load({ routerRtpCapabilities });
+      transport.on("connect", async ({ dtlsParameters }, callback, errback) => {
+        try {
+          await new Promise((resolve, reject) => {
+            socket.emit("connect-transport", { dtlsParameters }, (response) => {
+              if (response.error) {
+                reject(response.error);
+              } else {
+                resolve(response);
+              }
+            });
+          });
+          callback();
+        } catch (error) {
+          console.error("Failed to connect consumer transport:", error);
+          errback(error);
+        }
+      });
 
-    // // Step 3: Create a SendTransport
-    // const transportOptions = await fetch('http://localhost:8000/createTransport');
-    //   // .then((res) => res.json());
-    // const sendTransport = device.createSendTransport(transportOptions);
+      // Request existing producers when joining
+      socket.emit("get-producers", async (producers) => {
+        for (const { producerId, kind } of producers) {
+          await consumeTrack(transport, producerId, kind);
+        }
+      });
 
-    // // Step 4: Produce from MediaStream Track and Get RTP Parameters
-    // const videoTrack = stream.getVideoTracks()[0]; // Get video track
-    // const producer = await sendTransport.produce({
-    //   track: videoTrack, // Add the video track to the transport
-    // });
+      // Handle new producers
+      socket.on("new-producer", async ({ producerId, kind }) => {
+        await consumeTrack(transport, producerId, kind);
+      });
 
-    // RTP Parameters are part of the producer
-    // const rtpParameters = producer.rtpParameters;
-
-    // console.log('RTP Parameters:', rtpParameters);
-    return routerRtpCapabilities;
-  } catch (err) {
-    console.error('Error extracting RTP parameters:', err);
-    throw err;
-  }
-};
-
-  // Leave lecture
-  const leaveLecture = () => {
-    socket.emit('leave-lecture', lectureId);
-    setLectureId(null);
-    setIsHost(false);
-    setParticipants(0);
-    setConsumerOptions([]);
-    videoRef.current.srcObject = null; // Stop the video stream
+    } catch (error) {
+      console.error("Failed to join lecture:", error);
+    }
   };
 
-  // Socket event listeners
-  useEffect(() => {
-    socket.on('lecture-created', (data) => {
-      setLectureId(data.lectureId);
-      setParticipants(1);
-      alert(`Lecture created! Lecture ID: ${data.lectureId}`);
-      setTransportOptions(data.transportOptions);  // Save transport options for later use
-      startVideoStream(); // Start the video stream after creating the lecture
-    });
+  const consumeTrack = async (transport, producerId, kind) => {
+    try {
+      const consumerOptions = await new Promise((resolve) => {
+        console.log("Requesting to consume track for producer:", producerId);
+        socket.emit("consume", {
+          producerId,
+          rtpCapabilities: device.rtpCapabilities,
+        }, resolve);
+      });
 
-    socket.on('transport-options', (options) => {
-      setTransportOptions(options);  // Receive transport options from server
-    });
+      const consumer = await transport.consume(consumerOptions);
+      console.log(`Consumer created: ${consumer.id}`, consumer);
 
-    socket.on('new-consumer', (data) => {
-      setConsumerOptions((prev) => [...prev, data.consumerOptions]); // Add new consumers
-    });
+      // Check if consumer track is valid
+      if (consumer.track) {
+        console.log("Consumer track:", consumer.track);
+      } else {
+        console.error("Consumer track is not valid.");
+      }
 
-    socket.on('join-lecture-error', (data) => {
-      setError(data.message);
-      alert(data.message);
-    });
+      const remoteStream = new MediaStream([consumer.track]);
+      console.log("Remote Stream:", remoteStream);
 
-    return () => {
-      socket.off('lecture-created');
-      socket.off('transport-options');
-      socket.off('new-consumer');
-      socket.off('join-lecture-error');
-    };
-  }, []);
+      if (remoteVideoRef.current) {
+        if (kind === "video") {
+          remoteVideoRef.current.srcObject = remoteStream;
+        } else {
+          const existingStream = remoteVideoRef.current.srcObject;
+          if (existingStream) {
+            existingStream.addTrack(consumer.track);
+          } else {
+            remoteVideoRef.current.srcObject = remoteStream;
+          }
+        }
+      }
 
-  // Function to display the video streams (consumer streams)
-  const renderConsumers = () => {
-    return consumerOptions.map((consumer, index) => (
-      <video key={index} srcObject={consumer.stream} autoPlay />
-    ));
+      // Check if tracks are available
+      console.log("Remote Video tracks:", remoteVideoRef.current.srcObject.getTracks());
+      if (!remoteVideoRef.current) {
+        console.error("Remote video reference is not initialized.");
+        return;
+      }
+      
+      await consumer.resume();
+      console.log(`${kind} consumer created and resumed:`, consumer.id);
+    } catch (error) {
+      console.error("Failed to consume track:", error);
+    }
   };
 
   return (
-    <div>
-      <h1>Lecture Room</h1>
-
-      {!lectureId ? (
+    <div className="p-4">
+      <div className="mb-4 space-x-4">
+        <button 
+          onClick={joinLecture}
+          disabled={!device || !isConnected}
+          className="bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50"
+        >
+          Join Lecture
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+     
         <div>
-          <button onClick={createLecture}>Create Lecture</button>
-          <button onClick={joinLecture}>Join Lecture</button>
+          <h3 className="mb-2">Remote Video</h3>
+          <video 
+            ref={remoteVideoRef}
+            autoPlay 
+            playsInline 
+            className="w-full bg-black"
+          />
         </div>
-      ) : (
-        <div>
-          <h2>Lecture ID: {lectureId}</h2>
-          <p>Participants: {participants}</p>
-          
-          {isHost && <p>You are the host</p>}
-          
-          <button onClick={leaveLecture}>Leave Lecture</button>
-        </div>
-      )}
-
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      
-      <video ref={videoRef} autoPlay muted /> {/* Host's video stream */}
-      {renderConsumers()}
+      </div>
     </div>
   );
-}
+};
 
-export default LectureRoom;
+export default LectureRoom1;
