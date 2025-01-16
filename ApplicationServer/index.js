@@ -2,7 +2,6 @@ import cors from 'cors';
 import { configDotenv } from 'dotenv';
 import express from 'express';
 import Stripe from 'stripe';
-import authenticateToken from './middlewares/auth.middleware.js';
 import authRoutes from './router/auth.routes.js';
 import courseRoutes from './router/course.routes.js';
 import enrollmentRoutes from './router/enrollment.routes.js';
@@ -10,7 +9,7 @@ import reviewRoutes from './router/reviews.routes.js';
 import userRoutes from './router/user.routes.js';
 import connectDB from './utills/dbConnection.js';
 
-import courseDraft from "./router/courseDraft.routes.js";
+import courseDraft from './router/courseDraft.routes.js';
 configDotenv();
 const app = express();
 connectDB();
@@ -28,15 +27,8 @@ const stripeSecretKey = process.env.STRIPE_SECRETKEY;
 
 const stripe = new Stripe(stripeSecretKey);
 app.use('/api/auth', authRoutes);
-app.use(
-  '/api',
-  authenticateToken,
-  userRoutes,
-  courseRoutes,
-  enrollmentRoutes,
-  reviewRoutes,
-);
-app.use('/api/checkout', authenticateToken, async (req, res) => {
+app.use('/api', userRoutes, courseRoutes, enrollmentRoutes, reviewRoutes);
+app.use('/api/checkout', async (req, res) => {
   const course = req.body;
   // console.log(course)
   const lineItems = [
@@ -54,7 +46,7 @@ app.use('/api/checkout', authenticateToken, async (req, res) => {
       quantity: 1,
     },
   ];
-const session = await stripe.checkout.sessions.create({
+  const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: lineItems,
     mode: 'payment',
@@ -63,7 +55,14 @@ const session = await stripe.checkout.sessions.create({
   });
   res.json({ id: session.id });
 });
-app.use("/api",userRoutes,courseDraft,courseRoutes,enrollmentRoutes,reviewRoutes);
+app.use(
+  '/api',
+  userRoutes,
+  courseDraft,
+  courseRoutes,
+  enrollmentRoutes,
+  reviewRoutes,
+);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

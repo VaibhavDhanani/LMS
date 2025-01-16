@@ -1,59 +1,33 @@
-import React from "react";
-import CourseCard from "../General/CourseCard";
+import { fetchAllCourses } from '@/services/courseService';
+import { useEffect, useState } from 'react';
+import CourseCard from '../General/CourseCard';
 
 const MainSection = () => {
+  const [courses, setCourses] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetchAllCourses();
+        setCourses(() => response.data);
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  console.log(courses);
+
   const data = [
     {
-      title: "Your Learning",
-      content: [
-        "Python",
-        "Java",
-        "C++",
-        "Ruby",
-        "Python",
-        "Java",
-        "C++",
-        "Ruby",
-      ],
+      title: 'Your Learning',
+      content: courses,
     },
     {
-      title: "Your Learning",
-      content: [
-        "Python",
-        "Java",
-        "C++",
-        "Ruby",
-        "Python",
-        "Java",
-        "C++",
-        "Ruby",
-      ],
-    },
-    {
-      title: "Your Learning",
-      content: [
-        "Python",
-        "Java",
-        "C++",
-        "Ruby",
-        "Python",
-        "Java",
-        "C++",
-        "Ruby",
-      ],
-    },
-    {
-      title: "Your Learning",
-      content: [
-        "Python",
-        "Java",
-        "C++",
-        "Ruby",
-        "Python",
-        "Java",
-        "C++",
-        "Ruby",
-      ],
+      title: 'Your Learning',
+      content: courses,
     },
   ];
 
