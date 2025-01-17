@@ -105,7 +105,7 @@ export const updateCourseDraft = async (req, res) => {
 
     res.status(200).json({ 
       message: "Course draft updated successfully", 
-      updatedCourseDraft 
+      data: updatedCourseDraft
     });
   } catch (error) {
     console.error(error);
@@ -158,12 +158,10 @@ export const publishCourseDraft = async (req, res) => {
       requirements: draft.requirements || [],
       thumbnail: draft.thumbnail || "",
       promotionalVideo: draft.promotionalVideo || "",
-      lectures: draft.lectures || [],
+      curriculum: draft.curriculum || [],
       targetStudents: draft.targetStudents || [],
       topics: draft.topics || [],
       pricing: draft.pricing || {},
-      createdAt: new Date(),
-      lastUpdated: new Date(),
       enrolledStudents: [],
       rating: 0,
       reviews: []
@@ -177,7 +175,7 @@ export const publishCourseDraft = async (req, res) => {
 
     res.status(201).json({
       message: "Course published successfully.",
-      course: newCourse,
+      data: newCourse,
     });
   } catch (error) {
     console.error("Error publishing draft:", error);

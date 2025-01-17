@@ -42,27 +42,48 @@ export const createCourse = async (req, res) => {
 // Get all courses
 export const getAllCourses = async (req, res) => {
   try {
-    const courses = await Course.find(); // Query the database
+    const courses = await Course.find()
+        .populate({
+          path: "instructor",
+          select: "name email profilePicture reviews",
+        })
+        .populate({
+          path: "reviews",
+          select: "rating comment user",
+        });
+
     if (!courses.length) {
-      return res.status(404).json({ message: 'No courses found' });
+      return res.status(404).json({ message: "No courses found" });
     }
-    res.status(200).json({ message: 'success', data: courses });
+
+    res.status(200).json({ message: "success", data: courses });
   } catch (error) {
-    console.error('Error fetching courses:', error); // Log the error
+    console.error("Error fetching courses:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
-// Get a single course by ID
+
 export const getCourseById = async (req, res) => {
   try {
     const course = await Course.findById(req.params.id)
-    if (!course) return res.status(404).json({ message: 'Course not found' });
+        .populate({
+          path: "instructor",
+          select: "name email profilePicture reviews",
+        })
+        .populate({
+          path: "reviews",
+          select: "rating content",
+        });
+
+    if (!course) return res.status(404).json({ message: "Course not found" });
+
     res.status(200).json(course);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 // Update a course
 export const updateCourse = async (req, res) => {

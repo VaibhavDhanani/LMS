@@ -41,13 +41,13 @@ export const CourseHeader = ({ course }) => {
         
         <div className="flex items-center mb-4">
           <img 
-            src="/api/placeholder/50/50" 
-            alt={course.instructor}
+            src={`${course.instructor.profilePicture}`}
+            alt={course.instructor.name}
             className="w-12 h-12 rounded-full mr-4" 
           />
           <div>
-            <p className="font-semibold">{course.instructor}</p>
-            <p className="text-sm text-gray-500">{course.instructor}</p>
+            <p className="font-semibold">{course.instructor.name}</p>
+            <p className="text-sm text-gray-500">{course.instructor.email}</p>
           </div>
         </div>
         

@@ -29,7 +29,20 @@ const CourseForm = () => {
     requirements: [""],
     thumbnail: "",
     promotionalVideo: "",
-    lectures: [{ title: "", description: "", video: "", duration: "", preview: false }],
+    curriculum: [
+      {
+        section: "",
+        lectures: [
+          {
+            title: "",
+            description: "",
+            video: "",
+            duration: "",
+            preview: false,
+          },
+        ],
+      },
+    ],
     targetStudents: [""],
     topics: [""],
     pricing: { price: "", discountEnabled: false, discount: "" },
