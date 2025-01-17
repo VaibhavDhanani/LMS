@@ -23,6 +23,7 @@
     "js-cookie": "^3.0.5",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.468.0",
+    "marked": "^15.0.6",
     "mediasoup-client": "^3.7.18",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

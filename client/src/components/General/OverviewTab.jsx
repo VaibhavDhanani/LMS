@@ -27,7 +27,7 @@ export const OverviewTab = ({ course }) => {
       <div>
         <h2 className="text-2xl font-bold mb-4">What You'll Learn</h2>
         <ul className="space-y-2">
-          {course.whatYouWillLearn.map((item, index) => (
+          {course.learnPoints.map((item, index) => (
             <li key={index} className="flex items-start">
               <CheckIcon className="mr-2 text-primary" />
               <span className='prose'>{item}</span>
@@ -40,7 +40,7 @@ export const OverviewTab = ({ course }) => {
       <div>
         <h2 className="text-2xl font-bold mb-4">Tech Stack You'll Learn</h2>
         <div className="flex flex-wrap gap-4 justify-center">
-          {course.whichTechStackYouwillLearn.map((tech, index) => {
+          {course.technologies.map((tech, index) => {
             const TechIcon = techIcons[tech.toLowerCase()];
             return (
               <div 
@@ -75,16 +75,17 @@ export const OverviewTab = ({ course }) => {
           </div>
           <div className="flex items-center">
             <FileText className="mr-2 text-primary" />
-            <span>{course.details.lectures} lectures</span>
+            <span>{course.lectures.length} lectures</span>
           </div>
           <div className="flex items-center">
-            <Users className="mr-2 text-primary" />
-            <span>Last Updated: {course.details.lastUpdated.toLocaleDateString()}</span>
+            <Users className="mr-2 text-primary"/>
+            <span>Last Updated: {new Date(course.lastUpdated).toLocaleDateString()}</span>
+
           </div>
         </div>
       </div>
 
-      
+
     </div>
   );
 };

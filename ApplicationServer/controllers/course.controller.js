@@ -57,14 +57,6 @@ export const getAllCourses = async (req, res) => {
 export const getCourseById = async (req, res) => {
   try {
     const course = await Course.findById(req.params.id)
-      .populate('teacherId', 'name email')
-      .populate({
-        path: 'reviews',
-        populate: {
-          path: 'learnerId',
-          select: 'name email',
-        },
-      });
     if (!course) return res.status(404).json({ message: 'Course not found' });
     res.status(200).json(course);
   } catch (error) {
