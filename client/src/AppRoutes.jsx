@@ -7,6 +7,7 @@ import CoursePreviewPage from './pages/CoursePreview.page.jsx';
 import HomePage from './pages/Home.page.jsx';
 import MyCourses from './pages/MyCourses.jsx';
 import UserProfilePage from './pages/UserProfile.page.jsx';
+import ChatbotInterface from "@/components/chatbot.jsx";
 const AppRoutes = () => (
   <Routes>
     {/* Public Routes */}
@@ -43,7 +44,8 @@ const AppRoutes = () => (
         <Route path="/form" element={<CourseForm />} />
         <Route path="/user/profile" element={<UserProfilePage />} />
         <Route path="/mycourses" element={<MyCourses />} />
-        <Route path="/courseform/:id" element={<CourseForm />} />
+          <Route path="/courseform/:id" element={<CourseForm />} />
+          <Route path="/aihelp" element={<ChatbotInterface />}/>
       </Route>
     </Route>
 
