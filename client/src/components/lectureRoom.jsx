@@ -1,155 +1,144 @@
-import React, { useRef, useState, useEffect } from "react";
-import io from "socket.io-client";
-import { Device } from "mediasoup-client";
+import { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
+import { Device } from 'mediasoup-client';
 
-const socket = io("http://localhost:3000");
+const socket = io('http://localhost:3000'); // Connect to the signaling server
 
 const LectureRoom = () => {
   const [device, setDevice] = useState(null);
-  const [producerTransport, setProducerTransport] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const localVideoRef = useRef(null);
+  const [transport, setTransport] = useState(null);
+  const [localStream, setLocalStream] = useState(null);
+  const [roomId, setRoomId] = useState(''); // Added state for room ID
 
-  useEffect(() => {
-    // Handle socket connection status
-    socket.on("connect", () => setIsConnected(true));
-    socket.on("disconnect", () => setIsConnected(false));
-
-    return () => {
-      if (producerTransport) producerTransport.close();
-      socket.off("connect");
-      socket.off("disconnect");
-    };
-  }, []);
-
-  useEffect(() => {
-    console.log("Device initialized:", device);
-  }, [device]);
-
-  useEffect(() => {
-    console.log("Producer Transport:", producerTransport);
-  }, [producerTransport]);
-
-  useEffect(() => {
-    console.log("Socket connection status:", isConnected ? "Connected" : "Disconnected");
-  }, [isConnected]);
-
-  useEffect(() => {
-    const initMediasoup = async () => {
-      try {
-        const rtpCapabilities = await new Promise((resolve) => {
-          socket.emit("get-rtp-capabilities", resolve);
-        });
-
-        const device = new Device();
-        await device.load({ routerRtpCapabilities: rtpCapabilities });
-        setDevice(device);
-        console.log("Mediasoup device initialized:", device.loaded);
-      } catch (error) {
-        console.error("Failed to initialize mediasoup device:", error);
-      }
-    };
-
-    if (isConnected) {
-      initMediasoup();
-    }
-  }, [isConnected]);
-
-  const createLecture = async () => {
+  // Function to handle device setup
+  async function setupDevice() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
+      // Request RTP capabilities from the server
+      const rtpCapabilities = await new Promise((resolve, reject) => {
+        socket.emit('getRtpCapabilities', (response) => {
+          if (response.error) {
+            reject(response.error);
+          } else {
+            resolve(response.rtpCapabilities);
+          }
+        });
       });
 
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
+      // Initialize the mediasoup device
+      const newDevice = new Device();
+      await newDevice.load({ routerRtpCapabilities: rtpCapabilities });
 
-      const transportOptions = await new Promise((resolve) => {
-        socket.emit("create-producer-transport", resolve);
+      setDevice(newDevice);
+      console.log('Device loaded successfully:', newDevice);
+    } catch (error) {
+      console.error('Error setting up device:', error);
+    }
+  }
+
+  // Function to start streaming and producing media
+  async function startStreaming() {
+    if (!roomId) {
+      console.error('Room ID is required');
+      return;
+    }
+
+    try {
+      console.log('Requesting transport creation...');
+      const transportParams = await new Promise((resolve, reject) => {
+        socket.emit('createTransport', { direction: 'send', roomId }, (response) => {
+          if (response.error) {
+            console.error('Error creating transport:', response.error);
+            reject(response.error);
+          } else {
+            console.log('Transport created successfully:', response.transportParams);
+            resolve(response.transportParams);
+          }
+        });
       });
 
-      const transport = device.createSendTransport(transportOptions);
-      setProducerTransport(transport);
+      const sendTransport = device.createSendTransport(transportParams);
 
-      transport.on("connect", async ({ dtlsParameters }, callback, errback) => {
+      // Handle transport connection
+      sendTransport.on('connect', async ({ dtlsParameters }, callback, errback) => {
+        console.log('Connecting transport...');
         try {
-          await new Promise((resolve, reject) => {
-            socket.emit("connect-transport", { dtlsParameters }, (response) => {
-              if (response.error) {
-                reject(response.error);
-              } else {
-                resolve(response);
-              }
-            });
+          socket.emit('connectTransport', { transportId: sendTransport.id, dtlsParameters }, (response) => {
+            if (response.error) {
+              console.error('Error during transport connection:', response.error);
+              errback(response.error);
+            } else {
+              console.log('Transport connected successfully:', sendTransport.id);
+              callback();
+            }
           });
-          callback();
         } catch (error) {
-          console.error("Failed to connect transport:", error);
+          console.error('Transport connection error:', error);
           errback(error);
         }
       });
 
-      transport.on("produce", async ({ kind, rtpParameters }, callback, errback) => {
+      // Handle media production
+      sendTransport.on('produce', async ({ kind, rtpParameters }, callback, errback) => {
+        console.log(`Producing ${kind} media...`);
         try {
-          const { id } = await new Promise((resolve, reject) => {
-            socket.emit("produce", { kind, rtpParameters }, (response) => {
+          socket.emit(
+            'produce',
+            { roomId, transportId: sendTransport.id, kind, rtpParameters }, // Pass roomId here
+            (response) => {
               if (response.error) {
-                reject(response.error);
+                console.error('Error during production:', response.error);
+                errback(response.error);
               } else {
-                resolve(response);
+                console.log(`${kind} producer created successfully:`, response.producerId);
+                callback({ id: response.producerId });
               }
-            });
-          });
-          callback({ id });
+            }
+          );
         } catch (error) {
-          console.error("Failed to produce:", error);
+          console.error('Error during production:', error);
           errback(error);
         }
       });
 
-      // Produce both video and audio tracks
-      const tracks = stream.getTracks();
-      for (const track of tracks) {
-        try {
-          const producer = await transport.produce({ track });
-          console.log(`${track.kind} producer created:`, producer.id);
-        } catch (error) {
-          console.error(`Failed to produce ${track.kind}:`, error);
-        }
+      // Log media capture
+      console.log('Getting local media...');
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      console.log('Local media captured:', stream);
+
+      const videoTrack = stream.getVideoTracks()[0];
+      setLocalStream(stream);
+
+      const videoElement = document.getElementById('local-video');
+      videoElement.srcObject = stream;
+
+      const videoProducer = await sendTransport.produce({ track: videoTrack });
+      console.log('Video producer created:', videoProducer);
+
+      const audioTrack = stream.getAudioTracks()[0];
+      if (audioTrack) {
+        const audioProducer = await sendTransport.produce({ track: audioTrack });
+        console.log('Audio producer created:', audioProducer);
       }
     } catch (error) {
-      console.error("Failed to create lecture:", error);
+      console.error('Error during streaming:', error);
     }
-  };
+  }
 
+  useEffect(() => {
+    setupDevice(); // Load the device on mount
+  }, []);
 
   return (
-    <div className="p-4">
-      <div className="mb-4 space-x-4">
-        <button 
-          onClick={createLecture}
-          disabled={!device || !isConnected}
-          className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
-        >
-          Start Lecture
-        </button>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <h3 className="mb-2">Local Video</h3>
-          <video 
-  ref={localVideoRef}
-  autoPlay 
-  playsInline 
-  muted 
-  onError={(e) => console.error("Local video playback error:", e)}
-  className="w-full bg-black"
-/>
-
-        </div>
-      </div>
+    <div>
+      <h2>Lecture Room</h2>
+      <input
+        type="text"
+        placeholder="Enter Room ID"
+        value={roomId}
+        onChange={(e) => setRoomId(e.target.value)} // Update roomId state
+      />
+      <button onClick={startStreaming}>Start Streaming</button>
+      <video id="local-video" autoPlay></video>
     </div>
   );
 };

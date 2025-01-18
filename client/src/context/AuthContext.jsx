@@ -10,11 +10,11 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const navigate = useNavigate();
 
-  const login = (token) => {
-    const decodedUser = jwtDecode(token);
-    setUser(decodedUser);
-    setToken(token);
-  };
+  // const login = (token) => {
+  //   const decodedUser = jwtDecode(token);
+  //   setUser(decodedUser);
+  //   setToken(token);
+  // };
 
   const logout = () => {
     localStorage.removeItem('authToken');
@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }) => {
   }, [navigate]);
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, logout }}>
       {children}
     </AuthContext.Provider>
   );
