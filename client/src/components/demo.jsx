@@ -9,7 +9,7 @@ const LectureRoom1 = () => {
   const [device, setDevice] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const videoRef = useRef(null);
-  const socket = io('http://localhost:3000');
+  const socket = io('http://172.20.10.6:3000');
 
   // Monitor video element and stream changes
   useEffect(() => {
