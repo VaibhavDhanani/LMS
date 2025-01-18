@@ -1,206 +1,245 @@
-import React, { useRef, useState, useEffect } from "react";
-import io from "socket.io-client";
-import { Device } from "mediasoup-client";
-
-const socket = io("http://localhost:3000");
+import React, { useState, useRef, useEffect } from 'react';
+import { Device } from 'mediasoup-client';
+import io from 'socket.io-client';
 
 const LectureRoom1 = () => {
+  const [remoteStream, setRemoteStream] = useState(null);
+  const [roomId, setRoomId] = useState('');
+  const [producers,setProducers]= useState(null);
   const [device, setDevice] = useState(null);
-  const [producerTransport, setProducerTransport] = useState(null);
-  const [consumerTransport, setConsumerTransport] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
-  const localVideoRef = useRef(null);
-  const remoteVideoRef = useRef(null);
+  const videoRef = useRef(null);
+  const socket = io('http://localhost:3000');
 
+  // Monitor video element and stream changes
   useEffect(() => {
-    // Handle socket connection status
-    socket.on("connect", () => setIsConnected(true));
-    socket.on("disconnect", () => setIsConnected(false));
+    if (videoRef.current && remoteStream) {
+      console.log('Setting stream to video element:', remoteStream);
+      console.log('Video tracks:', remoteStream.getVideoTracks());
+      console.log('Audio tracks:', remoteStream.getAudioTracks());
+      
+      videoRef.current.srcObject = remoteStream;
+      
+      // Log when the video starts playing
+      videoRef.current.onplaying = () => {
+        console.log('Video started playing');
+      };
 
-    return () => {
-      if (producerTransport) producerTransport.close();
-      if (consumerTransport) consumerTransport.close();
-      socket.off("connect");
-      socket.off("disconnect");
-    };
-  }, []);
-
-  useEffect(() => {
-    console.log("Device initialized:", device);
-  }, [device]);
-
-  useEffect(() => {
-    console.log("Producer Transport:", producerTransport);
-    console.log("Consumer Transport:", consumerTransport);
-  }, [producerTransport, consumerTransport]);
-
-  useEffect(() => {
-    console.log("Socket connection status:", isConnected ? "Connected" : "Disconnected");
-  }, [isConnected]);
-
-  useEffect(() => {
-    const initMediasoup = async () => {
-      try {
-        const rtpCapabilities = await new Promise((resolve) => {
-          socket.emit("get-rtp-capabilities", resolve);
-        });
-
-        const device = new Device();
-        await device.load({ routerRtpCapabilities: rtpCapabilities });
-        setDevice(device);
-        console.log("Mediasoup device initialized:", device.loaded);
-      } catch (error) {
-        console.error("Failed to initialize mediasoup device:", error);
-      }
-    };
-
-    if (isConnected) {
-      initMediasoup();
+      // Log any errors
+      videoRef.current.onerror = (error) => {
+        console.error('Video element error:', error);
+      };
     }
-  }, [isConnected]);
+  }, [remoteStream]);
 
-  const createLecture = async () => {
+  const initializeDevice = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
+      console.log('Requesting RTP capabilities...');
+      const { rtpCapabilities } = await new Promise((resolve, reject) => {
+        socket.emit('getRtpCapabilities', (response) => {
+          if (response.error) {
+            reject(new Error(response.error));
+          } else {
+            console.log('Received RTP capabilities:', response.rtpCapabilities);
+            resolve(response);
+          }
+        });
       });
 
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
-
-      // Produce both video and audio tracks
-      const tracks = stream.getTracks();
-      for (const track of tracks) {
-        try {
-          const producer = await transport.produce({ track });
-          console.log(`${track.kind} producer created:`, producer.id);
-        } catch (error) {
-          console.error(`Failed to produce ${track.kind}:`, error);
-        }
-      }
+      const newDevice = new Device();
+      await newDevice.load({ routerRtpCapabilities: rtpCapabilities });
+      console.log('Device loaded successfully');
+      setDevice(newDevice);
     } catch (error) {
-      console.error("Failed to create lecture:", error);
+      console.error('Error initializing device:', error);
+      throw error;
     }
   };
 
   const joinLecture = async () => {
-    try {
-      const transportOptions = await new Promise((resolve) => {
-        socket.emit("create-consumer-transport", resolve);
-      });
-
-      const transport = device.createRecvTransport(transportOptions);
-      setConsumerTransport(transport);
-
-      transport.on("connect", async ({ dtlsParameters }, callback, errback) => {
-        try {
-          await new Promise((resolve, reject) => {
-            socket.emit("connect-transport", { dtlsParameters }, (response) => {
-              if (response.error) {
-                reject(response.error);
-              } else {
-                resolve(response);
-              }
-            });
-          });
-          callback();
-        } catch (error) {
-          console.error("Failed to connect consumer transport:", error);
-          errback(error);
-        }
-      });
-
-      // Request existing producers when joining
-      socket.emit("get-producers", async (producers) => {
-        for (const { producerId, kind } of producers) {
-          await consumeTrack(transport, producerId, kind);
-        }
-      });
-
-      // Handle new producers
-      socket.on("new-producer", async ({ producerId, kind }) => {
-        await consumeTrack(transport, producerId, kind);
-      });
-
-    } catch (error) {
-      console.error("Failed to join lecture:", error);
+    if (!roomId.trim()) {
+      alert('Please enter a valid room ID.');
+      return;
     }
-  };
 
-  const consumeTrack = async (transport, producerId, kind) => {
     try {
-      const consumerOptions = await new Promise((resolve) => {
-        console.log("Requesting to consume track for producer:", producerId);
-        socket.emit("consume", {
-          producerId,
-          rtpCapabilities: device.rtpCapabilities,
-        }, resolve);
-      });
-
-      const consumer = await transport.consume(consumerOptions);
-      console.log(`Consumer created: ${consumer.id}`, consumer);
-
-      // Check if consumer track is valid
-      if (consumer.track) {
-        console.log("Consumer track:", consumer.track);
-      } else {
-        console.error("Consumer track is not valid.");
-      }
-
-      const remoteStream = new MediaStream([consumer.track]);
-      console.log("Remote Stream:", remoteStream);
-
-      if (remoteVideoRef.current) {
-        if (kind === "video") {
-          remoteVideoRef.current.srcObject = remoteStream;
-        } else {
-          const existingStream = remoteVideoRef.current.srcObject;
-          if (existingStream) {
-            existingStream.addTrack(consumer.track);
+      console.log(`Joining lecture for room ID: ${roomId}`);
+      const producers = await new Promise((resolve, reject) => {
+        socket.emit('joinLecture', { roomId }, (response) => {
+          if (response.error) {
+            reject(new Error(response.error));
           } else {
-            remoteVideoRef.current.srcObject = remoteStream;
+            console.log('Joined lecture');
+            resolve(response);
           }
-        }
-      }
+        });
+      });
+      setProducers(producers);
+      setRoomId(roomId);
+      setIsConnected(true);
 
-      // Check if tracks are available
-      console.log("Remote Video tracks:", remoteVideoRef.current.srcObject.getTracks());
-      if (!remoteVideoRef.current) {
-        console.error("Remote video reference is not initialized.");
-        return;
+      if (!device) {
+        await initializeDevice();
       }
-      
-      await consumer.resume();
-      console.log(`${kind} consumer created and resumed:`, consumer.id);
     } catch (error) {
-      console.error("Failed to consume track:", error);
+      console.error('Error joining lecture:', error);
+      alert('Failed to join lecture: ' + error.message);
     }
   };
 
+  const consumeMedia = async () => {
+    if (!roomId || !device || producers.length < 2) {
+      alert('Room ID, device, or producers are not available. Join a lecture first.');
+      return;
+    }
+  
+    try {
+      console.log('Starting media consumption...');
+  
+      // Filter the producers into video and audio
+      const videoProducer = producers.find(producer => producer.kind === 'video');
+      const audioProducer = producers.find(producer => producer.kind === 'audio');
+  
+      console.log('Video Producer:', videoProducer);
+      console.log('Audio Producer:', audioProducer);
+  
+      if (!videoProducer || !audioProducer) {
+        throw new Error('Both video and audio producers are required');
+      }
+  
+      // Create receiving transport
+      const { transportParams } = await new Promise((resolve, reject) => {
+        socket.emit('createTransport', { direction: 'recv' }, (response) => {
+          if (response.error) reject(new Error(response.error));
+          else resolve(response);
+        });
+      });
+  
+      console.log('Created receive transport:', transportParams);
+      const recvTransport = device.createRecvTransport(transportParams);
+  
+      // Handle transport connection
+      recvTransport.on('connect', ({ dtlsParameters }, callback, errback) => {
+        console.log('Connecting transport...');
+        socket.emit('connectTransport', {
+          transportId: recvTransport.id,
+          dtlsParameters
+        }, (response) => {
+          if (response.error) {
+            errback(new Error(response.error));
+          } else {
+            console.log('Transport connected successfully');
+            callback();
+          }
+        });
+      });
+  
+      // Handle transport connection state changes
+      recvTransport.on('connectionstatechange', (state) => {
+        console.log('Transport connection state:', state);
+      });
+  
+      // Consume both video and audio producers
+      const consumeResponses = await new Promise((resolve, reject) => {
+        socket.emit('consume', {
+          transportId: recvTransport.id,
+          rtpCapabilities: device.rtpCapabilities,
+          roomId, // Pass roomId while emitting consume event
+        }, (response) => {
+          if (response.error) reject(new Error(response.error));
+          else resolve(response);
+        });
+      });
+  
+      console.log('Consumer responses:', consumeResponses);
+  
+      // Create consumers for both video and audio
+      for (const consumerInfo of consumeResponses) {
+        console.log(`Creating consumer for producerId: ${consumerInfo.producerId}`);
+        const consumer = await recvTransport.consume({
+          id: consumerInfo.id,
+          producerId: consumerInfo.producerId,
+          kind: consumerInfo.kind,
+          rtpParameters: consumerInfo.rtpParameters,
+        });
+  
+        console.log(`Consumer created for ${consumer.kind}:`, consumer);
+  
+        // Handle consumer closure
+        consumer.on('close', () => {
+          console.log(`Consumer closed: ${consumer.id}`);
+        });
+  
+        // Attach streams to media elements
+        if (consumer.kind === 'video') {
+          const videoStream = new MediaStream([consumer.track]);
+          if (videoRef.current) {
+            videoRef.current.srcObject = videoStream;
+            await videoRef.current.play();
+          } else {
+            console.error('Video ref is not attached to an element');
+          }
+        } else if (consumer.kind === 'audio') {
+          const audioStream = new MediaStream([consumer.track]);
+          
+          // Create an audio element dynamically for audio
+          const audioElement = document.createElement('audio');
+          audioElement.srcObject = audioStream;
+          audioElement.play().catch((error) => {
+            console.error('Error playing audio:', error);
+          });
+        }
+      }
+  
+    } catch (error) {
+      console.error('Error consuming media:', error);
+      alert('Failed to consume media: ' + error.message);
+    }
+  };
+  
   return (
     <div className="p-4">
-      <div className="mb-4 space-x-4">
-        <button 
-          onClick={joinLecture}
-          disabled={!device || !isConnected}
-          className="bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50"
-        >
-          Join Lecture
-        </button>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-     
-        <div>
-          <h3 className="mb-2">Remote Video</h3>
-          <video 
-            ref={remoteVideoRef}
-            autoPlay 
-            playsInline 
-            className="w-full bg-black"
-          />
+      <h2 className="text-xl font-bold mb-4">Media Receiver</h2>
+      <div className="space-y-4">
+        <input
+          type="text"
+          placeholder="Enter Room ID"
+          value={roomId}
+          onChange={(e) => setRoomId(e.target.value)}
+          className="border p-2 rounded w-full max-w-md"
+        />
+        <div className="space-x-4">
+          <button
+            onClick={joinLecture}
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+          >
+            Join Lecture
+          </button>
+          <button
+            onClick={consumeMedia}
+            className="bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50"
+            disabled={!isConnected}
+          >
+            Consume Media
+          </button>
         </div>
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          controls
+          className="w-full max-w-2xl mt-4 bg-black"
+          style={{ minHeight: '300px' }}
+        />
+        {remoteStream && (
+          <div className="mt-2 text-sm text-gray-600">
+            Stream Status: Active
+            <br />
+            Video Tracks: {remoteStream.getVideoTracks().length}
+            <br />
+            Audio Tracks: {remoteStream.getAudioTracks().length}
+          </div>
+        )}
       </div>
     </div>
   );
