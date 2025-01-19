@@ -42,74 +42,60 @@ export const createCourse = async (req, res) => {
 // Get all courses
 export const getAllCourses = async (req, res) => {
   try {
-    const courses = await Course.find().populate("instructor", "name email").populate({
-      path: "reviews", // Populate the Reviews field
-      populate: {
-        path: "learnerId", // Populate the learnerId inside Reviews
-        select: "name email", // Only include the learner's name and email
-      }});
-    res.status(200).json(courses);
+    const courses = await Course.find()
+        .populate({
+          path: "instructor",
+          select: "name email profilePicture reviews",
+        })
+        .populate({
+          path: "reviews",
+          select: "rating comment user",
+        });
+
+    if (!courses.length) {
+      return res.status(404).json({ message: "No courses found" });
+    }
+
+    res.status(200).json({ message: "success", data: courses });
   } catch (error) {
-    console.error('Error fetching courses:', error); // Log the error
+    console.error("Error fetching courses:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
-// Get a single course by ID
+
 export const getCourseById = async (req, res) => {
   try {
-    const course = await Course.findById(req.params.id).populate("instructor", "name email").populate({
-      path: "reviews", // Populate the Reviews field
-      populate: {
-        path: "learner", // Populate the learnerId inside Reviews
-        select: "name email", // Only include the learner's name and email
-      },
-    });
+    const course = await Course.findById(req.params.id)
+        .populate({
+          path: "instructor",
+          select: "name email profilePicture reviews",
+        })
+        .populate({
+          path: "reviews",
+          select: "rating content",
+        });
+
     if (!course) return res.status(404).json({ message: "Course not found" });
+
     res.status(200).json(course);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-export const getInstructorCourse = async (req, res) => {
-  try {
-    const { id : instructor } = req.params; // Destructure the instructor directly
-
-    const courses = await Course.find({ instructor }) // Query using the instructorId
-      .populate("instructor", "name email")
-      .populate({
-        path: "reviews", // Populate the Reviews field
-        populate: {
-          path: "learner", // Populate the learnerId inside Reviews
-          select: "name email", // Only include the learner's name and email
-        },
-      });
-
-
-    res.status(200).json(courses);
-  } catch (e) {
-    console.error("Error fetching instructor courses:", e.message);
-    res.status(500).json({ error: e.message });
-  }
-};
 
 // Update a course
 export const updateCourse = async (req, res) => {
   try {
-    // Create updated data, including the lastUpdated field
-    const updateData = { ...req.body, lastUpdated: new Date() };
-
-    // Use updateData instead of req.body directly
-    const course = await Course.findByIdAndUpdate(req.params.id, updateData, {
-      new: true,          // Return the updated document
-      runValidators: true // Ensure that validation occurs during update
+    const course = await Course.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
     });
     if (!course) return res.status(404).json({ message: 'Course not found' });
     res.status(200).json(course);
   } catch (error) {
-    // Improved error message
-    res.status(400).json({ error: `Failed to update course: ${error.message}` });
+    res.status(400).json({ error: error.message });
   }
 };
 
