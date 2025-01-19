@@ -85,6 +85,20 @@ export const getCourseById = async (req, res) => {
 };
 
 
+export const getInstructorCourse =async(req, res) => {
+  try{
+    const { id: instructor } = req.params; // Destructure the instructor directly
+    const courses = await Course.find({ instructor }) // Query using the instructorId
+     .populate("instructor", "name email profilePicture review")
+     .populate("reviews", "rating content");
+
+     if(!courses) return  res.status(404).json({ message: "Course not found" });
+
+     res.status(200).json({data: courses});
+  }catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
 // Update a course
 export const updateCourse = async (req, res) => {
   try {
