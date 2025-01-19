@@ -7,7 +7,7 @@ import { LoginForm } from './LoginForm';
 import { SignupForm } from './SignupForm';
 import { login as loginService,register as registerService  } from '@/services/auth.service';
 export const AuthForm = () => {
-  // const { login } = useAuth();
+  const { login } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     username: '',
@@ -38,7 +38,7 @@ export const AuthForm = () => {
     setError('');
     try{
     const response = await loginService(formData);
-      // login(response.token);
+      login(response.token);
       localStorage.setItem('authToken', response.token);
       Cookies.set('authToken', response.token, { expires: 1 });
       alert('Login successful');
@@ -64,7 +64,7 @@ export const AuthForm = () => {
     try {
       await registerService(formData);
       alert('Signup successful! Please log in.');
-      setIsLogin(true); 
+      setIsLogin(true); // Switch to login form
     } catch (error) {
       setError(error.message || 'An unexpected error occurred.');
     } finally {
