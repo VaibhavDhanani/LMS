@@ -2,7 +2,7 @@ import { Route, Routes,Outlet  } from 'react-router-dom';
 import Layout from './components/General/Layout.jsx';
 import ProtectedRoute from './context/protectedRoute.jsx';
 import { AuthForm } from './forms/Authentication/AuthForm.jsx';
-import CourseForm from './forms/Course/CourseForm.jsx';
+import CourseForm from './forms/Course/courseForm.jsx';
 import DraftForm from './forms/Course/DraftForm.jsx';
 import CoursePreviewPage from './pages/CoursePreview.page.jsx';
 import HomePage from './pages/Home.page.jsx';
