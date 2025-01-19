@@ -5,7 +5,8 @@ export const fetchAllCourses = async () => {
   const response = await db.get('/courses', {
     headers: { Authorization: `Bearer ${authToken}` },
   });
-  const data = response.data;
+  const data = response.data.data;
+  console.log(data);
   return data;
 };
 
