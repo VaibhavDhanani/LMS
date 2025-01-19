@@ -1,4 +1,4 @@
-import React from "react";
+import { Link } from 'react-router-dom';
 
 const CourseCard = ({ course }) => {
   const { title, description, pricing, _id } = course;

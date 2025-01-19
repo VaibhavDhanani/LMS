@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Navigationbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -9,24 +9,26 @@ const Navigationbar = () => {
   return (
     <div className="navbar bg-base-100 border border-black">
       <div className="flex-1">
-        <a className="btn btn-ghost text-xl"
-        onClick={()=> navigate('/')}
-        >LMS</a>
+        <Link to={'/'} className="btn btn-ghost text-xl">
+          LMS
+        </Link>
       </div>
 
-      {user && user.isInstructor &&(
+      {user && user.isInstructor && (
         <div className="flex-1">
-          <a className="btn btn-ghost text-xl"
-            onClick={() => navigate('/mycourses')} 
+          <a
+            className="btn btn-ghost text-xl"
+            onClick={() => navigate('/mycourses')}
           >
             My Courses
           </a>
         </div>
       )}
-      {user && !user.isInstructor &&(
+      {user && !user.isInstructor && (
         <div className="flex-1">
-          <a className="btn btn-ghost text-xl"
-            onClick={() => navigate('/mylearnings')} 
+          <a
+            className="btn btn-ghost text-xl"
+            onClick={() => navigate('/mylearnings')}
           >
             My Learnings
           </a>
