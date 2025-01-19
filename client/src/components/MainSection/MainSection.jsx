@@ -9,6 +9,7 @@ const MainSection = () => {
     const fetchData = async () => {
       try {
         const response = await fetchAllCourses();
+        console.log(response.data);
         setCourses(() => response.data);
       } catch (error) {
         console.error('Error fetching courses:', error);
@@ -18,7 +19,6 @@ const MainSection = () => {
     fetchData();
   }, []);
 
-  console.log(courses);
 
   const data = [
     {

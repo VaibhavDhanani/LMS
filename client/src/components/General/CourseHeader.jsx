@@ -27,7 +27,6 @@ export const CourseHeader = ({ course }) => {
     }
   }
 
-  console.log(course)
 
   return (
     <div className="grid md:grid-cols-2 gap-8 mb-12">

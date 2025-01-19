@@ -132,10 +132,10 @@ const CoursePreviewPage = () => {
         {/* Tab Content */}
         {activeTab === 'overview' && <OverviewTab course={course} />}
         {activeTab === 'curriculum' && <CurriculumTab course={coursed} />}
-        {activeTab === 'instructor' && <InstructorTab course={coursed} />}
-        {activeTab === 'reviews' && <ReviewsTab course={coursed} />}
+        {activeTab === 'instructor' && <InstructorTab course={course} />}
+        {activeTab === 'reviews' && <ReviewsTab course={course} />}
 
-        <PrerequisitesSection course={coursed} />
+        <PrerequisitesSection course={course} />
       </div>
   );
 };
