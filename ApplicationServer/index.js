@@ -37,7 +37,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api', userRoutes, courseRoutes, enrollmentRoutes, reviewRoutes);
 app.use('/api/checkout', async (req, res) => {
   const course = req.body;
-  console.log(course.thubnail)
+  // console.log(course.thubnail)
   const {price,discount} = course.pricing
   const discountedPrice = price * (discount ? discount/100 : 1);
   const lineItems = [

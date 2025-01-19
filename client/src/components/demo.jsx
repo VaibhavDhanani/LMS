@@ -9,10 +9,14 @@ const LectureRoom1 = () => {
   const [device, setDevice] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const videoRef = useRef(null);
-  const socket = io('http://172.20.10.6:3000');
 
+  useEffect(()=>{
+    const socket = io('http://172.20.10.2:3000');
+
+  },[])
   // Monitor video element and stream changes
   useEffect(() => {
+
     if (videoRef.current && remoteStream) {
       console.log('Setting stream to video element:', remoteStream);
       console.log('Video tracks:', remoteStream.getVideoTracks());
@@ -30,7 +34,7 @@ const LectureRoom1 = () => {
         console.error('Video element error:', error);
       };
     }
-  }, [remoteStream]);
+  }, [remoteStream]); // remoteStream
 
   const initializeDevice = async () => {
     try {
