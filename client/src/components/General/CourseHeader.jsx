@@ -41,6 +41,8 @@ export const CourseHeader = ({ course }) => {
     return 0;
   }, [course.pricing]);
 
+  console.log(course)
+
   return (
     <div className="grid md:grid-cols-2 gap-8 mb-12">
       <div className="bg-gray-200 rounded-lg">
@@ -58,8 +60,8 @@ export const CourseHeader = ({ course }) => {
             className="w-12 h-12 rounded-full mr-4"
           />
           <div>
-            <p className="font-semibold">{course.instructor.name}</p>
-            <p className="text-sm text-gray-500">{course.instructor.title}</p>
+            <p className="font-semibold">{course.instructor}</p>
+            <p className="text-sm text-gray-500">{course.instructor}</p>
           </div>
         </div>
 
