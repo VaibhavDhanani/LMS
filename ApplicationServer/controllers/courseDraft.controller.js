@@ -1,7 +1,11 @@
 import CourseDraft from "../models/courseDraft.js"; // Adjust the path to your model
 import Course from "../models/course.js";
+import {ObjectId} from 'mongodb';
+import mongoose from "mongoose";
+
 // Create a new course draft
 export const createCourseDraft = async (req, res) => {
+  console.log(req.body);
   try {
     const {
       title,
@@ -21,7 +25,6 @@ export const createCourseDraft = async (req, res) => {
       pricing,
       isActive
     } = req.body;
-
     const newCourseDraft = new CourseDraft({
       title,
       subtitle,
@@ -138,35 +141,76 @@ export const publishCourseDraft = async (req, res) => {
       return res.status(404).json({ message: "Draft not found." });
     }
 
-    // Validate required fields for course creation
-    if (!draft.title || !draft.subtitle || !draft.description 
-      //|| !draft.instructor
-      ) {
-      return res.status(400).json({ message: "Missing required fields in the draft." });
+    // Validate required fields
+    if (
+      !draft.title ||
+      !draft.subtitle ||
+      !draft.description ||
+      !draft.instructor ||
+      !draft.details?.level ||
+      !draft.details?.language ||
+      !draft.learnPoints?.length ||
+      !draft.thumbnail ||
+      !draft.promotionalVideo ||
+      !draft.pricing?.price ||
+      draft.lectures.some(lecture => 
+        !lecture.title || 
+        !lecture.description || 
+        !lecture.thumbnailUrl || 
+        !lecture.videoUrl || 
+        !lecture.duration
+      )
+    ) {
+      return res.status(400).json({ message: "Missing or invalid required fields in the draft." });
     }
 
-    // Create the new course using the draft data
+    // Validate instructor ID
+    const isValidObjectId = mongoose.Types.ObjectId.isValid(draft.instructor);
+    if (!isValidObjectId) {
+      return res.status(400).json({ message: "Invalid instructor ID." });
+    }
+
+    // Check for duplicate course
+    const duplicateCourse = await Course.findOne({
+      title: draft.title,
+      instructor: draft.instructor,
+    });
+
+    if (duplicateCourse) {
+      return res.status(400).json({
+        message: "A course with the same title already exists for this instructor.",
+      });
+    }
+
+    // Prepare course data
     const courseData = {
       title: draft.title,
       subtitle: draft.subtitle,
       description: draft.description,
-      instructor: draft.instructor,
+      instructor: new mongoose.Types.ObjectId(draft.instructor),
       details: draft.details,
-      learnPoints: draft.learnPoints || [],
+      learnPoints: draft.learnPoints,
       technologies: draft.technologies || [],
       prerequisites: draft.prerequisites || [],
       requirements: draft.requirements || [],
-      thumbnail: draft.thumbnail || "",
-      promotionalVideo: draft.promotionalVideo || "",
-      lectures: draft.lectures || [],
+      thumbnail: draft.thumbnail,
+      promotionalVideo: draft.promotionalVideo,
+      lectures: draft.lectures.map((lecture) => ({
+        title: lecture.title,
+        description: lecture.description,
+        thumbnailurl: lecture.thumbnailUrl,
+        videourl: lecture.videoUrl,
+        duration: lecture.duration,
+        preview: lecture.preview,
+      })),
       targetStudents: draft.targetStudents || [],
       topics: draft.topics || [],
-      pricing: draft.pricing || {},
+      pricing: draft.pricing,
       createdAt: new Date(),
       lastUpdated: new Date(),
       enrolledStudents: [],
       rating: 0,
-      reviews: []
+      reviews: [],
     };
 
     const newCourse = new Course(courseData);
@@ -184,3 +228,4 @@ export const publishCourseDraft = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
+

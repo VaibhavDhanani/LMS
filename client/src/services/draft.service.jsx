@@ -30,31 +30,35 @@ export const getDraftById = async (id,token)=>{
     return response.data;
 }
 
-export const updateDraft = async (id,draft)=>{
-    const response = await db.put(`/drafts/${id}`,draft);
+export const updateDraft = async (id,draft,token)=>{
+    const response = await db.put(`/drafts/${id}`,draft, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return response.data;
 }
 
-export const publishDraft = async (id, draft) => {
+export const publishDraft = async (id, draft,token) => {
     try {
-      const response = await db.post(`/publishdrafts/${id}`, draft);
+      const response = await db.post(`/publishdrafts/${id}`, draft, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       
-      // Check if the response contains an error
       if (response.error) {
-        console.error("Error while publishing draft:", response.error);
+        console.error("Error while publishing draft:", response);
         throw new Error(response.error); // Throw error to be caught below
-      }
-  
+      }  
       return response.data;
     } catch (error) {
-      console.error("Error publishing draft:", error.message);
-      throw error; // Re-throw the error after logging
+      console.error("Error publishing draft:", error.response.data.message);
+      throw error.response.data; // Re-throw the error after logging
     }
   };
   
 
-export const deleteDraft = async (id)=>{
-    const response = await db.delete(`/drafts/${id}`);
+export const deleteDraft = async (id,token)=>{
+    const response = await db.delete(`/drafts/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return response.data;
 }
 

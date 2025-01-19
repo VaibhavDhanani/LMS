@@ -11,7 +11,7 @@ import TargetStudentsStep from "./TargetStudentsStep";
 import ReviewStep from "./ReviewStep";
 import { getDraftById, updateDraft, publishDraft } from "../../services/draft.service.jsx";
 import { useAuth } from "@/context/AuthContext";
-const CourseForm = () => {
+const DraftForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
@@ -29,7 +29,7 @@ const CourseForm = () => {
     requirements: [""],
     thumbnail: "",
     promotionalVideo: "",
-    lectures: [{ title: "", description: "", video: "", duration: "", preview: false }],
+    lectures: [{ title: "", description: "", videoUrl: "",thumbnailUrl: "" , duration: "", preview: false }],
     targetStudents: [""],
     topics: [""],
     pricing: { price: "", discountEnabled: false, discount: "" },
@@ -66,7 +66,7 @@ const CourseForm = () => {
   };
 
   const handleSaveChanges = () => {
-    updateDraft(id, formData)
+    updateDraft(id, formData,token)
       .then(() => {
         console.log("Draft saved successfully!");
         setError(""); // Clear error if successful
@@ -77,14 +77,14 @@ const CourseForm = () => {
   const confirmPublish = () => {
     setShowConfirmModal(false);
     setLoading(true);
-    updateDraft(id, formData)
-      .then(() => publishDraft(id, formData))
+    updateDraft(id, formData,token)
+      .then(() => publishDraft(id, formData,token))
       .then(() => {
         console.log("Draft published successfully!");
         setError(""); // Clear error if successful
         navigate("/mycourses");
       })
-      .catch(() => setError("Failed to publish the course. Please try again."))
+      .catch((e) => setError("Failed to publish the course."+e.message))
       .finally(() => setLoading(false));
   };
 
@@ -166,4 +166,4 @@ const CourseForm = () => {
   );
 };
 
-export default CourseForm;
+export default DraftForm;

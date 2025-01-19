@@ -28,27 +28,6 @@ const CourseDetailsStep = ({ formData, updateFormData }) => {
         </select>
       </div>
 
-      {/* Total Hours */}
-      <div className="form-control">
-        <label htmlFor="total-hours" className="label font-medium">
-          Total Hours
-        </label>
-        <input
-          id="total-hours"
-          type="number"
-          className="input input-bordered w-full"
-          placeholder="e.g., 40"
-          value={details.totalHours}
-          min="1"
-          onChange={(e) =>
-            updateFormData("details", {
-              ...details,
-              totalHours: e.target.value,
-            })
-          }
-        />
-      </div>
-
       {/* Course Language */}
       <div className="form-control">
         <label htmlFor="course-language" className="label font-medium">
