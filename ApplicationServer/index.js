@@ -2,6 +2,7 @@ import cors from 'cors';
 import { configDotenv } from 'dotenv';
 import express from 'express';
 import Stripe from 'stripe';
+import authenticateToken from './middlewares/auth.middleware.js';
 import authRoutes from './router/auth.routes.js';
 import courseRoutes from './router/course.routes.js';
 import enrollmentRoutes from './router/enrollment.routes.js';
@@ -34,8 +35,15 @@ const stripeSecretKey = process.env.STRIPE_SECRETKEY;
 
 const stripe = new Stripe(stripeSecretKey);
 app.use('/api/auth', authRoutes);
-app.use('/api', userRoutes, courseRoutes, enrollmentRoutes, reviewRoutes);
-app.use('/api/checkout', async (req, res) => {
+app.use(
+  '/api',
+  authenticateToken,
+  userRoutes,
+  courseRoutes,
+  enrollmentRoutes,
+  reviewRoutes,
+);
+app.use('/api/checkout', authenticateToken, async (req, res) => {
   const course = req.body;
   // console.log(course)
   const lineItems = [
@@ -53,7 +61,7 @@ app.use('/api/checkout', async (req, res) => {
       quantity: 1,
     },
   ];
-  const session = await stripe.checkout.sessions.create({
+const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: lineItems,
     mode: 'payment',
@@ -62,75 +70,7 @@ app.use('/api/checkout', async (req, res) => {
   });
   res.json({ id: session.id });
 });
-app.use(
-  '/api',
-  userRoutes,
-  courseDraft,
-  courseRoutes,
-  enrollmentRoutes,
-  reviewRoutes,
-);
-
-// chatbot apis
-// Store chat history (in a real app, you'd use a database)
-let chatHistory = [];
-
-// Routes
-app.get('/api/messages', (req, res) => {
-  res.json(chatHistory);
-});
-
-app.post('/api/messages', async (req, res) => {
-  try {
-    const { message } = req.body;
-
-    // Save user message
-    const userMessage = {
-      id: chatHistory.length + 1,
-      type: 'user',
-      content: message,
-      timestamp: new Date().toLocaleTimeString(),
-    };
-    chatHistory.push(userMessage);
-
-    try {
-      // Generate response using Gemini
-      const result = await model.generateContent(message);
-      const response = await result.response;
-      const botResponse = response.text();
-
-      // Create bot message
-      const botMessage = {
-        id: chatHistory.length + 1,
-        type: 'bot',
-        content: botResponse,
-        timestamp: new Date().toLocaleTimeString(),
-      };
-      chatHistory.push(botMessage);
-
-      res.json(botMessage);
-    } catch (aiError) {
-      console.error('AI Error:', aiError);
-      // Send a fallback message if AI fails
-      const fallbackMessage = {
-        id: chatHistory.length + 1,
-        type: 'bot',
-        content:
-            "I apologize, but I'm having trouble processing your request at the moment. Could you please try again?",
-        timestamp: new Date().toLocaleTimeString(),
-      };
-      chatHistory.push(fallbackMessage);
-      res.json(fallbackMessage);
-    }
-  } catch (error) {
-    console.error('Server Error:', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: error.message,
-    });
-  }
-});
-
+app.use("/api",userRoutes,courseDraft,courseRoutes,enrollmentRoutes,reviewRoutes);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

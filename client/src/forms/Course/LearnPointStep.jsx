@@ -1,27 +1,33 @@
 import { useState, useEffect } from "react";
 import Select from "react-select";
 
+// Importing React Icons
+import { FaReact, FaNodeJs, FaJs, FaPython } from "react-icons/fa";
+import { SiMongodb, SiExpress, SiTypescript, SiNextdotjs } from "react-icons/si";
+
 const LearnPointsStep = ({ formData, updateFormData }) => {
+  // Hardcoded technology list with React Icons
   const availableTechnologies = [
-    { name: "React", logo: "/tech-logos/react.svg" },
-    { name: "Node.js", logo: "/tech-logos/nodejs.svg" },
-    { name: "JavaScript", logo: "/tech-logos/javascript.svg" },
-    { name: "Python", logo: "/tech-logos/python.svg" },
-    { name: "MongoDB", logo: "/tech-logos/mongodb.svg" },
-    { name: "Express.js", logo: "/tech-logos/expressjs.svg" },
-    { name: "TypeScript", logo: "/tech-logos/typescript.svg" },
-    { name: "Next.js", logo: "/tech-logos/nextjs.svg" },
+    { name: "React", icon: <FaReact /> },
+    { name: "Node.js", icon: <FaNodeJs /> },
+    { name: "JavaScript", icon: <FaJs /> },
+    { name: "Python", icon: <FaPython /> },
+    { name: "MongoDB", icon: <SiMongodb /> },
+    { name: "Express.js", icon: <SiExpress /> },
+    { name: "TypeScript", icon: <SiTypescript /> },
+    { name: "Next.js", icon: <SiNextdotjs /> },
   ];
 
+  // Options for the React Select component
   const options = availableTechnologies.map((tech) => ({
     value: tech.name,
     label: (
-      <div className="flex items-center">
-        <img src={tech.logo} alt={tech.name} className="w-6 h-6 mr-2" />
+      <div className="flex items-center gap-2">
+        <div className="text-xl">{tech.icon}</div>
         {tech.name}
       </div>
     ),
-    logo: tech.logo,
+    icon: tech.icon,
   }));
 
   // Initialize default form values
@@ -92,9 +98,9 @@ const LearnPointsStep = ({ formData, updateFormData }) => {
           options={options}
           className="w-full"
           value={options.filter((option) =>
-            Array.isArray(formData.technologies) && formData.technologies.includes(option.value)
+            Array.isArray(formData.technologies) &&
+            formData.technologies.includes(option.value)
           )}
-          
           onChange={handleTechChange}
           closeMenuOnSelect={false}
         />
@@ -111,9 +117,7 @@ const LearnPointsStep = ({ formData, updateFormData }) => {
                   key={techName}
                   className="flex items-center gap-2 p-2 border rounded-lg"
                 >
-                  {tech?.logo && (
-                    <img src={tech.logo} alt={tech.name} className="w-8 h-8" />
-                  )}
+                  {tech?.icon && <div className="text-2xl">{tech.icon}</div>}
                   <span>{tech?.name}</span>
                 </div>
               );

@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 
 const authenticateToken = (req, res, next) => {
+  console.log(req);
   const authHeader = req.headers['authorization']; // Expect "Bearer <token>"
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -14,4 +15,4 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-export default authenticateToken;
+// export default authenticateToken;

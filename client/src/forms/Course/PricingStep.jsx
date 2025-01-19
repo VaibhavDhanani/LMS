@@ -11,6 +11,17 @@ const PricingStep = ({ formData, updateFormData }) => {
     });
   };
 
+  // Calculate final price after applying discount
+  const calculateFinalPrice = () => {
+    if (formData.pricing?.discountEnabled && formData.pricing?.price) {
+      const discountAmount = (formData.pricing.discount / 100) * formData.pricing.price;
+      return formData.pricing.price - discountAmount;
+    }
+    return formData.pricing?.price || 0;
+  };
+
+  const finalPrice = calculateFinalPrice();
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold">Instructor and Pricing Details</h2>
@@ -63,6 +74,20 @@ const PricingStep = ({ formData, updateFormData }) => {
           />
         </div>
       )}
+
+      {/* Final Price Display */}
+      <div className="form-control">
+        <label className="label">
+          <span className="label-text font-semibold">Final Price (After Discount)</span>
+        </label>
+        <input
+          type="text"
+          className="input input-bordered bg-gray-100 text-gray-600"
+          value={`$${finalPrice.toFixed(2)}`}
+          readOnly
+          aria-label="Final Price"
+        />
+      </div>
     </div>
   );
 };

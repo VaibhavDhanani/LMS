@@ -1,7 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { fetchCourseById } from '@/services/courseService.jsx';
-
+import React, { useState } from 'react';
 import { CourseHeader } from '../components/General/CourseHeader';
 import { CourseTabs } from '../components/General/CourseTabs';
 import { OverviewTab } from '../components/General/OverviewTab';
@@ -10,9 +7,8 @@ import { InstructorTab } from '../components/General/InstructorTab';
 import { ReviewsTab } from '../components/General/ReviewsTab';
 import { PrerequisitesSection } from '../components/General/PrerequisitesSection';
 
-
 // Expanded Course Object with More Details
-const coursed = {
+const course = {
   id: "6750a031da931860f44b6530",
   title: "Introduction to Web Development",
   subtitle: "Master the fundamentals of modern web development from scratch",
@@ -25,7 +21,7 @@ const coursed = {
     bio: "With over 10 years of industry experience, John has worked with top tech companies and trained thousands of developers worldwide."
   },
   videos: [
-    "https://example.com/videos/html-basics.mp4",
+    "https://example.com/videos/html-basics.mp4", 
     "https://example.com/videos/css-styling.mp4"
   ],
   materials: [
@@ -100,44 +96,24 @@ const coursed = {
 };
 
 const CoursePreviewPage = () => {
-  const { id } = useParams();
-  const [course, setCourse] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
-
-  useEffect(() => {
-    const fetchCourse = async () => {
-      try {
-        const fetchedCourse = await fetchCourseById(id);
-        if (fetchedCourse) {
-          setCourse(fetchedCourse);
-        } else {
-          console.error('Course not found!');
-        }
-      } catch (error) {
-        console.error('Error fetching course:', error);
-      }
-    };
-    fetchCourse();
-  }, [id]);
-
-  if (!course) {
-    return <div className="container mx-auto px-4 py-8">Loading course...</div>;
-  }
-
-  return (
+    const [activeTab, setActiveTab] = useState('overview');
+  
+    return (
       <div className="container mx-auto px-4 py-8">
         <CourseHeader course={course} />
+        
         <CourseTabs activeTab={activeTab} setActiveTab={setActiveTab} />
-
+        
         {/* Tab Content */}
         {activeTab === 'overview' && <OverviewTab course={course} />}
-        {activeTab === 'curriculum' && <CurriculumTab course={coursed} />}
-        {activeTab === 'instructor' && <InstructorTab course={coursed} />}
-        {activeTab === 'reviews' && <ReviewsTab course={coursed} />}
-
-        <PrerequisitesSection course={coursed} />
+        {activeTab === 'curriculum' && <CurriculumTab course={course} />}
+        {activeTab === 'instructor' && <InstructorTab course={course} />}
+        {activeTab === 'reviews' && <ReviewsTab course={course} />}
+        
+        <PrerequisitesSection course={course} />
+        
       </div>
-  );
-};
-
-export default CoursePreviewPage;
+    );
+  };
+  
+  export default CoursePreviewPage;
