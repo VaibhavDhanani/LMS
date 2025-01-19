@@ -37,7 +37,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api', userRoutes, courseRoutes, enrollmentRoutes, reviewRoutes);
 app.use('/api/checkout', async (req, res) => {
   const course = req.body;
-  // console.log(course)
+  console.log(course.thubnail)
+  const {price,discount} = course.pricing
+  const discountedPrice = price * (discount ? discount/100 : 1);
   const lineItems = [
     {
       price_data: {
@@ -45,10 +47,10 @@ app.use('/api/checkout', async (req, res) => {
         product_data: {
           name: course.title,
           images: [
-            'https://imgs.search.brave.com/-xm-3EXUVu0v3aVls5wGMx5e2kL3fxrr-57uApRt5GU/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly90NC5m/dGNkbi5uZXQvanBn/LzAzLzcyLzcyLzcx/LzM2MF9GXzM3Mjcy/NzE5MF8xT2prVzBL/YXVHeTV4cjJPVFFD/ZDU1b0JBcVoxV3px/Ti5qcGc',
+            course.thumbnail
           ],
         },
-        unit_amount: Math.round(course.price.discounted * 100),
+        unit_amount: Math.round(discountedPrice),
       },
       quantity: 1,
     },
