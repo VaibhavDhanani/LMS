@@ -17,7 +17,7 @@ export const getAllCourse = async (token) => {
     const response = await db.get(`/courses`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    return response.data; // Return the data if the request is successful
+    return response.data.data; // Return the data if the request is successful
   } catch (error) {
     console.error("Error fetching courses:", error);
     return []; // Return an empty array or suitable fallback value in case of an error
@@ -30,7 +30,7 @@ export const getInstructorCourse = async (instructorId, token) => {
       const response = await db.get(`/courses/users/${instructorId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      return response.data;
+      return response.data.data;
     } catch (error) {
       console.error("Error fetching course:", error);
       throw error; // Re-throw the error for further handling
@@ -49,9 +49,9 @@ export const getCourseById = async  (courseId,token) => {
   }
 };
 
-export const updateCourse = async (course,token) => {
+export const updateCourse = async (id,course,token) => {
   try {
-    const response = await db.put(`/courses`,course, {
+    const response = await db.put(`/courses/${id}`,course, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;

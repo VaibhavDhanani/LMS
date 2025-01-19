@@ -19,25 +19,22 @@ const courseSchema = new mongoose.Schema({
   requirements: [String],
   thumbnail: { type: String, required: true },
   promotionalVideo: { type: String, required: true },
-  lectures: {
-    type: [
-      {
-        title: { type: String, required: true },
-        description: { type: String, required: true },
-        videourl: { type: String, required: true },
-        thumbnailurl: { type: String, required: true },
-        duration: { type: String, required: true },
-        preview: { type: Boolean, default: false }
-      }
-    ],
-    required: true,
-    validate: {
-      validator: function (v) {
-        return v && v.length > 0; // Ensure the array is not empty
-      },
-      message: "Lectures array must contain at least one lecture."
-    }
-  },
+  curriculum: [
+    {
+      section: { type: String, required: true, trim: true },
+      lectures: [
+        {
+          title: { type: String, required: true, trim: true },
+          description: { type: String, trim: true },
+          video: { type: String },
+          duration: { type: String, required: true },
+          preview: { type: Boolean, default: false },
+          thumbnailurl: { type: String, required: false },
+        },
+      ],
+    },
+  ],
+
   targetStudents: { type: [String], required: true },
   topics: { type: [String], required: true },
   pricing: {

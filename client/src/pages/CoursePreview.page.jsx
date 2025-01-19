@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { fetchCourseById } from '@/services/courseService.jsx';
-
+import {getCourseById} from '../services/course.service'
 import { CourseHeader } from '../components/General/CourseHeader';
 import { CourseTabs } from '../components/General/CourseTabs';
 import { OverviewTab } from '../components/General/OverviewTab';
@@ -107,7 +106,7 @@ const CoursePreviewPage = () => {
   useEffect(() => {
     const fetchCourse = async () => {
       try {
-        const fetchedCourse = await fetchCourseById(id);
+        const fetchedCourse = await getCourseById(id);
         if (fetchedCourse) {
           setCourse(fetchedCourse);
         } else {
@@ -131,7 +130,7 @@ const CoursePreviewPage = () => {
 
         {/* Tab Content */}
         {activeTab === 'overview' && <OverviewTab course={course} />}
-        {activeTab === 'curriculum' && <CurriculumTab course={coursed} />}
+        {activeTab === 'curriculum' && <CurriculumTab course={course} />}
         {activeTab === 'instructor' && <InstructorTab course={course} />}
         {activeTab === 'reviews' && <ReviewsTab course={course} />}
 
