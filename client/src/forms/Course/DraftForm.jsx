@@ -11,7 +11,7 @@ import TargetStudentsStep from "./TargetStudentsStep";
 import ReviewStep from "./ReviewStep";
 import { getDraftById, updateDraft, publishDraft } from "../../services/draft.service.jsx";
 import { useAuth } from "@/context/AuthContext";
-const DraftForm = () => {
+const CourseForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
@@ -29,7 +29,20 @@ const DraftForm = () => {
     requirements: [""],
     thumbnail: "",
     promotionalVideo: "",
-    lectures: [{ title: "", description: "", videoUrl: "",thumbnailUrl: "" , duration: "", preview: false }],
+    curriculum: [
+      {
+        section: "",
+        lectures: [
+          {
+            title: "",
+            description: "",
+            video: "",
+            duration: "",
+            preview: false,
+          },
+        ],
+      },
+    ],
     targetStudents: [""],
     topics: [""],
     pricing: { price: "", discountEnabled: false, discount: "" },
@@ -66,7 +79,7 @@ const DraftForm = () => {
   };
 
   const handleSaveChanges = () => {
-    updateDraft(id, formData,token)
+    updateDraft(id, formData)
       .then(() => {
         console.log("Draft saved successfully!");
         setError(""); // Clear error if successful
@@ -77,14 +90,14 @@ const DraftForm = () => {
   const confirmPublish = () => {
     setShowConfirmModal(false);
     setLoading(true);
-    updateDraft(id, formData,token)
-      .then(() => publishDraft(id, formData,token))
+    updateDraft(id, formData)
+      .then(() => publishDraft(id, formData))
       .then(() => {
         console.log("Draft published successfully!");
         setError(""); // Clear error if successful
         navigate("/mycourses");
       })
-      .catch((e) => setError("Failed to publish the course."+e.message))
+      .catch(() => setError("Failed to publish the course. Please try again."))
       .finally(() => setLoading(false));
   };
 
@@ -166,4 +179,4 @@ const DraftForm = () => {
   );
 };
 
-export default DraftForm;
+export default CourseForm;

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useCallback } from "react";
 import {
   storage,
   ref,
@@ -7,77 +7,62 @@ import {
   deleteObject,
 } from "../../apis/firebase.config.js";
 import { Loader2, Plus, X, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime", "video/x-m4v"];
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
-const VideoContainer = ({ videoUrl, onRemove, className = "", onLoadedMetadata }) => {
-  const videoRef = useRef(null);
-
-  return (
-    <div className={`relative inline-block ${className}`}>
-      <div className="bg-gray-100 rounded-lg p-4 shadow-sm border border-gray-200">
-        <div className="relative aspect-video w-full max-w-lg">
-          <video 
-            ref={videoRef}
-            controls 
-            className="w-full h-full rounded-md"
-            onLoadedMetadata={onLoadedMetadata}
-          >
-            <source src={videoUrl} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-          <button
-            className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-md transition-colors"
-            onClick={onRemove}
-          >
-            <X size={16} />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ThumbnailContainer = ({ thumbnailUrl, onRemove, className = "" }) => (
-  <div className={`relative inline-block ${className}`}>
-    <div className="bg-gray-100 rounded-lg p-2 shadow-sm border border-gray-200">
-      <img src={thumbnailUrl} alt="Thumbnail" className="w-32 h-32 object-cover rounded-md" />
-      <button
-        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-md transition-colors"
-        onClick={onRemove}
-      >
-        <X size={16} />
-      </button>
-    </div>
-  </div>
-);
-
-const formatDuration = (seconds) => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
-  
-  if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-  }
-  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-};
-
 const CurriculumStep = ({ formData, updateFormData }) => {
-  const [expandedIndex, setExpandedIndex] = useState(null);
   const [uploadStatus, setUploadStatus] = useState({});
   const [errors, setErrors] = useState({});
+  const [expandedItems, setExpandedItems] = useState({
+    sections: new Set(),
+    lectures: new Set()
+  });
+
+  // Toggle expanded state
+  const toggleExpanded = useCallback((type, id) => {
+    setExpandedItems(prev => ({
+      ...prev,
+      [type]: new Set(
+          prev[type].has(id)
+              ? [...prev[type]].filter(item => item !== id)
+              : [...prev[type], id]
+      )
+    }));
+  }, []);
+
+  // Validate file
+  const validateFile = useCallback((file, type) => {
+    // console.log("Detected File Type:", file.type);
+    const allowedTypes = type === "video" ? ALLOWED_VIDEO_TYPES : ALLOWED_IMAGE_TYPES;
+    const maxSize = type === "video" ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+
+    if (!allowedTypes.includes(file.type)) {
+      return `Only ${type === "video" ? "MP4, WebM, MOV, M4V" : "JPEG, PNG, WebP"} files are allowed`;
+    }
+    if (file.size > maxSize) {
+      return `File size should be less than ${maxSize / (1024 * 1024)}MB`;
+    }
+    return null;
+  }, []);
 
   // Handle file upload
-  const handleFileUpload = async (file, type, lectureIndex) => {
+  const handleFileUpload = useCallback(async (file, type, sectionIndex, lectureIndex) => {
     if (!file) return;
 
-    const uploadKey = `${type}-${lectureIndex ?? "main"}`;
-    setUploadStatus({ ...uploadStatus, [uploadKey]: true });
-    setErrors({ ...errors, [uploadKey]: null });
+    const uploadKey = `${type}-${sectionIndex ?? 'main'}-${lectureIndex ?? 'main'}`;
+    const validationError = validateFile(file, type.includes('video') || type.includes('promotionalVideo') ? 'video' : 'image');
+
+    if (validationError) {
+      setErrors(prev => ({ ...prev, [uploadKey]: validationError }));
+      return;
+    }
+
+    setUploadStatus(prev => ({ ...prev, [uploadKey]: true }));
+    setErrors(prev => ({ ...prev, [uploadKey]: null }));
 
     try {
       const uniqueName = `${type}-${Date.now()}-${file.name}`;
@@ -85,266 +70,277 @@ const CurriculumStep = ({ formData, updateFormData }) => {
       const snapshot = await uploadBytes(storageRef, file);
       const url = await getDownloadURL(snapshot.ref);
 
-      if (lectureIndex !== undefined) {
-        const updatedLectures = [...formData.lectures];
-        if (type === "video") {
-          updatedLectures[lectureIndex].videoUrl = url;
-        } else if (type === "lectureThumbnail") {
-          updatedLectures[lectureIndex].thumbnailUrl = url;
-        }
-        updateFormData("lectures", updatedLectures);
+      if (sectionIndex !== undefined && lectureIndex !== undefined) {
+        const updatedCurriculum = [...formData.curriculum];
+        updatedCurriculum[sectionIndex].lectures[lectureIndex].video = url;
+        updateFormData("curriculum", updatedCurriculum);
       } else {
         updateFormData(type, url);
       }
     } catch (error) {
       console.error("Error uploading file:", error);
-      setErrors({ ...errors, [uploadKey]: "Error uploading file" });
+      setErrors(prev => ({ ...prev, [uploadKey]: "Error uploading file" }));
     } finally {
-      setUploadStatus({ ...uploadStatus, [uploadKey]: false });
+      setUploadStatus(prev => ({ ...prev, [uploadKey]: false }));
     }
-  };
+  }, [formData, updateFormData, validateFile]);
 
   // Remove file
-  const handleRemoveFile = async (url, type, lectureIndex) => {
+  const handleRemoveFile = useCallback(async (url, type, sectionIndex, lectureIndex) => {
     try {
       const fileRef = ref(storage, url);
       await deleteObject(fileRef);
 
-      if (lectureIndex !== undefined) {
-        const updatedLectures = [...formData.lectures];
-        if (type === "video") {
-          updatedLectures[lectureIndex].videoUrl = "";
-          updatedLectures[lectureIndex].duration = 0;
-        } else if (type === "lectureThumbnail") {
-          updatedLectures[lectureIndex].thumbnailUrl = "";
-        }
-        updateFormData("lectures", updatedLectures);
+      if (sectionIndex !== undefined && lectureIndex !== undefined) {
+        const updatedCurriculum = [...formData.curriculum];
+        updatedCurriculum[sectionIndex].lectures[lectureIndex].video = "";
+        updateFormData("curriculum", updatedCurriculum);
       } else {
         updateFormData(type, "");
       }
     } catch (error) {
       console.error("Error removing file:", error);
+      setErrors(prev => ({
+        ...prev,
+        [`${type}-${sectionIndex ?? 'main'}-${lectureIndex ?? 'main'}`]: "Error removing file"
+      }));
     }
+  }, [formData, updateFormData]);
+
+  // Curriculum operations
+  const curriculumOperations = {
+    addSection: useCallback(() => {
+      const newSection = {
+        section: "",
+        lectures: []
+      };
+      updateFormData("curriculum", [...formData.curriculum, newSection]);
+    }, [formData, updateFormData]),
+
+    removeSection: useCallback((sectionIndex) => {
+      const updatedCurriculum = [...formData.curriculum];
+      updatedCurriculum.splice(sectionIndex, 1);
+      updateFormData("curriculum", updatedCurriculum);
+    }, [formData, updateFormData]),
+
+    updateSection: useCallback((sectionIndex, field, value) => {
+      const updatedCurriculum = [...formData.curriculum];
+      updatedCurriculum[sectionIndex][field] = value;
+      updateFormData("curriculum", updatedCurriculum);
+    }, [formData, updateFormData]),
+
+    addLecture: useCallback((sectionIndex) => {
+      const newLecture = {
+        title: "",
+        description: "",
+        video: "",
+        duration: "",
+        preview: false
+      };
+
+      const updatedCurriculum = [...formData.curriculum];
+      updatedCurriculum[sectionIndex].lectures.push(newLecture);
+      updateFormData("curriculum", updatedCurriculum);
+    }, [formData, updateFormData]),
+
+    removeLecture: useCallback((sectionIndex, lectureIndex) => {
+      const updatedCurriculum = [...formData.curriculum];
+      updatedCurriculum[sectionIndex].lectures.splice(lectureIndex, 1);
+      updateFormData("curriculum", updatedCurriculum);
+    }, [formData, updateFormData]),
+
+    updateLecture: useCallback((sectionIndex, lectureIndex, field, value) => {
+      const updatedCurriculum = [...formData.curriculum];
+      updatedCurriculum[sectionIndex].lectures[lectureIndex][field] = value;
+      updateFormData("curriculum", updatedCurriculum);
+    }, [formData, updateFormData])
   };
 
-  // Handle video duration
-  const handleVideoDuration = (index, event) => {
-    const durationInSeconds = Math.floor(event.target.duration);
-    
-    const updatedLectures = [...formData.lectures];
-    updatedLectures[index].duration = durationInSeconds;
-    updateFormData("lectures", updatedLectures);
-  };
+  // Render file upload section
+  const renderFileUpload = (type, accept, sectionIndex, lectureIndex) => {
+    const key = `${type}-${sectionIndex ?? 'main'}-${lectureIndex ?? 'main'}`;
+    const currentValue = sectionIndex !== undefined && lectureIndex !== undefined
+        ? formData.curriculum[sectionIndex].lectures[lectureIndex].video
+        : formData[type];
 
-  // Add new lecture at a specific index
-  const addLectureAtIndex = (index) => {
-    const newLecture = {
-      title: "",
-      description: "",
-      videoUrl: "",
-      thumbnailUrl: "",
-      duration: 0,
-      preview: false,
-    };
-
-    const updatedLectures = [...formData.lectures];
-    updatedLectures.splice(index + 1, 0, newLecture);
-    updateFormData("lectures", updatedLectures);
-  };
-
-  // Remove lecture
-  const removeLecture = (index) => {
-    const updatedLectures = [...formData.lectures];
-    updatedLectures.splice(index, 1);
-    updateFormData("lectures", updatedLectures);
-    if (expandedIndex === index) setExpandedIndex(null);
-  };
-
-  // Update lecture details
-  const updateLecture = (index, field, value) => {
-    const updatedLectures = [...formData.lectures];
-    updatedLectures[index][field] = value;
-    updateFormData("lectures", updatedLectures);
+    return (
+        <div className="space-y-2">
+          <label className="text-sm font-semibold">
+            {type === 'thumbnail' ? 'Course Thumbnail' : 'Video'}
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+                type="file"
+                accept={accept}
+                className="file-input file-input-bordered w-full"
+                onChange={(e) => handleFileUpload(e.target.files[0], type, sectionIndex, lectureIndex)}
+            />
+            {uploadStatus[key] && <Loader2 className="animate-spin" size={24} />}
+          </div>
+          {errors[key] && (
+              <Alert variant="destructive">
+                <AlertDescription>{errors[key]}</AlertDescription>
+              </Alert>
+          )}
+          {currentValue && (
+              <div className="relative inline-block">
+                {type === 'thumbnail' ? (
+                    <img
+                        src={currentValue}
+                        alt="Thumbnail"
+                        className="w-32 h-32 object-cover rounded"
+                    />
+                ) : (
+                    <video width="320" height="240" controls className="rounded">
+                      <source src={currentValue} type="video/mp4" />
+                      Your browser does not support the video tag.
+                    </video>
+                )}
+                <button
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                    onClick={() => handleRemoveFile(currentValue, type, sectionIndex, lectureIndex)}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+          )}
+        </div>
+    );
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Course Curriculum</h2>
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold">Create Course</h2>
 
-      {/* Course Media Section */}
-      <div className="space-y-6 p-6 border rounded-lg bg-gray-50">
-        <h3 className="text-xl font-semibold">Course Media</h3>
+        {/* File Uploads */}
+        {renderFileUpload('thumbnail', '.jpg,.jpeg,.png,.webp')}
+        {renderFileUpload('promotionalVideo', '.mp4,.webm,.mov,.m4v')}
 
-        {/* Course Thumbnail */}
-        <div className="space-y-2">
-          <label className="text-sm font-semibold">Course Thumbnail</label>
-          <div className="flex items-center gap-2">
-            <input
-              type="file"
-              accept=".jpg,.jpeg,.png,.webp"
-              className="file-input file-input-bordered w-full"
-              onChange={(e) => handleFileUpload(e.target.files[0], "thumbnail")}
-            />
-            {uploadStatus["thumbnail-main"] && <Loader2 className="animate-spin" size={24} />}
-          </div>
-          {errors["thumbnail-main"] && <p className="text-red-500 text-sm">{errors["thumbnail-main"]}</p>}
-          {formData.thumbnail && (
-            <ThumbnailContainer 
-              thumbnailUrl={formData.thumbnail}
-              onRemove={() => handleRemoveFile(formData.thumbnail, "thumbnail")}
-              className="mt-4"
-            />
-          )}
-        </div>
+        {/* Curriculum Sections */}
+        <div className="space-y-4">
+          <h3 className="text-xl font-bold">
+            Curriculum ({formData.curriculum.length} sections)
+          </h3>
 
-        {/* Promotional Video */}
-        <div className="space-y-2">
-          <label className="text-sm font-semibold">Promotional Video</label>
-          <div className="flex items-center gap-2">
-            <input
-              type="file"
-              accept=".mp4,.webm,.mov,.m4v"
-              className="file-input file-input-bordered w-full"
-              onChange={(e) => handleFileUpload(e.target.files[0], "promotionalVideo")}
-            />
-            {uploadStatus["promotionalVideo-main"] && <Loader2 className="animate-spin" size={24} />}
-          </div>
-          {errors["promotionalVideo-main"] && <p className="text-red-500 text-sm">{errors["promotionalVideo-main"]}</p>}
-          {formData.promotionalVideo && (
-            <VideoContainer 
-              videoUrl={formData.promotionalVideo} 
-              onRemove={() => handleRemoveFile(formData.promotionalVideo, "promotionalVideo")}
-              className="mt-4"
-            />
-          )}
-        </div>
-      </div>
-
-      {/* Lectures Section */}
-      <div className="space-y-4">
-        <h3 className="text-xl font-bold">Lectures ({formData.lectures.length})</h3>
-
-        {formData.lectures.map((lecture, index) => (
-          <div key={index} className="border rounded-lg p-4 relative group">
-            <div
-              className="flex items-center gap-2 cursor-pointer"
-              onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
-            >
-              {expandedIndex === index ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-              <span className="font-semibold">
-                {lecture.title ? lecture.title : `Lecture ${index + 1}`}
-              </span>
-              {lecture.duration > 0 && (
-                <span className="text-sm text-gray-500">({formatDuration(lecture.duration)})</span>
-              )}
-            </div>
-
-            {/* Expanded Content */}
-            {expandedIndex === index && (
-              <div className="mt-4 space-y-4 pl-6">
-                {/* Title Field */}
-                <div>
-                  <label className="text-sm font-semibold">Title</label>
-                  <input
-                    type="text"
-                    className="input input-bordered w-full mt-2"
-                    value={lecture.title}
-                    onChange={(e) => updateLecture(index, "title", e.target.value)}
-                    placeholder="Enter lecture title"
-                  />
-                </div>
-
-                {/* Description Field */}
-                <div>
-                  <label className="text-sm font-semibold">Description</label>
-                  <textarea
-                    className="textarea textarea-bordered w-full mt-2"
-                    value={lecture.description}
-                    onChange={(e) => updateLecture(index, "description", e.target.value)}
-                    placeholder="Enter lecture description"
-                    rows={3}
-                  />
-                </div>
-
-                {/* Lecture Thumbnail */}
-                <div>
-                  <label className="text-sm font-semibold">Lecture Thumbnail</label>
-                  <input
-                    type="file"
-                    accept=".jpg,.jpeg,.png,.webp"
-                    className="file-input file-input-bordered w-full mt-2"
-                    onChange={(e) => handleFileUpload(e.target.files[0], "lectureThumbnail", index)}
-                  />
-                  {uploadStatus[`lectureThumbnail-${index}`] && <Loader2 className="animate-spin" size={24} />}
-                  {errors[`lectureThumbnail-${index}`] && (
-                    <p className="text-red-500 text-sm">{errors[`lectureThumbnail-${index}`]}</p>
-                  )}
-
-                  {lecture.thumbnailUrl && (
-                    <ThumbnailContainer 
-                      thumbnailUrl={lecture.thumbnailUrl}
-                      onRemove={() => handleRemoveFile(lecture.thumbnailUrl, "lectureThumbnail", index)}
-                      className="mt-4"
+          {formData.curriculum.map((section, sectionIndex) => (
+              <div key={sectionIndex} className="border p-4 rounded-lg space-y-4">
+                {/* Section Header */}
+                <div className="flex items-center justify-between">
+                  <div
+                      className="flex items-center gap-2 cursor-pointer"
+                      onClick={() => toggleExpanded('sections', sectionIndex)}
+                  >
+                    {expandedItems.sections.has(sectionIndex) ? (
+                        <ChevronDown size={20} />
+                    ) : (
+                        <ChevronRight size={20} />
+                    )}
+                    <input
+                        type="text"
+                        className="input input-bordered w-full font-semibold"
+                        value={section.section}
+                        placeholder="Enter Section Name"
+                        onChange={(e) => curriculumOperations.updateSection(sectionIndex, 'section', e.target.value)}
                     />
-                  )}
+                  </div>
+                  <button
+                      onClick={() => curriculumOperations.removeSection(sectionIndex)}
+                      className="text-red-500 hover:text-red-700"
+                  >
+                    <Trash2 size={20} />
+                  </button>
                 </div>
 
-                {/* Video */}
-                <div>
-                  <label className="text-sm font-semibold">Video</label>
-                  <input
-                    type="file"
-                    accept=".mp4,.webm,.mov,.m4v"
-                    className="file-input file-input-bordered w-full mt-2"
-                    onChange={(e) => handleFileUpload(e.target.files[0], "video", index)}
-                  />
-                  {uploadStatus[`video-${index}`] && <Loader2 className="animate-spin" size={24} />}
-                  {errors[`video-${index}`] && <p className="text-red-500 text-sm">{errors[`video-${index}`]}</p>}
+                {/* Lectures */}
+                {expandedItems.sections.has(sectionIndex) && (
+                    <div className="space-y-4">
+                      {section.lectures.map((lecture, lectureIndex) => (
+                          <div key={lectureIndex} className="border p-3 rounded-lg ml-6 space-y-3">
+                            <div
+                                className="flex items-center gap-2 cursor-pointer"
+                                onClick={() => toggleExpanded('lectures', `${sectionIndex}-${lectureIndex}`)}
+                            >
+                              {expandedItems.lectures.has(`${sectionIndex}-${lectureIndex}`) ? (
+                                  <ChevronDown size={20} />
+                              ) : (
+                                  <ChevronRight size={20} />
+                              )}
+                              <span className="font-semibold">Lecture {lectureIndex + 1}</span>
+                            </div>
 
-                  {lecture.videoUrl && (
-                    <VideoContainer 
-                      videoUrl={lecture.videoUrl} 
-                      onRemove={() => handleRemoveFile(lecture.videoUrl, "video", index)}
-                      onLoadedMetadata={(e) => handleVideoDuration(index, e)}
-                      className="mt-4"
-                    />
-                  )}
-                </div>
+                            {expandedItems.lectures.has(`${sectionIndex}-${lectureIndex}`) && (
+                                <div className="ml-6 space-y-4">
+                                  {/* Lecture Fields */}
+                                  <div className="space-y-3">
+                                    <input
+                                        type="text"
+                                        className="input input-bordered w-full"
+                                        value={lecture.title}
+                                        placeholder="Enter Lecture Title"
+                                        onChange={(e) => curriculumOperations.updateLecture(sectionIndex, lectureIndex, 'title', e.target.value)}
+                                    />
+                                    <textarea
+                                        className="textarea textarea-bordered w-full"
+                                        value={lecture.description}
+                                        placeholder="Enter Lecture Description"
+                                        onChange={(e) => curriculumOperations.updateLecture(sectionIndex, lectureIndex, 'description', e.target.value)}
+                                    />
+                                    <input
+                                        type="text"
+                                        className="input input-bordered w-full"
+                                        value={lecture.duration}
+                                        placeholder="Enter Duration (e.g. 10 min)"
+                                        onChange={(e) => curriculumOperations.updateLecture(sectionIndex, lectureIndex, 'duration', e.target.value)}
+                                    />
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                          type="checkbox"
+                                          className="toggle"
+                                          checked={lecture.preview}
+                                          onChange={(e) => curriculumOperations.updateLecture(sectionIndex, lectureIndex, 'preview', e.target.checked)}
+                                      />
+                                      <span className="text-sm">Preview Available</span>
+                                    </div>
+                                  </div>
 
-                {/* Preview Checkbox */}
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    className="checkbox"
-                    checked={lecture.preview}
-                    onChange={(e) => updateLecture(index, "preview", e.target.checked)}
-                  />
-                  <label className="text-sm font-semibold">Mark as Preview</label>
-                </div>
+                                  {/* Video Upload */}
+                                  {renderFileUpload('video', '.mp4,.webm,.mov,.m4v', sectionIndex, lectureIndex)}
+
+                                  {/* Remove Lecture */}
+                                  <button
+                                      className="btn btn-error btn-sm"
+                                      onClick={() => curriculumOperations.removeLecture(sectionIndex, lectureIndex)}
+                                  >
+                                    Remove Lecture
+                                  </button>
+                                </div>
+                            )}
+                          </div>
+                      ))}
+
+                      {/* Add Lecture Button */}
+                      <button
+                          className="btn btn-primary w-full"
+                          onClick={() => curriculumOperations.addLecture(sectionIndex)}
+                      >
+                        <Plus size={16} className="mr-2" />
+                        Add Lecture
+                      </button>
+                    </div>
+                )}
               </div>
-            )}
+          ))}
 
-            {/* Delete Lecture */}
-            <div className="absolute top-2 right-2">
-              <button
-                onClick={() => removeLecture(index)}
-                className="btn btn-ghost text-red-500 hover:text-red-700"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
-
-        <button
-          onClick={() => addLectureAtIndex(formData.lectures.length - 1)}
-          className="btn btn-outline w-full"
-        >
-          <Plus size={16} className="mr-2" />
-          Add New Lecture
-        </button>
+          {/* Add Section Button */}
+          <button
+              className="btn btn-secondary w-full"
+              onClick={curriculumOperations.addSection}
+          >
+            <Plus size={16} className="mr-2" />
+            Add Section
+          </button>
+        </div>
       </div>
-    </div>
   );
 };
 
