@@ -1,25 +1,39 @@
 import { Link } from 'react-router-dom';
 
 const CourseCard = ({ course }) => {
+  const { title, description, pricing, _id } = course;
+
   return (
     <div className="card card-compact bg-base-100 w-60 shadow-xl flex-shrink-0">
+      {/* Course Thumbnail */}
       <figure>
         <img
-          src={`${course.thumbnail}`}
-          alt="Course"
+          src={course.thumbnail}
+          alt={title || "Course Thumbnail"}
           className="h-40 w-full object-cover"
         />
       </figure>
+
+      {/* Course Details */}
       <div className="card-body">
-        <h2 className="card-title">{course.title}</h2>
-        <p>{course.description}</p>
+        {/* Course Title */}
+        <h2 className="card-title">{title || "Untitled Course"}</h2>
+
+        {/* Course Description */}
+        <p>{description || "No description available for this course."}</p>
+
+        {/* Pricing Information */}
+        {pricing?.price && (
+          <p className="text-sm font-medium text-gray-600">
+            Price: ${pricing.price}
+          </p>
+        )}
+
+        {/* Explore Button */}
         <div className="card-actions justify-end">
-          <Link
-            className="btn-custom btn-active btn-accent"
-            to={`/courses/${course._id}`}
-          >
+          <a className="btn btn-accent" href={`/courses/${_id}`}>
             Explore
-          </Link>
+          </a>
         </div>
       </div>
     </div>
