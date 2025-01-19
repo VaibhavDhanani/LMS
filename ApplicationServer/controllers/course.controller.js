@@ -87,6 +87,7 @@ export const getCourseById = async (req, res) => {
 
 // Update a course
 export const updateCourse = async (req, res) => {
+  console.log(req.params.id,req.body);
   try {
     const course = await Course.findByIdAndUpdate(req.params.id, req.body, {
       new: true,

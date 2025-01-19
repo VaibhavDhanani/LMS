@@ -1,19 +1,42 @@
-import React, { useState } from 'react';
+// eslint-disable-next-line no-unused-vars
+import React, {useEffect, useState} from 'react';
 import { User, Book, PlayCircle, Heart, Settings, LogOut } from 'lucide-react';
+import {useAuth} from "@/context/AuthContext.jsx";
+import {getUser} from "@/services/user.service.jsx";
+import { LoadingSpinner } from '@/components/ui/loading.jsx';
+import ProfileDetails from "@/components/User/ProfileDetails.jsx";
 
 const UserProfilePage = () => {
   const [activeTab, setActiveTab] = useState('profile');
-  const user = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    profilePicture: 'https://i.pravatar.cc/150?img=3',
-    type: 'Instructor'
-  };
+  const { user } = useAuth();
+  const authToken = localStorage.getItem('authToken');
+  const [loggedUser, setLoggedUser] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchUser = async () => {
+      try {
+        const userData = await getUser(user.id, authToken);
+        if (mounted) {
+          setLoggedUser(userData);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchUser();
+
+    return () => {
+      mounted = false;
+    };
+  }, [authToken, user.id]);
 
   const renderContent = () => {
     switch (activeTab) {
       case 'profile':
-        return <ProfileDetails user={user} />;
+        return <ProfileDetails user={loggedUser} />;
       case 'courses':
         return <MyCourses />;
       case 'learning':
@@ -23,9 +46,10 @@ const UserProfilePage = () => {
       case 'settings':
         return <AccountSettings />;
       default:
-        return <ProfileDetails user={user} />;
+        return <ProfileDetails user={loggedUser} />;
     }
   };
+
 
   return (
     <div className="min-h-screen bg-base-200 p-8">
@@ -78,7 +102,9 @@ const UserProfilePage = () => {
         <div className="md:col-span-3">
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body">
-              {renderContent()}
+              { loggedUser ? renderContent() : <div className="flex justify-center items-center h-40">
+                <LoadingSpinner variant="primary" size="large" />
+              </div>  }
             </div>
           </div>
         </div>
@@ -87,59 +113,6 @@ const UserProfilePage = () => {
   );
 };
 
-const ProfileDetails = ({ user }) => {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6">Profile Details</h2>
-      <form className="space-y-4">
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text">Full Name</span>
-          </label>
-          <input 
-            type="text" 
-            placeholder="Full Name" 
-            className="input input-bordered" 
-            defaultValue={user.name} 
-          />
-        </div>
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text">Email</span>
-          </label>
-          <input 
-            type="email" 
-            placeholder="Email" 
-            className="input input-bordered" 
-            defaultValue={user.email} 
-          />
-        </div>
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text">Headline</span>
-          </label>
-          <input 
-            type="text" 
-            placeholder="Professional Headline" 
-            className="input input-bordered" 
-          />
-        </div>
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text">Biography</span>
-          </label>
-          <textarea 
-            className="textarea textarea-bordered h-24" 
-            placeholder="Tell us about yourself"
-          ></textarea>
-        </div>
-        <div className="form-control mt-6">
-          <button className="btn btn-primary">Save Changes</button>
-        </div>
-      </form>
-    </div>
-  );
-};
 
 const MyCourses = () => {
   return (
