@@ -2,7 +2,7 @@ import db from '../apis/database.js'
 
 export const createDraft = async (draft,token)=>{
     const response = await db.post('/drafts',draft, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${token}` },
     });
     return response.data;
 }
@@ -14,7 +14,7 @@ export const getDrafts = async (userId, token) => {
       return []; 
     }
     const response = await db.get(`/drafts/users/${userId}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${token}` },
     });
     return response.data;
   } catch (error) {
@@ -25,14 +25,14 @@ export const getDrafts = async (userId, token) => {
 
 export const getDraftById = async (id,token)=>{
     const response = await db.get(`/drafts/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${token}` },
     });
     return response.data;
 }
 
 export const updateDraft = async (id,draft,token)=>{
     const response = await db.put(`/drafts/${id}`,draft, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${token}` },
     });
     return response.data;
 }
@@ -40,7 +40,7 @@ export const updateDraft = async (id,draft,token)=>{
 export const publishDraft = async (id, draft,token) => {
     try {
       const response = await db.post(`/publishdrafts/${id}`, draft, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { authorization: `Bearer ${token}` },
       });
       
       if (response.error) {
@@ -57,7 +57,7 @@ export const publishDraft = async (id, draft,token) => {
 
 export const deleteDraft = async (id,token)=>{
     const response = await db.delete(`/drafts/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${token}` },
     });
     return response.data;
 }
