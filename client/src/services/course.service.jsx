@@ -3,7 +3,7 @@ import db from "@/apis/database"
 export const getCourse = async (courseId,token)=>{
   try{
     const response = await db.get(`/courses/${courseId}`,{
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${token}` },
     });
     return response.data.data;
   }catch (error) {
@@ -15,7 +15,7 @@ export const getCourse = async (courseId,token)=>{
 export const getAllCourse = async (token) => {
   try {
     const response = await db.get(`/courses`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${token}` },
     });
     return response.data.data; // Return the data if the request is successful
   } catch (error) {
@@ -28,7 +28,7 @@ export const getAllCourse = async (token) => {
 export const getInstructorCourse = async (instructorId, token) => {
     try {
       const response = await db.get(`/courses/users/${instructorId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { authorization: `Bearer ${token}` },
       });
       return response.data.data;
     } catch (error) {
@@ -40,7 +40,7 @@ export const getInstructorCourse = async (instructorId, token) => {
 export const getCourseById = async  (courseId,token) => {
   try {
     const response = await db.get(`/courses/${courseId}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${token}` },
     });
     return response.data;
   } catch (error) {
@@ -52,7 +52,7 @@ export const getCourseById = async  (courseId,token) => {
 export const updateCourse = async (id,course,token) => {
   try {
     const response = await db.put(`/courses/${id}`,course, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { authorization: `Bearer ${token}` },
     });
     return response.data;
   } catch (error) {
