@@ -8,7 +8,7 @@ import { CurriculumTab } from '../components/General/CurriculumTab';
 import { InstructorTab } from '../components/General/InstructorTab';
 import { ReviewsTab } from '../components/General/ReviewsTab';
 import { PrerequisitesSection } from '../components/General/PrerequisitesSection';
-
+import { useAuth } from '@/context/AuthContext';
 
 // Expanded Course Object with More Details
 const coursed = {
@@ -102,11 +102,12 @@ const CoursePreviewPage = () => {
   const { id } = useParams();
   const [course, setCourse] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const { user, token } = useAuth();
 
   useEffect(() => {
     const fetchCourse = async () => {
       try {
-        const fetchedCourse = await getCourseById(id);
+        const fetchedCourse = await getCourseById(id,token);
         if (fetchedCourse) {
           setCourse(fetchedCourse);
         } else {
