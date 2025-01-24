@@ -8,13 +8,15 @@ import enrollmentRoutes from './router/enrollment.routes.js';
 import reviewRoutes from './router/reviews.routes.js';
 import userRoutes from './router/user.routes.js';
 import connectDB from './utills/dbConnection.js';
-
+import authenticateToken from './middlewares/auth.middleware.js';
 import courseDraft from './router/courseDraft.routes.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import webhookRoutes from './router/webhook.routes.js';
 
 configDotenv();
 const app = express();
 connectDB();
+app.use('/api/stripe/', webhookRoutes);
 app.use(express.json());
 app.use(
   cors({
@@ -24,54 +26,62 @@ app.use(
   }),
 );
 
-// // Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 const port = process.env.PORT || 5000;
 
-const stripeSecretKey = process.env.STRIPE_SECRETKEY;
 
+
+const stripeSecretKey = process.env.STRIPE_SECRETKEY;
 const stripe = new Stripe(stripeSecretKey);
-app.use('/api/auth', authRoutes);
-app.use('/api', userRoutes, courseRoutes, enrollmentRoutes, reviewRoutes);
-app.use('/api/checkout', async (req, res) => {
+app.use('/api/payment', async (req, res) => {
   const course = req.body;
-  // console.log(course.thubnail)
-  const {price,discount} = course.pricing
-  const discountedPrice = price * (discount ? discount/100 : 1);
+  const { price, discount } = course.pricing;
+  const discountedPrice = price * (discount ? discount / 100 : 1);
+
   const lineItems = [
     {
       price_data: {
         currency: 'inr',
         product_data: {
           name: course.title,
-          images: [
-            course.thumbnail
-          ],
+          images: [course.thumbnail],
         },
-        unit_amount: Math.round(price*1000000),
+        unit_amount: Math.round(price),
       },
       quantity: 1,
     },
   ];
+
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: lineItems,
     mode: 'payment',
     success_url: 'http://localhost:5173/success',
     cancel_url: 'http://localhost:5173/cancel',
+    metadata: {
+      courseId: course.id, // Pass courseId
+      userId: null, 
+      //  req.user.id, // Add userId from authentication
+    },
   });
+
   res.json({ id: session.id });
 });
-app.use(
-  '/api',
-  userRoutes,
-  courseDraft,
-  courseRoutes,
-  enrollmentRoutes,
-  reviewRoutes,
-);
+
+app.use('/api/auth', authRoutes);
+app.use('/api',authenticateToken
+  , userRoutes, courseRoutes,courseDraft, enrollmentRoutes, reviewRoutes);
+  app.use(
+    '/api1',
+    userRoutes,
+    courseDraft,
+    courseRoutes,
+    enrollmentRoutes,
+    reviewRoutes,
+  );
+  // // Initialize Gemini AI
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 // chatbot apis
 // Store chat history (in a real app, you'd use a database)

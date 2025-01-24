@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { fetchCourseById } from '@/services/courseService.jsx';
-
+import {getCourseById} from '../services/course.service'
 import { CourseHeader } from '../components/General/CourseHeader';
 import { CourseTabs } from '../components/General/CourseTabs';
 import { OverviewTab } from '../components/General/OverviewTab';
@@ -9,7 +8,7 @@ import { CurriculumTab } from '../components/General/CurriculumTab';
 import { InstructorTab } from '../components/General/InstructorTab';
 import { ReviewsTab } from '../components/General/ReviewsTab';
 import { PrerequisitesSection } from '../components/General/PrerequisitesSection';
-
+import { useAuth } from '@/context/AuthContext';
 
 // Expanded Course Object with More Details
 const coursed = {
@@ -103,11 +102,12 @@ const CoursePreviewPage = () => {
   const { id } = useParams();
   const [course, setCourse] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const { user, token } = useAuth();
 
   useEffect(() => {
     const fetchCourse = async () => {
       try {
-        const fetchedCourse = await fetchCourseById(id);
+        const fetchedCourse = await getCourseById(id,token);
         if (fetchedCourse) {
           setCourse(fetchedCourse);
         } else {
@@ -131,7 +131,7 @@ const CoursePreviewPage = () => {
 
         {/* Tab Content */}
         {activeTab === 'overview' && <OverviewTab course={course} />}
-        {activeTab === 'curriculum' && <CurriculumTab course={coursed} />}
+        {activeTab === 'curriculum' && <CurriculumTab course={course} />}
         {activeTab === 'instructor' && <InstructorTab course={course} />}
         {activeTab === 'reviews' && <ReviewsTab course={course} />}
 

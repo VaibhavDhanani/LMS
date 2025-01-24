@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { Device } from 'mediasoup-client';
 
-
 const LectureRoom = () => {
   const [device, setDevice] = useState(null);
   const [transport, setTransport] = useState(null);
   const [localStream, setLocalStream] = useState(null);
   const [roomId, setRoomId] = useState(''); // Added state for room ID
+  
+  useEffect(()=>{
+    const socket = io('http://localhost:3000'); // Connect to the signaling server
+  },[]);
 
   // Function to handle device setup
   async function setupDevice() {
@@ -124,8 +127,6 @@ const LectureRoom = () => {
   }
 
   useEffect(() => {
-    const socket = io('http://172.20.10.2:3000'); // Connect to the signaling server
-
     setupDevice(); // Load the device on mount
   }, []);
 
