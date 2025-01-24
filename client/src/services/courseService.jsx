@@ -15,6 +15,6 @@ export const fetchCourseById = async (id) => {
     headers: { Authorization: `Bearer ${authToken}` },
   });
   const data = response.data;
-  // console.log(data)
+  console.log(data)
   return data;
 };

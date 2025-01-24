@@ -11,6 +11,7 @@ import UserProfilePage from './pages/UserProfile.page.jsx';
 import LectureRoom from './components/lectureRoom.jsx';
 import LectureRoom1 from './components/demo.jsx';
 import ChatbotInterface from "@/components/chatbot.jsx";
+import ViewLecturePage from "@/pages/ViewLecture.page.jsx";
 const AppRoutes = () => (
   <Routes>
     {/* Public Routes */}
@@ -30,6 +31,7 @@ const AppRoutes = () => (
         </Layout>
       }
     />
+      <Route path="/view" element={<Layout><ViewLecturePage /></Layout>} />
 
     {/* Protected Routes */}
     <Route element={<ProtectedRoute />}>

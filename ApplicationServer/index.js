@@ -43,14 +43,14 @@ app.use('/api/checkout', async (req, res) => {
   const lineItems = [
     {
       price_data: {
-        currency: 'usd',
+        currency: 'inr',
         product_data: {
           name: course.title,
           images: [
             course.thumbnail
           ],
         },
-        unit_amount: Math.round(discountedPrice),
+        unit_amount: Math.round(price*1000000),
       },
       quantity: 1,
     },
