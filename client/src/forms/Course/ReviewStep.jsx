@@ -145,8 +145,8 @@ const ReviewStep = ({ formData }) => {
             <div className="space-y-3">
                 <h3 className="text-lg font-semibold">Pricing</h3>
                 <div className="grid gap-2">
-                    <p><span className="font-medium">Original Price:</span> ${formData.price?.original || "N/A"}</p>
-                    <p><span className="font-medium">Discounted Price:</span> ${formData.price?.discounted || "N/A"}</p>
+                    <p><span className="font-medium">Original Price:</span> ₹{formData.price?.original || "N/A"}</p>
+                    <p><span className="font-medium">Discounted Price:</span> ₹{formData.price?.discounted || "N/A"}</p>
                 </div>
             </div>
 

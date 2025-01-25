@@ -11,6 +11,7 @@ import UserProfilePage from './pages/UserProfile.page.jsx';
 import LectureRoom from './components/lectureRoom.jsx';
 import LectureRoom1 from './components/demo.jsx';
 import ChatbotInterface from "@/components/chatbot.jsx";
+import ViewLecturePage from './pages/ViewLecture.page.jsx';
 const AppRoutes = () => (
   <Routes>
     {/* Public Routes */}
@@ -41,6 +42,7 @@ const AppRoutes = () => (
         }
       >
         <Route path="/courses/:id" element={<CoursePreviewPage />} />
+        <Route path="/enrolledcourses/:id" element={<ViewLecturePage />} />
         <Route path="/success" element={<h1>Success</h1>} />
         <Route path="/cancel" element={<h1>Cancel</h1>} />
         <Route path="/courses" element={<HomePage />} />

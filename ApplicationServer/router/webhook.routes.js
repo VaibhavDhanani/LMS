@@ -8,7 +8,9 @@ import Stripe from 'stripe';
 const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRETKEY);
 
-router.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {  // Changed from '/webhook' to '/'
+router.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+  console.log("Raw Body:", req.body.toString());
+  console.log("Headers:", req.headers);
   console.log("1. Webhook endpoint hit!"); // Debug log
 
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;

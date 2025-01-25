@@ -79,7 +79,7 @@ const CourseForm = () => {
   };
 
   const handleSaveChanges = () => {
-    updateDraft(id, formData)
+    updateDraft(id, formData,token)
       .then(() => {
         console.log("Draft saved successfully!");
         setError(""); // Clear error if successful

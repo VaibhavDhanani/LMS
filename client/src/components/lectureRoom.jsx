@@ -7,14 +7,32 @@ const LectureRoom = () => {
   const [transport, setTransport] = useState(null);
   const [localStream, setLocalStream] = useState(null);
   const [roomId, setRoomId] = useState(''); // Added state for room ID
-  
-  useEffect(()=>{
-    const socket = io('http://localhost:3000'); // Connect to the signaling server
-  },[]);
+  const [socket, setSocket] = useState(null); // Store the socket instance in state
+
+  useEffect(() => {
+    // Initialize the socket connection
+    const newSocket = io('http://172.20.10.6:3000');
+    setSocket(newSocket); // Save the socket instance in state
+
+    newSocket.on('connect', () => {
+      console.log('Socket connected:', newSocket.id);
+      setupDevice(newSocket); // Pass the initialized socket
+    });
+
+    // Clean up the socket connection on component unmount
+    return () => {
+      newSocket.disconnect();
+    };
+  }, []);
 
   // Function to handle device setup
-  async function setupDevice() {
+  async function setupDevice(socket) {
     try {
+      if (!socket) {
+        console.error('Socket is not initialized');
+        return;
+      }
+
       // Request RTP capabilities from the server
       const rtpCapabilities = await new Promise((resolve, reject) => {
         socket.emit('getRtpCapabilities', (response) => {
@@ -41,6 +59,11 @@ const LectureRoom = () => {
   async function startStreaming() {
     if (!roomId) {
       console.error('Room ID is required');
+      return;
+    }
+
+    if (!socket) {
+      console.error('Socket is not initialized');
       return;
     }
 
@@ -85,7 +108,7 @@ const LectureRoom = () => {
         try {
           socket.emit(
             'produce',
-            { roomId, transportId: sendTransport.id, kind, rtpParameters }, // Pass roomId here
+            { roomId, transportId: sendTransport.id, kind, rtpParameters },
             (response) => {
               if (response.error) {
                 console.error('Error during production:', response.error);
@@ -126,10 +149,6 @@ const LectureRoom = () => {
     }
   }
 
-  useEffect(() => {
-    setupDevice(); // Load the device on mount
-  }, []);
-
   return (
     <div>
       <h2>Lecture Room</h2>
@@ -137,7 +156,7 @@ const LectureRoom = () => {
         type="text"
         placeholder="Enter Room ID"
         value={roomId}
-        onChange={(e) => setRoomId(e.target.value)} // Update roomId state
+        onChange={(e) => setRoomId(e.target.value)}
       />
       <button onClick={startStreaming}>Start Streaming</button>
       <video id="local-video" autoPlay></video>
