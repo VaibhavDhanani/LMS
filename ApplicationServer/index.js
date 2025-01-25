@@ -13,6 +13,7 @@ import courseDraft from './router/courseDraft.routes.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import webhookRoutes from './router/webhook.routes.js';
 import transactionRoutes from './router/transaction.routes.js';
+import paymentRoutes from './router/payment.routes.js';
 
 configDotenv();
 const app = express();
@@ -27,45 +28,8 @@ app.use(
 );
 
 
-
-
 app.use('/api/stripe', webhookRoutes);
-
-const stripeSecretKey = process.env.STRIPE_SECRETKEY;
-const stripe = new Stripe(stripeSecretKey);
-app.use('/api/payment', async (req, res) => {
-  const {course,user} = req.body;
-  const { price, discountEnabled,discount } = course.pricing;
-  const discountedPrice = price * (discountEnabled ? discount/100  : 1);
-  const lineItems = [
-    {
-      price_data: {
-        currency: 'inr',
-        product_data: {
-          name: course.title,
-          images: [course.thumbnail],
-        },
-        unit_amount: Math.round(discountedPrice*100),
-      },
-      quantity: 1,
-    },
-  ];
-
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ['card'],
-    line_items: lineItems,
-    mode: 'payment',
-    success_url: `http://localhost:5173/courses/${course._id}?status=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `http://localhost:5173/courses/${course._id}?status=cancel&session_id={CHECKOUT_SESSION_ID}`,
-    metadata: {
-      courseId: course._id, // Pass courseId
-      userId: user.id, 
-    },
-  });
-
-  res.json({ id: session.id });
-});
-
+app.use('/api/payment',authenticateToken, paymentRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api',authenticateToken
   , userRoutes, courseRoutes,courseDraft, enrollmentRoutes, reviewRoutes,transactionRoutes);
