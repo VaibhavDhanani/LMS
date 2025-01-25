@@ -5,12 +5,12 @@ import AppRoutes from './AppRoutes';
 import { AuthProvider } from './context/AuthContext';
 import './index.css';
 
+// <StrictMode>
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
     <Router>
       <AuthProvider>
         <AppRoutes />
       </AuthProvider>
     </Router>
-  </StrictMode>,
 );
+// {/* </StrictMode>, */}
