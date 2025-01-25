@@ -12,32 +12,31 @@ import authenticateToken from './middlewares/auth.middleware.js';
 import courseDraft from './router/courseDraft.routes.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import webhookRoutes from './router/webhook.routes.js';
+import transactionRoutes from './router/transaction.routes.js';
 
 configDotenv();
 const app = express();
 connectDB();
-app.use('/api/stripe/', webhookRoutes);
+
 app.use(express.json());
 app.use(
   cors({
-    origin: 'http://localhost:5173', // Allow requests from this origin
+    origin: '*', // Allow requests from this origin
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed HTTP methods
-    credentials: false, // Allow cookies or authentication headers
   }),
 );
 
 
-const port = process.env.PORT || 5000;
 
 
+app.use('/api/stripe', webhookRoutes);
 
 const stripeSecretKey = process.env.STRIPE_SECRETKEY;
 const stripe = new Stripe(stripeSecretKey);
 app.use('/api/payment', async (req, res) => {
-  const course = req.body;
-  const { price, discount } = course.pricing;
-  const discountedPrice = price * (discount ? discount / 100 : 1);
-
+  const {course,user} = req.body;
+  const { price, discountEnabled,discount } = course.pricing;
+  const discountedPrice = price * (discountEnabled ? discount/100  : 1);
   const lineItems = [
     {
       price_data: {
@@ -46,7 +45,7 @@ app.use('/api/payment', async (req, res) => {
           name: course.title,
           images: [course.thumbnail],
         },
-        unit_amount: Math.round(price),
+        unit_amount: Math.round(discountedPrice*100),
       },
       quantity: 1,
     },
@@ -56,12 +55,11 @@ app.use('/api/payment', async (req, res) => {
     payment_method_types: ['card'],
     line_items: lineItems,
     mode: 'payment',
-    success_url: 'http://localhost:5173/success',
-    cancel_url: 'http://localhost:5173/cancel',
+    success_url: `http://localhost:5173/courses/${course._id}?status=success&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `http://localhost:5173/courses/${course._id}?status=cancel&session_id={CHECKOUT_SESSION_ID}`,
     metadata: {
-      courseId: course.id, // Pass courseId
-      userId: null, 
-      //  req.user.id, // Add userId from authentication
+      courseId: course._id, // Pass courseId
+      userId: user.id, 
     },
   });
 
@@ -70,7 +68,7 @@ app.use('/api/payment', async (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api',authenticateToken
-  , userRoutes, courseRoutes,courseDraft, enrollmentRoutes, reviewRoutes);
+  , userRoutes, courseRoutes,courseDraft, enrollmentRoutes, reviewRoutes,transactionRoutes);
   app.use(
     '/api1',
     userRoutes,
@@ -78,12 +76,15 @@ app.use('/api',authenticateToken
     courseRoutes,
     enrollmentRoutes,
     reviewRoutes,
+    transactionRoutes,
   );
+
+
   // // Initialize Gemini AI
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-// chatbot apis
+  
+  // chatbot apis
 // Store chat history (in a real app, you'd use a database)
 let chatHistory = [];
 
@@ -108,9 +109,9 @@ app.post('/api/messages', async (req, res) => {
     try {
       // Generate response using Gemini
       const result = await model.generateContent(message);
-      const response = await result.response;
+      const response = result.response;
       const botResponse = response.text();
-
+      
       // Create bot message
       const botMessage = {
         id: chatHistory.length + 1,
@@ -143,6 +144,7 @@ app.post('/api/messages', async (req, res) => {
   }
 });
 
+const port = process.env.PORT || 5000;
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
