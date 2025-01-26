@@ -35,7 +35,7 @@ export const InstructorTab = ({ course }) => {
           </div>
         </div>
 
-        <p className="mt-4">{instructor.bio || "Biography not available."}</p>
+        <p className="mt-4"> Biography: {instructor.biography || "Biography not available."}</p>
       </div>
     </div>
   );

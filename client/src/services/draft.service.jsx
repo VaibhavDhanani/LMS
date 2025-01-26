@@ -4,7 +4,7 @@ export const createDraft = async (draft,token)=>{
     const response = await db.post('/drafts',draft, {
       headers: { authorization: `Bearer ${token}` },
     });
-    return response.data;
+    return response.data.data;
 }
 
 export const getDrafts = async (userId, token) => {
@@ -27,14 +27,14 @@ export const getDraftById = async (id,token)=>{
     const response = await db.get(`/drafts/${id}`, {
       headers: { authorization: `Bearer ${token}` },
     });
-    return response.data;
+    return response.data.data;
 }
 
 export const updateDraft = async (id,draft,token)=>{
     const response = await db.put(`/drafts/${id}`,draft, {
       headers: { authorization: `Bearer ${token}` },
     });
-    return response.data;
+    return response.data.data;
 }
 
 export const publishDraft = async (id, draft,token) => {

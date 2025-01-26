@@ -2,21 +2,90 @@ import { useState, useEffect } from "react";
 import Select from "react-select";
 
 // Importing React Icons
-import { FaReact, FaNodeJs, FaJs, FaPython } from "react-icons/fa";
-import { SiMongodb, SiExpress, SiTypescript, SiNextdotjs } from "react-icons/si";
+import {FaReact, FaNodeJs, FaJs, FaPython, FaDocker} from "react-icons/fa";
+import {
+  SiMongodb,
+  SiExpress,
+  SiTypescript,
+  SiNextdotjs,
+  SiVuedotjs,
+  SiAngular,
+  SiSvelte,
+  SiNuxtdotjs,
+  SiDjango,
+  SiFlask,
+  SiSpringboot,
+  SiPydantic,
+  SiRuby,
+  SiPostgresql,
+  SiMysql,
+  SiRedis,
+  SiApachecassandra,
+  SiFirebase,
+  SiKubernetes,
+  SiTerraform,
+  SiJenkins,
+  SiGithubactions,
+  SiFlutter,
+  SiKotlin,
+  SiSwift,
+  SiTensorflow,
+  SiPytorch, SiScikitlearn, SiAmazon
+} from "react-icons/si";
 
 const LearnPointsStep = ({ formData, updateFormData }) => {
   // Hardcoded technology list with React Icons
   const availableTechnologies = [
+    // Frontend Technologies
     { name: "React", icon: <FaReact /> },
-    { name: "Node.js", icon: <FaNodeJs /> },
-    { name: "JavaScript", icon: <FaJs /> },
-    { name: "Python", icon: <FaPython /> },
-    { name: "MongoDB", icon: <SiMongodb /> },
-    { name: "Express.js", icon: <SiExpress /> },
-    { name: "TypeScript", icon: <SiTypescript /> },
+    { name: "Vue.js", icon: <SiVuedotjs /> },
+    { name: "Angular", icon: <SiAngular /> },
+    { name: "Svelte", icon: <SiSvelte /> },
     { name: "Next.js", icon: <SiNextdotjs /> },
+    { name: "Nuxt.js", icon: <SiNuxtdotjs /> },
+    { name: "TypeScript", icon: <SiTypescript /> },
+    { name: "JavaScript", icon: <FaJs /> },
+
+    // Backend Technologies
+    { name: "Node.js", icon: <FaNodeJs /> },
+    { name: "Express.js", icon: <SiExpress /> },
+    { name: "Django", icon: <SiDjango /> },
+    { name: "Flask", icon: <SiFlask /> },
+    { name: "Spring Boot", icon: <SiSpringboot /> },
+    { name: "FastAPI", icon: <SiPydantic /> },
+    { name: "Ruby on Rails", icon: <SiRuby /> },
+
+    // Databases
+    { name: "MongoDB", icon: <SiMongodb /> },
+    { name: "PostgreSQL", icon: <SiPostgresql /> },
+    { name: "MySQL", icon: <SiMysql /> },
+    { name: "Redis", icon: <SiRedis /> },
+    { name: "Cassandra", icon: <SiApachecassandra /> },
+    { name: "Firebase", icon: <SiFirebase /> },
+
+    // Cloud and DevOps
+    { name: "AWS", icon: <SiAmazon /> },
+    { name: "Docker", icon: <FaDocker /> },
+    { name: "Kubernetes", icon: <SiKubernetes /> },
+    { name: "Terraform", icon: <SiTerraform /> },
+    { name: "Jenkins", icon: <SiJenkins /> },
+    { name: "GitHub Actions", icon: <SiGithubactions /> },
+
+    // Mobile Development
+    { name: "React Native", icon: <FaReact /> },
+    { name: "Flutter", icon: <SiFlutter /> },
+    { name: "Kotlin", icon: <SiKotlin /> },
+    { name: "Swift", icon: <SiSwift /> },
+
+    // Machine Learning and AI
+    { name: "Python", icon: <FaPython /> },
+    { name: "TensorFlow", icon: <SiTensorflow /> },
+    { name: "PyTorch", icon: <SiPytorch /> },
+    { name: "Scikit-learn", icon: <SiScikitlearn /> },
   ];
+
+  console.log(formData)
+
 
   // Options for the React Select component
   const options = availableTechnologies.map((tech) => ({

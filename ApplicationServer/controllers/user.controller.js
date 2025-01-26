@@ -27,9 +27,9 @@ export const getAllUsers = async (req, res) => {
 // Get a single user by ID
 export const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select("-password");;
+    const user = await User.findById(req.params.id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
-    res.status(200).json(user);
+    res.status(200).json({message:"User Found",data:user});
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -38,16 +38,24 @@ export const getUserById = async (req, res) => {
 // Update a user
 export const updateUser = async (req, res) => {
   try {
+    // console.log("Received ID:", req.params.id);
+    // console.log("Received Body:", req.body);
+    if (!req.params.id) return res.status(400).json({ message: "User ID is required" });
+
     const user = await User.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
+
     if (!user) return res.status(404).json({ message: "User not found" });
-    res.status(200).json(user);
+
+    res.status(200).json({ message: "User updated", data: user });
   } catch (error) {
+    console.error(error);
     res.status(400).json({ error: error.message });
   }
 };
+
 
 // Delete a user
 export const deleteUser = async (req, res) => {
