@@ -1,4 +1,3 @@
-
 import { X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import ReactPlayer from 'react-player';
@@ -33,14 +32,27 @@ const VideoPlay = ({ src }) => {
 
   return (
     <div className="relative w-full max-w-2xl mx-auto">
-      <ReactPlayer
-        ref={playerRef}
-        url={src}
-        controls
-        autoPlay
-        onProgress={handleProgress}
-        width="100%"
-      />
+      <div 
+        onContextMenu={(e) => e.preventDefault()} // Disable right-click menu
+        className="relative"
+      >
+        <ReactPlayer
+          ref={playerRef}
+          url={src}
+          controls
+          autoPlay
+          onProgress={handleProgress}
+          width="100%"
+          config={{
+            file: {
+              attributes: {
+                controlsList: 'nodownload', // Disable download button
+                disablePictureInPicture: true, // Prevent PiP mode
+              },
+            },
+          }}
+        />
+      </div>
 
       {showQuiz && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
