@@ -33,6 +33,7 @@ const ReviewStep = ({ formData }) => {
                     <p><span className="font-medium">Total Lectures:</span> {formData.details?.lectures || "N/A"}</p>
                     <p><span className="font-medium">Level:</span> {formData.details?.level || "N/A"}</p>
                     <p><span className="font-medium">Last Updated:</span> {formData.details?.lastUpdated?.toLocaleDateString() || "N/A"}</p>
+                    <p><span  className="font-medium">Language:</span>{formData.details?.language || "N\A"}</p>
                 </div>
             </div>
 
