@@ -29,7 +29,7 @@ const PricingStep = ({ formData, updateFormData }) => {
       {/* Course Price */}
       <div className="form-control">
         <label className="label">
-          <span className="label-text font-semibold">Course Price (USD)</span>
+          <span className="label-text font-semibold">Course Price (INR)</span>
         </label>
         <input
           type="number"
@@ -83,7 +83,7 @@ const PricingStep = ({ formData, updateFormData }) => {
         <input
           type="text"
           className="input input-bordered bg-gray-100 text-gray-600"
-          value={`$${finalPrice.toFixed(2)}`}
+          value={`₹${finalPrice.toFixed(2)}`}
           readOnly
           aria-label="Final Price"
         />

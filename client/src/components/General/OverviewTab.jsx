@@ -75,7 +75,7 @@ export const OverviewTab = ({ course }) => {
           </div>
           <div className="flex items-center">
             <FileText className="mr-2 text-primary" />
-            <span>{course.lectures.length} lectures</span>
+            {/* <span>{course.lectures.length} lectures</span> */}
           </div>
           <div className="flex items-center">
             <Users className="mr-2 text-primary"/>

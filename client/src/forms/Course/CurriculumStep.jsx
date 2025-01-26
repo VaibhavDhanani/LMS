@@ -8,7 +8,8 @@ import {
 } from "../../apis/firebase.config.js";
 import { Loader2, Plus, X, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
+import videoPlay from '../../components/General/VideoPlay.jsx'
+import ReactPlayer from "react-player";
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime", "video/x-m4v"];
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
@@ -191,10 +192,15 @@ const CurriculumStep = ({ formData, updateFormData }) => {
                         className="w-32 h-32 object-cover rounded"
                     />
                 ) : (
-                    <video width="320" height="240" controls className="rounded">
-                      <source src={currentValue} type="video/mp4" />
-                      Your browser does not support the video tag.
-                    </video>
+                  <div className="rounded overflow-hidden" style={{ width: "320px", height: "240px" }}>
+                  <ReactPlayer 
+                    url={currentValue} 
+                    controls
+                    width="100%" 
+                    height="100%" 
+                    className="rounded"
+                  />
+                </div>
                 )}
                 <button
                     className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
