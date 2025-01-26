@@ -3,7 +3,7 @@ import CourseSection from "../components/MainSection/CourseSection";
 
 const HomePage = () => {
   return (
-    <div className="container" >
+    <div>
       <CourseSection />
     </div>
   );

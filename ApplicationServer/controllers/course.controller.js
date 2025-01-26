@@ -69,7 +69,7 @@ export const getCourseById = async (req, res) => {
     const course = await Course.findById(req.params.id)
         .populate({
           path: "instructor",
-          select: "name email profilePicture reviews",
+          select: "name email profilePicture reviews biography",
         })
         .populate({
           path: "reviews",
@@ -77,8 +77,8 @@ export const getCourseById = async (req, res) => {
         });
 
     if (!course) return res.status(404).json({ message: "Course not found" });
-
-    res.status(200).json(course);
+    // console.log(course);
+    res.status(200).json({message: "success", data: course});
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -108,7 +108,7 @@ export const getStudentCourse = async (req, res) => {
       .populate({
         path: "enrolledCourses", // Populate the enrolledCourses field
         populate: [
-          { path: "instructor", select: "name email profilePicture review" }, // Populate instructor details
+          { path: "instructor", select: "name email profilePicture review biography" }, // Populate instructor details
           { path: "reviews", select: "rating content" }, // Populate reviews
         ],
       });
@@ -128,6 +128,7 @@ export const getStudentCourse = async (req, res) => {
 
 // Update a course
 export const updateCourse = async (req, res) => {
+  console.log(req.params.id,req.body);
   try {
     const course = await Course.findByIdAndUpdate(req.params.id, req.body, {
       new: true,

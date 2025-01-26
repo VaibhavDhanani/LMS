@@ -53,11 +53,15 @@ const CourseForm = () => {
     if (id) {
       setLoading(true);
       getCourseById(id,token)
-        .then((data) => setFormData(data))
+        .then((data) => {
+          console.log(data);
+          setFormData(data)
+        })
         .catch((error) => setError("Error fetching draft. Please try again later."))
         .finally(() => setLoading(false));
     }
-  }, [id]);
+
+  },[id]);
 
   const updateFormData = (field, value) => {
     setFormData((prevState) => ({ ...prevState, [field]: value }));
@@ -71,7 +75,6 @@ const CourseForm = () => {
       })
       .catch(() => setError("Failed to save changes. Please try again."));
   };
-
 
   const renderStep = () => {
     switch (currentStep) {
@@ -90,7 +93,7 @@ const CourseForm = () => {
       case 6:
         return <PricingStep formData={formData} updateFormData={updateFormData} />;
       case 7:
-        return <ReviewStep formData={formData} />;
+        return <ReviewStep formData={formData} updateFormData={updateFormData} />;
       default:
         return <div>Step not found</div>;
     }

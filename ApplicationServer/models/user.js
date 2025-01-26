@@ -3,12 +3,19 @@ import mongoose from 'mongoose';
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: false,
+    required: true,
+    unique: true,
   },
   email: {
     type: String,
     required: true,
     unique: true,
+  },
+  headline :{
+    type: String,
+  },
+  biography : {
+    type: String,
   },
   password: {
     type: String,
@@ -19,6 +26,12 @@ const userSchema = new mongoose.Schema({
     default: false,
   },
   enrolledCourses: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course',
+    },
+  ],
+  wishlist: [
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Course',

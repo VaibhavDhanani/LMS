@@ -1,31 +1,59 @@
-import React, { useState } from 'react';
+// eslint-disable-next-line no-unused-vars
+import React, {useEffect, useState} from 'react';
 import { User, Book, PlayCircle, Heart, Settings, LogOut } from 'lucide-react';
+import {useAuth} from "@/context/AuthContext.jsx";
+import {getUser} from "@/services/user.service.jsx";
+import { LoadingSpinner } from '@/components/ui/loading.jsx';
+import ProfileDetails from "@/components/User/ProfileDetails.jsx";
+import {UserCourses} from "@/components/User/UserCourses.jsx";
+import {UserLearning} from "@/components/User/UserLearning.jsx";
+import {UserWishlist} from "@/components/User/UserWishlist.jsx";
+import {AccountSettings} from "@/components/User/AccountSettings.jsx";
 
 const UserProfilePage = () => {
   const [activeTab, setActiveTab] = useState('profile');
-  const user = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    profilePicture: 'https://i.pravatar.cc/150?img=3',
-    type: 'Instructor'
-  };
+  const { user } = useAuth();
+  const authToken = localStorage.getItem('authToken');
+  const [loggedUser, setLoggedUser] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchUser = async () => {
+      try {
+        const userData = await getUser(user.id, authToken);
+        if (mounted) {
+          setLoggedUser(userData);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchUser();
+
+    return () => {
+      mounted = false;
+    };
+  }, [authToken, user.id]);
 
   const renderContent = () => {
     switch (activeTab) {
       case 'profile':
-        return <ProfileDetails user={user} />;
+        return <ProfileDetails user={loggedUser} />;
       case 'courses':
-        return <MyCourses />;
+        return <UserCourses user={loggedUser} />;
       case 'learning':
-        return <MyLearning />;
+        return <UserLearning user={loggedUser} />;
       case 'wishlist':
-        return <Wishlist />;
+        return <UserWishlist user={loggedUser} />;
       case 'settings':
-        return <AccountSettings />;
+        return <AccountSettings user={loggedUser} />;
       default:
-        return <ProfileDetails user={user} />;
+        return <ProfileDetails user={loggedUser} />;
     }
   };
+
 
   return (
     <div className="min-h-screen bg-base-200 p-8">
@@ -78,164 +106,11 @@ const UserProfilePage = () => {
         <div className="md:col-span-3">
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body">
-              {renderContent()}
+              { loggedUser ? renderContent() : <div className="flex justify-center items-center h-40">
+                <LoadingSpinner variant="primary" size="large" />
+              </div>  }
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ProfileDetails = ({ user }) => {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6">Profile Details</h2>
-      <form className="space-y-4">
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text">Full Name</span>
-          </label>
-          <input 
-            type="text" 
-            placeholder="Full Name" 
-            className="input input-bordered" 
-            defaultValue={user.name} 
-          />
-        </div>
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text">Email</span>
-          </label>
-          <input 
-            type="email" 
-            placeholder="Email" 
-            className="input input-bordered" 
-            defaultValue={user.email} 
-          />
-        </div>
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text">Headline</span>
-          </label>
-          <input 
-            type="text" 
-            placeholder="Professional Headline" 
-            className="input input-bordered" 
-          />
-        </div>
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text">Biography</span>
-          </label>
-          <textarea 
-            className="textarea textarea-bordered h-24" 
-            placeholder="Tell us about yourself"
-          ></textarea>
-        </div>
-        <div className="form-control mt-6">
-          <button className="btn btn-primary">Save Changes</button>
-        </div>
-      </form>
-    </div>
-  );
-};
-
-const MyCourses = () => {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6">My Courses</h2>
-      <div className="space-y-4">
-        <div className="card card-side bg-base-100 shadow-xl">
-          <figure className="w-48"><img src="https://img.daisyui.com/images/stock/photo-1635805737707-575c4f40470d.jpg" alt="Course"/></figure>
-          <div className="card-body">
-            <h2 className="card-title">React Complete Course</h2>
-            <p>Learn React from Scratch to Advanced</p>
-            <div className="card-actions justify-end">
-              <button className="btn btn-primary">View Course</button>
-            </div>
-          </div>
-        </div>
-        {/* Add more course cards */}
-      </div>
-    </div>
-  );
-};
-
-const MyLearning = () => {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6">My Learning</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="card bg-base-100 shadow-xl">
-          <figure><img src="https://img.daisyui.com/images/stock/photo-1635805737707-575c4f40470d.jpg" alt="Course"/></figure>
-          <div className="card-body">
-            <h2 className="card-title">Python Programming</h2>
-            <progress className="progress progress-primary w-full" value="60" max="100"></progress>
-            <p>60% Completed</p>
-          </div>
-        </div>
-        {/* Add more learning progress cards */}
-      </div>
-    </div>
-  );
-};
-
-const Wishlist = () => {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6">Wishlist</h2>
-      <div className="space-y-4">
-        <div className="card card-side bg-base-100 shadow-xl">
-          <figure className="w-48"><img src="https://img.daisyui.com/images/stock/photo-1635805737707-575c4f40470d.jpg" alt="Course"/></figure>
-          <div className="card-body">
-            <h2 className="card-title">Machine Learning A-Z</h2>
-            <p>Complete Machine Learning Course</p>
-            <div className="card-actions justify-end">
-              <button className="btn btn-primary">Add to Cart</button>
-              <button className="btn btn-ghost">Remove</button>
-            </div>
-          </div>
-        </div>
-        {/* Add more wishlist items */}
-      </div>
-    </div>
-  );
-};
-
-const AccountSettings = () => {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6">Account Settings</h2>
-      <div className="space-y-4">
-        <div className="form-control">
-          <label className="label cursor-pointer">
-            <span className="label-text">Email Notifications</span>
-            <input type="checkbox" className="toggle toggle-primary" />
-          </label>
-        </div>
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text">Change Password</span>
-          </label>
-          <input 
-            type="password" 
-            placeholder="Current Password" 
-            className="input input-bordered mb-2" 
-          />
-          <input 
-            type="password" 
-            placeholder="New Password" 
-            className="input input-bordered mb-2" 
-          />
-          <input 
-            type="password" 
-            placeholder="Confirm New Password" 
-            className="input input-bordered" 
-          />
-        </div>
-        <div className="form-control mt-6">
-          <button className="btn btn-primary">Update Settings</button>
         </div>
       </div>
     </div>

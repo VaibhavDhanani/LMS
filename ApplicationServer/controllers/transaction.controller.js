@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
 import Course from '../models/course.js'; // Adjust import based on your file structure
-import Transaction from '../models/Transaction.js';
+import Transaction from '../models/transaction.js';
 import User  from '../models/user.js';
 import { configDotenv } from 'dotenv';
 configDotenv();
