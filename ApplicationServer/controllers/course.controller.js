@@ -99,6 +99,33 @@ export const getInstructorCourse =async(req, res) => {
     res.status(500).json({ error: error.message });
   }
 }
+export const getStudentCourse = async (req, res) => {
+  try {
+    const { id: studentId } = req.params; // Get student ID from request parameters
+
+    // Find the student and populate the enrolledCourses array
+    const student = await User.findById(studentId)
+      .populate({
+        path: "enrolledCourses", // Populate the enrolledCourses field
+        populate: [
+          { path: "instructor", select: "name email profilePicture review" }, // Populate instructor details
+          { path: "reviews", select: "rating content" }, // Populate reviews
+        ],
+      });
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Return the populated enrolled courses
+    res.status(200).json({ data: student.enrolledCourses });
+  } catch (error) {
+    console.error("Error fetching student courses:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
 // Update a course
 export const updateCourse = async (req, res) => {
   console.log(req.params.id,req.body);

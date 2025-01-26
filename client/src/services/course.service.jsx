@@ -36,6 +36,19 @@ export const getInstructorCourse = async (instructorId, token) => {
       throw error; // Re-throw the error for further handling
     }
   };
+
+export const getStudentEnrolledCourses =async (userId,token) => {
+  try{
+    const response = await db.get(`/courses/enrolled/${userId}`, {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    return response.data.data;
+  }
+  catch (error) {
+    console.error("Error fetching enrolled courses:", error);
+    throw error; // Re-throw the error for further handling
+  }
+};
   
 export const getCourseById = async  (courseId,token) => {
   try {
