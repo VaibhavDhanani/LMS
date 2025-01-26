@@ -22,7 +22,7 @@ const CourseForm = () => {
     subtitle: "",
     description: "",
     instructor: "",
-    details: { totalHours: "", lectures: "", level: "" },
+    details: { totalHours: "", lectures: "", level: "" ,language:""},
     learnPoints: [""],
     technologies: [""],
     prerequisites: [""],
@@ -90,8 +90,8 @@ const CourseForm = () => {
   const confirmPublish = () => {
     setShowConfirmModal(false);
     setLoading(true);
-    updateDraft(id, formData)
-      .then(() => publishDraft(id, formData))
+    updateDraft(id, formData,token)
+      .then(() => publishDraft(id, formData,token))
       .then(() => {
         console.log("Draft published successfully!");
         setError(""); // Clear error if successful
