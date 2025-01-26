@@ -9,10 +9,23 @@ const LectureRoom1 = () => {
   const [device, setDevice] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const videoRef = useRef(null);
-  
-  useEffect(()=>{
-    const socket = io('http://localhost:3000'); // Connect to the signaling server
-  },[]);
+  const [socket, setSocket] = useState(null); // Store the socket instance in state
+
+  useEffect(() => {
+    // Initialize the socket connection
+    const newSocket = io('http://172.20.10.6:3000');
+    setSocket(newSocket); // Save the socket instance in state
+
+    newSocket.on('connect', () => {
+      console.log('Socket connected:', newSocket.id);
+    });
+
+    // Clean up the socket connection on component unmount
+    return () => {
+      newSocket.disconnect();
+    };
+  }, []);
+
 
   // Monitor video element and stream changes
   useEffect(() => {
