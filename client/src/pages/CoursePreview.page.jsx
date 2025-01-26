@@ -124,6 +124,8 @@ const CoursePreviewPage = () => {
     return <div className="container mx-auto px-4 py-8">Loading course...</div>;
   }
 
+  // console.log(course);
+
   return (
       <div className="container mx-auto px-4 py-8">
         <CourseHeader course={course} />

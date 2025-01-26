@@ -1,13 +1,16 @@
 import React from 'react';
 import { Clock, BarChart, FileText, Users } from 'lucide-react';
 import { CheckIcon } from './CheckIcon';
-import { 
-  SiHtml5, 
-  SiCss3, 
-  SiJavascript, 
-  SiPython, 
-  SiReact, 
-  SiNodedotjs 
+import {
+  SiHtml5, SiCss3, SiJavascript, SiTypescript,
+  SiPython, SiReact, SiVuedotjs, SiAngular,
+  SiSvelte, SiNextdotjs, SiNuxtdotjs, SiNodedotjs,
+  SiExpress, SiDjango, SiFlask, SiSpring,
+  SiPydantic, SiRuby, SiMongodb, SiPostgresql,
+  SiMysql, SiRedis, SiApachecassandra, SiFirebase,
+  SiAmazon, SiDocker, SiKubernetes, SiTerraform,
+  SiJenkins, SiGithubactions, SiFlutter, SiKotlin,
+  SiSwift, SiTensorflow, SiPytorch, SiScikitlearn
 } from 'react-icons/si';
 
 // Mapping of tech stack to icons
@@ -15,9 +18,40 @@ const techIcons = {
   'html': SiHtml5,
   'css': SiCss3,
   'javascript': SiJavascript,
+  'typescript': SiTypescript,
   'python': SiPython,
   'react': SiReact,
-  'node': SiNodedotjs
+  'vue': SiVuedotjs,
+  'angular': SiAngular,
+  'svelte': SiSvelte,
+  'nextjs': SiNextdotjs,
+  'nuxtjs': SiNuxtdotjs,
+  'nodejs': SiNodedotjs,
+  'express': SiExpress,
+  'django': SiDjango,
+  'flask': SiFlask,
+  'spring': SiSpring,
+  'fastapi': SiPydantic,
+  'ruby': SiRuby,
+  'mongodb': SiMongodb,
+  'postgresql': SiPostgresql,
+  'mysql': SiMysql,
+  'redis': SiRedis,
+  'cassandra': SiApachecassandra,
+  'firebase': SiFirebase,
+  'aws': SiAmazon,
+  'docker': SiDocker,
+  'kubernetes': SiKubernetes,
+  'terraform': SiTerraform,
+  'jenkins': SiJenkins,
+  'githubactions': SiGithubactions,
+  'reactnative': SiReact,
+  'flutter': SiFlutter,
+  'kotlin': SiKotlin,
+  'swift': SiSwift,
+  'tensorflow': SiTensorflow,
+  'pytorch': SiPytorch,
+  'scikitlearn': SiScikitlearn
 };
 
 export const OverviewTab = ({ course }) => {
@@ -67,7 +101,7 @@ export const OverviewTab = ({ course }) => {
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center">
             <Clock className="mr-2 text-primary" />
-            <span>{course.details.totalHours} total hours</span>
+            <span>{course.details.totalMinutes} total minutes</span>
           </div>
           <div className="flex items-center">
             <BarChart className="mr-2 text-primary" />

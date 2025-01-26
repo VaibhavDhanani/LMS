@@ -11,6 +11,7 @@ import TargetStudentsStep from "./TargetStudentsStep";
 import ReviewStep from "./ReviewStep";
 import { getDraftById, updateDraft, publishDraft } from "../../services/draft.service.jsx";
 import { useAuth } from "@/context/AuthContext";
+
 const CourseForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ const CourseForm = () => {
     subtitle: "",
     description: "",
     instructor: "",
-    details: { totalHours: "", lectures: "", level: "" ,language:""},
+    details: { totalMinutes: "", lectures: "", level: "" ,language:""},
     learnPoints: [""],
     technologies: [""],
     prerequisites: [""],
@@ -67,8 +68,12 @@ const CourseForm = () => {
   useEffect(() => {
     if (id) {
       setLoading(true);
+      console.log(token)
       getDraftById(id,token)
-        .then((data) => setFormData(data))
+        .then((data) => {
+          console.log(data)
+          setFormData(data)
+        })
         .catch((error) => setError("Error fetching draft. Please try again later."))
         .finally(() => setLoading(false));
     }
@@ -118,7 +123,7 @@ const CourseForm = () => {
       case 6:
         return <PricingStep formData={formData} updateFormData={updateFormData} />;
       case 7:
-        return <ReviewStep formData={formData} />;
+        return <ReviewStep formData={formData} updateFormData={updateFormData} />;
       default:
         return <div>Step not found</div>;
     }

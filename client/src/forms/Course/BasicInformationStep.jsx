@@ -1,4 +1,5 @@
 const BasicInformationStep = ({ formData, updateFormData }) => (
+
     <div className="space-y-4">
       <h2 className="text-xl font-bold">Basic Information</h2>
       <div className="form-control">
