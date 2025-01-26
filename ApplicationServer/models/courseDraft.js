@@ -13,6 +13,7 @@ const courseDraftSchema = new mongoose.Schema(
       details: {
         totalHours: { type: Number, required: false, min: 0 },
         level: { type: String, required: false, enum: ["Beginner", "Intermediate", "Advanced"] },
+        language: { type: String, required: false },
       },
       learnPoints: { type: [String], required: false },
       technologies: { type: [String], required: false },
