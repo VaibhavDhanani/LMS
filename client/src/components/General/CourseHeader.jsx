@@ -10,7 +10,7 @@ export const CourseHeader = ({ course }) => {
   const { user, token } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-
+  // console.log(course)
   const queryParams = new URLSearchParams(location.search);
   const sessionId = queryParams.get('session_id');
   const status = queryParams.get('status');
@@ -71,7 +71,7 @@ export const CourseHeader = ({ course }) => {
   return (
     <div className="grid md:grid-cols-2 gap-8 mb-12">
       <div className="bg-gray-200 rounded-lg">
-        <VideoPlay src={course.promotionalVideo || ''} />
+        <VideoPlay thumbnail={course.thumbnail} src={course.promotionalVideo || ''} />
       </div>
       <div>
         <h1 className="text-3xl font-bold mb-4">{course.title}</h1>
@@ -116,7 +116,7 @@ export const CourseHeader = ({ course }) => {
           {isEnrolled ? (
             <button
               className="btn btn-success btn-wide mt-4 hover:bg-success-dark transition duration-200"
-              onClick={() => navigate(`/enrolledcourses/${course._id}`)}
+              onClick={() => navigate(`/my-courses/${course._id}`)}
             >
               Go to Course
             </button>

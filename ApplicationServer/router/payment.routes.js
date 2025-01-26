@@ -3,7 +3,7 @@ const router = express.Router();
 import Stripe from 'stripe';
 const stripeSecretKey = process.env.STRIPE_SECRETKEY;
 const stripe = new Stripe(stripeSecretKey);
-import Transaction from '../models/Transaction.js';
+import Transaction from '../models/transaction.js';
 import User from '../models/user.js';
 import Course from '../models/course.js';
 router.post('/verify/:id', async (req, res) => {

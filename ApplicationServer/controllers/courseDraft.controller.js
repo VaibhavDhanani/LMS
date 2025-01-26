@@ -42,7 +42,7 @@ export const createCourseDraft = async (req, res) => {
     });
 
     await newCourseDraft.save();
-    res.status(201).json({ message: "Course draft created successfully", newCourseDraft });
+    res.status(201).json({ message: "Course draft created successfully", data: newCourseDraft });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error creating course draft", error });
@@ -74,13 +74,14 @@ export const getUserCourseDrafts = async (req, res) => {
 // Get a single course draft by ID
 export const getCourseDraftById = async (req, res) => {
   try {
-    const courseDraft = await CourseDraft.findById(req.params.id).populate("instructor", "username email");
+    const courseDraft = await CourseDraft.findById(req.params.id)
+        .populate("instructor", "name email profilePicture biography");
 
     if (!courseDraft) {
       return res.status(404).json({ message: "Course draft not found" });
     }
-
-    res.status(200).json(courseDraft);
+    // console.log(courseDraft);
+    res.status(200).json({message: "success",data: courseDraft});
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching course draft", error });

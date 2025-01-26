@@ -10,7 +10,7 @@ const courseSchema = new mongoose.Schema({
     required: false
   },
   details: {
-    totalHours: { type: Number, required: false, min: 0 },
+    totalMinutes: { type: Number, required: false, min: 0 },
     level: { type: String, required: true },
     language: { type: String, required: true }
   },
