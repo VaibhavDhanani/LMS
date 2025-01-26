@@ -1,5 +1,5 @@
 const CourseDetailsStep = ({ formData, updateFormData }) => {
-  const details = formData.details || { level: "", totalHours: "", language: "" };
+  const details = formData.details;
 
   return (
     <div className="space-y-6">
