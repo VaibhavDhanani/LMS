@@ -1,17 +1,70 @@
-import {BookOpen, ChevronDown, ChevronUp, FileText, X} from "lucide-react";
-import {useState, useEffect } from "react";
-import {useParams} from "react-router-dom";
-import {useAuth} from "@/context/AuthContext.jsx";
-import {getCourseById} from "@/services/course.service.jsx";
+import { BookOpen, ChevronDown, ChevronUp, FileText } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useParams } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext.jsx";
+import { getCourseById } from "@/services/course.service.jsx";
+import shaka from "shaka-player";
+import {AXINOM_CONFIG} from "@/config/axinom.js";
+
+// Initialize Shaka Player
+shaka.polyfill.installAll();
 
 const VideoPlayer = ({ videoUrl, key }) => {
+	const videoRef = useRef(null);
+	const playerRef = useRef(null);
+	
+	useEffect(() => {
+		// Initialize Shaka Player
+		const player = new shaka.Player(videoRef.current);
+		playerRef.current = player;
+		
+		// Listen for errors
+		player.addEventListener("error", onErrorEvent);
+		
+		// Configure DRM (Replace with your DRM configuration)
+		player.configure({
+			drm: {
+				servers: {
+					'com.widevine.alpha': AXINOM_CONFIG.WIDEVINE_LICENSE_URL  // Use Widevine API URL
+				},
+				advanced: {
+					'com.widevine.alpha': {
+						'videoRobustness': 'SW_SECURE_CRYPTO',
+						'audioRobustness': 'SW_SECURE_CRYPTO'
+					}
+				}
+			}
+		});
+		
+		// Load the video
+		player
+			.load(videoUrl)
+			.then(() => {
+				console.log("Video loaded successfully");
+			})
+			.catch(onError);
+		
+		// Cleanup on unmount
+		return () => {
+			player.destroy();
+		};
+	}, [videoUrl]);
+	
+	const onErrorEvent = (event) => {
+		onError(event.detail);
+	};
+	
+	const onError = (error) => {
+		console.error("Error code", error.code, "object", error);
+	};
+	
 	return (
 		<div className="w-full aspect-video bg-black">
 			<video
 				key={key}
+				ref={videoRef}
 				controls
 				className="w-full h-full"
-				src={videoUrl}
 			>
 				Your browser does not support the video tag.
 			</video>
@@ -46,10 +99,11 @@ const LectureList = ({ curriculum, onSelectLecture, currentLecture }) => {
 								<div
 									key={lectureIndex}
 									onClick={() => {
-										onSelectLecture(lecture)
-										console.log("lectureIndex", lecture,lectureIndex);
+										onSelectLecture(lecture);
+										console.log("lectureIndex", lecture, lectureIndex);
 									}} // Update current lecture
-									className={`p-2 cursor-pointer hover:bg-base-100 rounded ${currentLecture === lecture ? "bg-primary text-primary-content" : ""
+									className={`p-2 cursor-pointer hover:bg-base-100 rounded ${
+										currentLecture === lecture ? "bg-primary text-primary-content" : ""
 									}`}
 								>
 									<div className="flex items-center justify-between">
@@ -57,8 +111,8 @@ const LectureList = ({ curriculum, onSelectLecture, currentLecture }) => {
 										<div className="flex items-center space-x-2">
 											{lecture.preview && (
 												<span className="text-white bg-blue-500 px-2 py-1 rounded-full">
-                          Preview
-                        </span>
+													Preview
+												</span>
 											)}
 											<span className="text-sm opacity-70">{lecture.duration}</span>
 										</div>
@@ -109,7 +163,6 @@ const NotesSection = ({ lectureName }) => {
 	);
 };
 
-
 const ViewLecturePage = () => {
 	const { id } = useParams();
 	const [course, setCourse] = useState(null);
@@ -142,7 +195,7 @@ const ViewLecturePage = () => {
 	
 	const handleSelectLecture = (lecture) => {
 		setCurrentLecture(lecture);
-		setVideoKey(prevKey => prevKey + 1); // Force video to reset
+		setVideoKey((prevKey) => prevKey + 1); // Force video to reset
 	};
 	
 	if (!course) {

@@ -8,7 +8,6 @@ import {
 } from "../../apis/firebase.config.js";
 import { Loader2, Plus, X, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import videoPlay from '../../components/General/VideoPlay.jsx'
 import ReactPlayer from "react-player";
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime", "video/x-m4v"];
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -53,6 +52,7 @@ const CurriculumStep = ({ formData, updateFormData }) => {
 	// Handle file upload
 	const handleFileUpload = useCallback(async (file, type, sectionIndex, lectureIndex) => {
 		if (!file) return;
+		
 		// Use a Promise to get video duration
 		const getDuration = (file) => {
 			return new Promise((resolve) => {
@@ -83,17 +83,66 @@ const CurriculumStep = ({ formData, updateFormData }) => {
 			
 			// Update duration before file upload
 			curriculumOperations.updateLecture(sectionIndex, lectureIndex, 'duration', duration);
-			const uniqueName = `${type}-${Date.now()}-${file.name}`;
-			const storageRef = ref(storage, `${type}s/${uniqueName}`);
-			const snapshot = await uploadBytes(storageRef, file);
-			const url = await getDownloadURL(snapshot.ref);
 			
-			if (sectionIndex !== undefined && lectureIndex !== undefined) {
-				const updatedCurriculum = [...formData.curriculum];
-				updatedCurriculum[sectionIndex].lectures[lectureIndex].video = url;
-				updateFormData("curriculum", updatedCurriculum);
+			if (type.includes('video')) {
+				// Create FormData for encryption
+				const formData = new FormData();
+				formData.append('video', file);
+				
+				// Send to encryption endpoint
+				const encryptionResponse = await fetch('/api/encrypt-video', {
+					method: 'POST',
+					body: formData
+				});
+				
+				if (!encryptionResponse.ok) throw new Error('Encryption failed');
+				
+				const { manifestUrl, encryptedUrl } = await encryptionResponse.json();
+				
+				// Upload encrypted video to Firebase
+				const uniqueName = `${type}-${Date.now()}-encrypted.mp4`;
+				const manifestName = `${type}-${Date.now()}-manifest.mpd`;
+				
+				// Upload encrypted video
+				const storageRef = ref(storage, `${type}s/${uniqueName}`);
+				const encryptedBlob = await fetch(encryptedUrl).then(r => r.blob());
+				const snapshot = await uploadBytes(storageRef, encryptedBlob);
+				const url = await getDownloadURL(snapshot.ref);
+				
+				// Upload manifest
+				const manifestRef = ref(storage, `${type}s/${manifestName}`);
+				const manifestBlob = await fetch(manifestUrl).then(r => r.blob());
+				const manifestSnapshot = await uploadBytes(manifestRef, manifestBlob);
+				const manifestDownloadUrl = await getDownloadURL(manifestSnapshot.ref);
+				
+				// Update form data with both URLs
+				if (sectionIndex !== undefined && lectureIndex !== undefined) {
+					const updatedCurriculum = [...formData.curriculum];
+					updatedCurriculum[sectionIndex].lectures[lectureIndex] = {
+						...updatedCurriculum[sectionIndex].lectures[lectureIndex],
+						video: url,
+						manifestUrl: manifestDownloadUrl,
+						duration
+					};
+					updateFormData("curriculum", updatedCurriculum);
+				} else {
+					updateFormData(type, url);
+					updateFormData(`${type}Manifest`, manifestDownloadUrl);
+				}
 			} else {
-				updateFormData(type, url);
+				// Handle non-video files (images) as before
+				const uniqueName = `${type}-${Date.now()}-${file.name}`;
+				const storageRef = ref(storage, `${type}s/${uniqueName}`);
+				const snapshot = await uploadBytes(storageRef, file);
+				const url = await getDownloadURL(snapshot.ref);
+				
+				if (sectionIndex !== undefined && lectureIndex !== undefined) {
+					const updatedCurriculum = [...formData.curriculum];
+					updatedCurriculum[sectionIndex].lectures[lectureIndex].video = url;
+					updateFormData("curriculum", updatedCurriculum);
+				} else {
+					updateFormData(type, url);
+				}
 			}
 		} catch (error) {
 			console.error("Error uploading file:", error);
@@ -102,7 +151,6 @@ const CurriculumStep = ({ formData, updateFormData }) => {
 			setUploadStatus(prev => ({ ...prev, [uploadKey]: false }));
 		}
 	}, [formData, updateFormData, validateFile]);
-	
 	// Remove file
 	const handleRemoveFile = useCallback(async (url, type, sectionIndex, lectureIndex) => {
 		try {

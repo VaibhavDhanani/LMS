@@ -28,6 +28,8 @@ const courseSchema = new mongoose.Schema({
           title: { type: String, required: true, trim: true },
           description: { type: String, trim: true },
           video: { type: String },
+          manifestUrl: String,    // Add this for DASH manifest
+          contentKeyId: String,
           duration: { type: String, required: true },
           preview: { type: Boolean, default: false },
           thumbnailurl: { type: String, required: false },
