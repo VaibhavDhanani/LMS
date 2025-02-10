@@ -85,7 +85,7 @@ const TargetStudentsStep = ({ formData, updateFormData }) => {
   };
   
   return (
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="max-w-3xl mx-10 space-y-6">
         {/* Target Students Section */}
         <Card className="shadow-lg">
           <CardHeader className="bg-primary text-white rounded-t-lg px-6 py-4">

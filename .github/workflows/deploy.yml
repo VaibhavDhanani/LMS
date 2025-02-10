@@ -1,0 +1,68 @@
+name: Deploy LMS
+on:
+  push:
+    branches: [ main ]  # or your default branch name
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'  # or your Node.js version
+
+      # Install root dependencies if needed
+      - name: Install Root Dependencies
+        run: npm install
+
+      # Client setup and build
+      - name: Setup Client
+        run: |
+          cd client
+          npm install
+          npm run build  # assuming you have a build script
+
+      # Application Server setup
+      - name: Setup Application Server
+        run: |
+          cd ApplicationServer
+          npm install
+
+      # Live Server setup
+      - name: Setup Live Server
+        run: |
+          cd LiveServer
+          npm install
+
+      # AWS Deployment configuration
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Deploy Application Server
+      - name: Deploy Application Server
+        run: |
+          cd ApplicationServer
+          # Add your AWS deployment commands here
+          # Example for Elastic Beanstalk:
+          # aws elasticbeanstalk create-application-version ...
+          # aws elasticbeanstalk update-environment ...
+
+      # Deploy Live Server
+      - name: Deploy Live Server
+        run: |
+          cd LiveServer
+          # Add your AWS deployment commands here
+
+      # Deploy Client
+      - name: Deploy Client
+        run: |
+          cd client/dist  # assuming your build output is in dist
+          # Example for S3 deployment:
+          # aws s3 sync . s3://your-bucket-name
