@@ -98,36 +98,66 @@ const CourseForm = () => {
         return <div>Step not found</div>;
     }
   };
-
-  if (loading) return <div>Loading...</div>;
-
+  
+  if (loading) return (
+      <div className="flex items-center justify-center min-h-screen bg-base-200">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+      </div>
+  );
+  
   return (
-    <div className="flex min-h-screen bg-base-200">
-      <FormSidebar formSteps={formSteps} currentStep={currentStep} goToStep={setCurrentStep} />
-      <main className="w-3/4 p-6 bg-white shadow-lg">
-        {renderStep()}
-        <div className="mt-6 flex justify-between">
-          {currentStep > 0 && (
-            <button className="btn btn-secondary" onClick={() => setCurrentStep(currentStep - 1)}>
-              Previous
-            </button>
-          )}
-          <button className="btn btn-outline ml-4" onClick={handleSaveChanges}>
-            Save Changes
-          </button>
-          {currentStep < formSteps.length - 1 && (
-            <button className="btn btn-primary ml-auto" onClick={() => setCurrentStep(currentStep + 1)}>
-              Next
-            </button>
-          )}
-        </div>
-
-        {/* Error Message Display */}
-        {error && <div className="mt-4 text-red-600">{error}</div>}
-
-      </main>
-    </div>
+      <div className="flex min-h-screen bg-base-200">
+        <FormSidebar
+            formSteps={formSteps}
+            currentStep={currentStep}
+            goToStep={setCurrentStep}
+        />
+        <main className="flex-1 p-6 transition-all duration-300">
+          <div className="max-w-4xl mx-auto">
+            <div className="card bg-base-100 shadow-xl">
+              <div className="card-body">
+                {renderStep()}
+                
+                <div className="card-actions mt-6 flex justify-between items-center border-t border-base-300 pt-4">
+                  {currentStep > 0 && (
+                      <button
+                          className="btn btn-secondary btn-outline hover:scale-105 transition-transform duration-200"
+                          onClick={() => setCurrentStep(currentStep - 1)}
+                      >
+                        Previous
+                      </button>
+                  )}
+                  
+                  <button
+                      className="btn btn-ghost hover:bg-base-200 transition-colors duration-200"
+                      onClick={handleSaveChanges}
+                  >
+                    Save Changes
+                  </button>
+                  
+                  {currentStep < formSteps.length - 1 && (
+                      <button
+                          className="btn btn-primary hover:scale-105 transition-transform duration-200"
+                          onClick={() => setCurrentStep(currentStep + 1)}
+                      >
+                        Next
+                      </button>
+                  )}
+                </div>
+                
+                {error && (
+                    <div className="alert alert-error mt-4 transition-all duration-300">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>{error}</span>
+                    </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
   );
 };
-
 export default CourseForm;

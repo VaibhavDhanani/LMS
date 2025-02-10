@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback ,useEffect} from "react";
 import {
 	storage,
 	ref,
@@ -22,6 +22,18 @@ const CurriculumStep = ({ formData, updateFormData }) => {
 		sections: new Set(),
 		lectures: new Set()
 	});
+	
+	useEffect(() => {
+		const handleKeyDown = (e) => {
+			if (e.key === "PrintScreen" || (e.ctrlKey && e.key === "u")) {
+				e.preventDefault();
+				alert("Screenshot is disabled!");
+			}
+		};
+		document.addEventListener("keydown", handleKeyDown);
+		return () => document.removeEventListener("keydown", handleKeyDown);
+	}, []);
+	
 	
 	// Toggle expanded state
 	const toggleExpanded = useCallback((type, id) => {
@@ -53,7 +65,7 @@ const CurriculumStep = ({ formData, updateFormData }) => {
 	// Handle file upload
 	const handleFileUpload = useCallback(async (file, type, sectionIndex, lectureIndex) => {
 		if (!file) return;
-		// Use a Promise to get video duration
+		
 		const getDuration = (file) => {
 			return new Promise((resolve) => {
 				const videoElement = document.createElement("video");
@@ -78,11 +90,11 @@ const CurriculumStep = ({ formData, updateFormData }) => {
 		setErrors(prev => ({ ...prev, [uploadKey]: null }));
 		
 		try {
-			// Get duration before upload
-			const duration = await getDuration(file);
+			let duration = null;
+			if (type.includes('video') || type.includes('promotionalVideo')) {
+				duration = await getDuration(file);
+			}
 			
-			// Update duration before file upload
-			curriculumOperations.updateLecture(sectionIndex, lectureIndex, 'duration', duration);
 			const uniqueName = `${type}-${Date.now()}-${file.name}`;
 			const storageRef = ref(storage, `${type}s/${uniqueName}`);
 			const snapshot = await uploadBytes(storageRef, file);
@@ -91,6 +103,9 @@ const CurriculumStep = ({ formData, updateFormData }) => {
 			if (sectionIndex !== undefined && lectureIndex !== undefined) {
 				const updatedCurriculum = [...formData.curriculum];
 				updatedCurriculum[sectionIndex].lectures[lectureIndex].video = url;
+				if (duration !== null) {
+					updatedCurriculum[sectionIndex].lectures[lectureIndex].duration = duration;
+				}
 				updateFormData("curriculum", updatedCurriculum);
 			} else {
 				updateFormData(type, url);
@@ -203,20 +218,25 @@ const CurriculumStep = ({ formData, updateFormData }) => {
 				{currentValue && (
 					<div className="relative inline-block">
 						{type === 'thumbnail' ? (
-							<img
-								src={currentValue}
-								alt="Thumbnail"
-								className="w-32 h-32 object-cover rounded"
-							/>
+							<div onContextMenu={(e) => e.preventDefault()}>
+								<img
+									src={currentValue}
+									alt="Thumbnail"
+									className="w-56 h-full object-cover rounded"
+									onContextMenu={(e) => e.preventDefault()} // Disable right-click
+									onDragStart={(e) => e.preventDefault()} // Disable dragging
+								/>
+							</div>
+						
 						) : (
-							<div className="rounded overflow-hidden" style={{ width: "320px", height: "240px" }}>
+							<div onContextMenu={(e) => e.preventDefault()} className="rounded w-56 h-full">
 								<ReactPlayer
 									url={currentValue}
 									controls
-									width="100%"
-									className="rounded"
+									className="rounded w-full h-full"
 								/>
 							</div>
+						
 						)}
 						<button
 							className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
