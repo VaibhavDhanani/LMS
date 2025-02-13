@@ -1,68 +1,54 @@
 name: Deploy LMS
+
 on:
   push:
-    branches: [ main ]  # or your default branch name
+    branches: [ main ]  # Runs deployment on push to main branch
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'  # or your Node.js version
-
-      # Install root dependencies if needed
-      - name: Install Root Dependencies
-        run: npm install
-
-      # Client setup and build
-      - name: Setup Client
+      - name: Setup SSH
         run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        run: |
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          cd ~/LMS  # Navigate to your project folder on EC2
+
+          # Pull latest code from GitHub
+          git reset --hard
+          git pull origin main
+
+          # Install root dependencies
+          npm install
+
+          # Setup Client
           cd client
           npm install
-          npm run build  # assuming you have a build script
+          npm run build
+          cd ..
 
-      # Application Server setup
-      - name: Setup Application Server
-        run: |
+          # Setup Application Server
           cd ApplicationServer
           npm install
+          pm2 restart application-server || pm2 start server.js --name "application-server"
+          cd ..
 
-      # Live Server setup
-      - name: Setup Live Server
-        run: |
+          # Setup Live Server
           cd LiveServer
           npm install
+          pm2 restart live-server || pm2 start server.js --name "live-server"
+          cd ..
 
-      # AWS Deployment configuration
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      # Deploy Application Server
-      - name: Deploy Application Server
-        run: |
-          cd ApplicationServer
-          # Add your AWS deployment commands here
-          # Example for Elastic Beanstalk:
-          # aws elasticbeanstalk create-application-version ...
-          # aws elasticbeanstalk update-environment ...
-
-      # Deploy Live Server
-      - name: Deploy Live Server
-        run: |
-          cd LiveServer
-          # Add your AWS deployment commands here
-
-      # Deploy Client
-      - name: Deploy Client
-        run: |
-          cd client/dist  # assuming your build output is in dist
-          # Example for S3 deployment:
-          # aws s3 sync . s3://your-bucket-name
+          # Restart Nginx
+          sudo systemctl restart nginx
+          EOF
