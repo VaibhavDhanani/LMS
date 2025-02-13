@@ -12,6 +12,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Debug SSH Connection
+        run: |
+          ssh -v -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo 'SSH ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} successful'"
+
+
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
