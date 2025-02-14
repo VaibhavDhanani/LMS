@@ -7,71 +7,9 @@ import {
   deleteDraft,
 } from '../services/draft.service';
 import { getInstructorCourse } from '../services/course.service';
-
-const Modal = ({ isOpen, onClose, title, children }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">{title}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            ✕
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-};
-
-const Card = ({ children, onClick, className }) => (
-  <div
-    onClick={onClick}
-    className={`bg-white rounded-lg shadow hover:shadow-md transition-shadow ${className}`}
-  >
-    {children}
-  </div>
-);
-
-const Button = ({ children, onClick, variant = 'default', disabled, className = '', size = 'default' }) => {
-  const baseStyles = 'rounded-md font-medium transition-colors focus:outline-none';
-  const variants = {
-    default: 'bg-blue-600 text-white hover:bg-blue-700',
-    outline: 'border border-gray-300 hover:bg-gray-50',
-    ghost: 'hover:bg-gray-100',
-  };
-  const sizes = {
-    default: 'px-4 py-2',
-    icon: 'p-2',
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className} ${disabled ? 'opacity-50 cursor-not-allowed' : ''
-        }`}
-    >
-      {children}
-    </button>
-  );
-};
-
-const Badge = ({ children, variant = 'default' }) => {
-  const variants = {
-    default: 'bg-blue-100 text-blue-800',
-    secondary: 'bg-gray-100 text-gray-800',
-  };
-
-  return (
-    <span className={`px-2 py-1 rounded-full text-xs font-medium ${variants[variant]}`}>
-      {children}
-    </span>
-  );
-};
-
+import * as MyCourseComponents from '../components/MyCoursePage/components.jsx';
+import { MoreVertical, Calendar, List } from 'lucide-react';
+import { scheduleLecture } from '../services/lecture.service.jsx';
 const MyCourses = () => {
   const [draftCourses, setDraftCourses] = useState([]);
   const [publishedCourses, setPublishedCourses] = useState([]);
@@ -79,8 +17,82 @@ const MyCourses = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [activeDropdownId, setActiveDropdownId] = useState(null);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [scheduleForm, setScheduleForm] = useState({
+    title: '',
+    date: '',
+    startTime: '',
+    duration: '',
+    description: ''
+  });
+  const [selectedCourseId, setSelectedCourseId] = useState(null);
   const { user, token } = useAuth();
   const navigate = useNavigate();
+  const [formMessage, setFormMessage] = useState(null); // For errors inside the form
+  const [formMessageType, setFormMessageType] = useState(null); // 'error' or 'success'
+  const [globalMessage, setGlobalMessage] = useState(null); // For success outside
+  const [globalMessageType, setGlobalMessageType] = useState(null);
+
+  const handleScheduleSubmit = async (e) => {
+    e.preventDefault();
+    setFormMessage(null); // Reset previous messages
+
+    try {
+      if (!selectedCourseId || !user?.id) {
+        setFormMessage("Course ID or Teacher ID is missing.");
+        setFormMessageType("error");
+        return;
+      }
+
+      const lectureData = {
+        ...scheduleForm,
+        courseId: selectedCourseId,
+        instructorId: user.id,
+      };
+
+      // Call API to schedule lecture
+      const response = await scheduleLecture(lectureData, token);
+
+      // if (response.success) {
+      // Success message outside modal
+      setGlobalMessage("Lecture scheduled successfully!");
+      setGlobalMessageType("success");
+
+      // Reset form and close modal
+      setScheduleForm({
+        title: "",
+        date: "",
+        startTime: "",
+        duration: "",
+        description: "",
+      });
+      setIsScheduleModalOpen(false);
+      setSelectedCourseId(null);
+      // } else {
+      //   // Show error inside form (e.g., time clash)
+      //   console.log(response);
+      //   setFormMessage(response.message || "Failed to schedule lecture.");
+      //   setFormMessageType("error");
+      // }
+    } catch (error) {
+      console.error("Error scheduling lecture:", error);
+      setFormMessage(error.response.data.message);
+      setFormMessageType("error");
+    }
+  };
+
+  const handleDropdownClick = (courseId, e) => {
+    e.stopPropagation();
+    setActiveDropdownId(activeDropdownId === courseId ? null : courseId);
+  };
+
+  const handleScheduleClick = (courseId, e) => {
+    e.stopPropagation();
+    setSelectedCourseId(courseId);
+    setIsScheduleModalOpen(true);
+    setActiveDropdownId(null);
+  };
 
   const fetchCourses = async () => {
     try {
@@ -92,14 +104,14 @@ const MyCourses = () => {
         ...course,
         isPublished: true, // Ensure published courses are marked
       }));
-  
+
       setDraftCourses(drafts);
       setPublishedCourses(published);
     } catch (error) {
       console.error('Error fetching courses:', error);
     }
   };
-  
+
   useEffect(() => {
     if (user?.id && token) {
       fetchCourses();
@@ -140,18 +152,18 @@ const MyCourses = () => {
   return (
     <div className="w-full py-8 px-4 md:px-8">
       <div className="max-w-7xl mx-auto">
-        <header className="mb-8">            
+        <header className="mb-8">
           <h1 className="text-3xl font-bold mb-2">My Courses</h1>
           <div className="flex justify-between items-center">
             <p className="text-gray-600">Manage and organize your courses</p>
-            <Button onClick={() => setIsModalOpen(true)}>
+            <MyCourseComponents.Button onClick={() => setIsModalOpen(true)}>
               <span className="flex items-center">
                 <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M12 5v14M5 12h14" />
                 </svg>
                 Create New Course
               </span>
-            </Button>
+            </MyCourseComponents.Button>
           </div>
         </header>
 
@@ -173,10 +185,15 @@ const MyCourses = () => {
             <option value="draft">Draft</option>
           </select>
         </div>
+        {globalMessage && (
+          <div className={`alert ${globalMessageType === "success" ? "alert-success" : "alert-error"}`}>
+            {globalMessage}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-6">
           {filteredCourses.map((course) => (
-            <Card
+            <MyCourseComponents.Card
               key={course._id}
               onClick={() => navigate(course.isPublished ? `/courseform/${course._id}` : `/draft/${course._id}`)}
               className="w-full"
@@ -194,22 +211,27 @@ const MyCourses = () => {
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="text-xl font-semibold mb-1">{course.title}</h3>
-                        <p className="text-gray-600">
-                          {course.studentCount || 0} students · {course.lessonCount || 0} lessons
-                        </p>
+                        {course.isPublished && (
+                          <p className="text-gray-600">
+                            {course.studentCount || 0} students · {course.lessonCount || 0} lessons
+                          </p>
+                        )}
                       </div>
-                      <Badge variant={course.isPublished ? "default" : "secondary"}>
+                      <MyCourseComponents.Badge variant={course.isPublished ? "default" : "secondary"}>
                         {course.isPublished ? "Active" : "Draft"}
-                      </Badge>
+                      </MyCourseComponents.Badge>
                     </div>
                   </div>
                   <p className="text-sm text-gray-500 mb-4">
                     Last updated: {new Date(course.updatedAt).toLocaleDateString()}
                   </p>
+
                   <div className="flex justify-between items-center mt-auto">
-                    <Button variant="outline">View Course</Button>
+                    <MyCourseComponents.Button variant="outline">
+                      {course.isPublished ? "View Course" : "View Draft"}
+                    </MyCourseComponents.Button>
                     <div className="flex gap-2">
-                      <Button
+                      <MyCourseComponents.Button
                         variant="ghost"
                         size="icon"
                         onClick={(e) => {
@@ -221,9 +243,9 @@ const MyCourses = () => {
                           <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
                           <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                         </svg>
-                      </Button>
+                      </MyCourseComponents.Button>
                       {!course.isPublished && (
-                        <Button
+                        <MyCourseComponents.Button
                           variant="ghost"
                           size="icon"
                           onClick={(e) => handleDeleteDraft(course._id, e)}
@@ -231,24 +253,52 @@ const MyCourses = () => {
                           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
                           </svg>
-                        </Button>
+                        </MyCourseComponents.Button>
                       )}
-                      <Button variant="ghost" size="icon">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <circle cx="12" cy="12" r="1" />
-                          <circle cx="12" cy="5" r="1" />
-                          <circle cx="12" cy="19" r="1" />
-                        </svg>
-                      </Button>
+                      <div className="relative">
+                        <MyCourseComponents.Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => handleDropdownClick(course._id, e)}
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </MyCourseComponents.Button>
+                        {activeDropdownId === course._id && (
+                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border">
+                            <div className="py-1">
+                              <button
+                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+                                onClick={(e) => handleScheduleClick(course._id, e)}
+                              >
+                                <Calendar className="w-4 h-4" />
+                                Schedule Live Lecture
+                              </button>
+                              <button
+                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Add navigation to manage lectures page
+                                  navigate(`/course/${course._id}/lectures`);
+                                }}
+                              >
+                                <List className="w-4 h-4" />
+                                Manage Live Lectures
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </Card>
+            </MyCourseComponents.Card>
+
           ))}
         </div>
       </div>
-      <Modal
+
+      <MyCourseComponents.Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Create New Course"
@@ -260,14 +310,93 @@ const MyCourses = () => {
           value={newCourseTitle}
           onChange={(e) => setNewCourseTitle(e.target.value)}
         />
-        <Button
+        <MyCourseComponents.Button
           onClick={handleAddCourse}
           className="w-full"
           disabled={!newCourseTitle.trim()}
         >
           Create Draft
-        </Button>
-      </Modal>
+        </MyCourseComponents.Button>
+      </MyCourseComponents.Modal>
+      <MyCourseComponents.Modal
+        isOpen={isScheduleModalOpen}
+        onClose={() => {
+          setIsScheduleModalOpen(false);
+          setSelectedCourseId(null);
+        }}
+        title="Schedule Live Lecture"
+      >
+        <form onSubmit={handleScheduleSubmit} className="space-y-4">
+          {formMessage && (
+            <div className={`alert ${formMessageType === "error" ? "alert-error" : "alert-success"}`}>
+              {formMessage}
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Lecture Title
+            </label>
+            <input
+              type="text"
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={scheduleForm.title}
+              onChange={(e) => setScheduleForm({ ...scheduleForm, title: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Date
+            </label>
+            <input
+              type="date"
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={scheduleForm.date}
+              onChange={(e) => setScheduleForm({ ...scheduleForm, date: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Start Time
+            </label>
+            <input
+              type="time"
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={scheduleForm.startTime}
+              onChange={(e) => setScheduleForm({ ...scheduleForm, startTime: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Duration (minutes)
+            </label>
+            <input
+              type="number"
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={scheduleForm.duration}
+              onChange={(e) => setScheduleForm({ ...scheduleForm, duration: e.target.value })}
+              required
+              min="1"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={scheduleForm.description}
+              onChange={(e) => setScheduleForm({ ...scheduleForm, description: e.target.value })}
+              rows="3"
+            />
+          </div>
+          <MyCourseComponents.Button type="submit" className="w-full">
+            Schedule Lecture
+          </MyCourseComponents.Button>
+        </form>
+      </MyCourseComponents.Modal>
     </div>
   );
 };
