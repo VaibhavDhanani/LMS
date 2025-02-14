@@ -48,16 +48,17 @@ jobs:
             # ✅ Remove LMS directory if it exists
             sudo rm -rf LMS
 
-            # ✅ Add GitHub to known hosts (Prevents SSH verification failure)
+            # ✅ Add GitHub to known hosts (Fix SSH verification failure)
             mkdir -p ~/.ssh
             ssh-keyscan github.com >> ~/.ssh/known_hosts
 
             # ✅ Clone the repository using SSH
-            git clone ${{ secrets.REPO_URL }} LMS
+            GIT_SSH_COMMAND="ssh -i ~/.ssh/github-deploy-key -o StrictHostKeyChecking=no" git clone ${{ secrets.REPO_URL }} LMS
 
             # ✅ Ensure correct permissions
             sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} LMS
           EOF
+      
       
 
       # ✅ Install Dependencies and Build Project
