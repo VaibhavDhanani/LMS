@@ -1,14 +1,18 @@
 name: Deploy to EC2
+
 on:
   push:
-    branches: [ main ]  # or your default branch
+    branches: [ main ]  # Runs deployment on push to the main branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # ✅ Configure SSH First
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
@@ -16,38 +20,76 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-
-      - name: Create Directory
+      # ✅ Setup Server Environment (Node.js, Nginx, PM2)
+      - name: Setup Environment
         run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
-            sudo mkdir -p /home/${{ secrets.EC2_USERNAME }}/LMS
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
+            sudo apt update -y
+            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+            sudo apt install -y nodejs nginx git
+            sudo npm install -g pm2
+          EOF
+
+      # ✅ Create LMS Directory and Set Permissions
+      - name: Create Project Directory
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
+            sudo rm -rf /home/${{ secrets.EC2_USERNAME }}/LMS
+            mkdir -p /home/${{ secrets.EC2_USERNAME }}/LMS
             sudo chown -R ${{ secrets.EC2_USERNAME }}:${{ secrets.EC2_USERNAME }} /home/${{ secrets.EC2_USERNAME }}/LMS
-          '
+          EOF
 
-      - name: Deploy to EC2
+      # ✅ Clone Project from GitHub
+      - name: Clone and Setup Project
         run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
             cd /home/${{ secrets.EC2_USERNAME }}/LMS
             git clone ${{ secrets.REPO_URL }} .
+          EOF
+
+      # ✅ Install Dependencies and Build Project
+      - name: Install Dependencies and Build
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd /home/${{ secrets.EC2_USERNAME }}/LMS
           
-            # Install and build client
+            echo "Setting up Client..."
             cd client
             npm install
             npm run build
+            cd ..
           
-            # Install and start ApplicationServer
-            cd ../ApplicationServer
+            echo "Setting up Application Server..."
+            cd ApplicationServer
             npm install
-            pm2 delete app_server || true
-            pm2 start app.js --name app_server
+            cd ..
           
-            # Install and start LiveServer
-            cd ../LiveServer
+            echo "Setting up Live Server..."
+            cd LiveServer
             npm install
-            pm2 delete live_server || true
-            pm2 start server.js --name live_server
+            cd ..
+          EOF
+
+      # ✅ Start Backend and Live Server Using PM2
+      - name: Start Applications
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd /home/${{ secrets.EC2_USERNAME }}/LMS
           
-            # Setup and start nginx
-            sudo systemctl enable nginx
-            sudo systemctl start nginx
-          '
+            echo "Starting Application Server..."
+            cd ApplicationServer
+            pm2 restart application-server || pm2 start app.js --name application-server
+            cd ..
+          
+            echo "Starting Live Server..."
+            cd LiveServer
+            pm2 restart live-server || pm2 start server.js --name live-server
+            cd ..
+          EOF
+
+      # ✅ Configure and Restart Nginx
+      - name: Configure and Restart Nginx
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
+            sudo systemctl restart nginx
+          EOF
