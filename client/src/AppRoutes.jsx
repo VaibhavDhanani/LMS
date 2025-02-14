@@ -13,8 +13,9 @@ import LectureRoom1 from './components/demo.jsx';
 import ChatbotInterface from "@/components/chatbot.jsx";
 import ViewLecturePage from './pages/ViewLecture.page.jsx';
 import MyLearningPage from "@/pages/MyLearnings.jsx";
-
-
+import ManageLiveLectures from './pages/liveLectureSection.jsx';
+import LectureStreaming from './pages/lectureStreaming.page.jsx';
+import LiveLecture from './pages/livelecture.jsx';
 const AppRoutes = () => (
   <Routes>
     {/* Public Routes */}
@@ -55,6 +56,9 @@ const AppRoutes = () => (
         <Route path="/mycourses" element={<MyCourses />} />
         <Route path="/draft/:id" element={<DraftForm />} />
         <Route path="/courseform/:id" element={<CourseForm />} />
+        <Route path="/livelectures/section" element={<ManageLiveLectures />} />
+        <Route path="/livelecture/:id" element={<LectureStreaming />} />
+        <Route path="/livelecture/view/:id" element={<LiveLecture/>} />
           <Route path="/aihelp" element={<ChatbotInterface />}/>
       </Route>
     </Route>

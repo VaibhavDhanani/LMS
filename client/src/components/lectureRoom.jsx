@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { Device } from 'mediasoup-client';
 
@@ -6,160 +6,267 @@ const LectureRoom = () => {
   const [device, setDevice] = useState(null);
   const [transport, setTransport] = useState(null);
   const [localStream, setLocalStream] = useState(null);
-  const [roomId, setRoomId] = useState(''); // Added state for room ID
-  const [socket, setSocket] = useState(null); // Store the socket instance in state
+  const [roomId, setRoomId] = useState('');
+  const [socket, setSocket] = useState(null);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [debugInfo, setDebugInfo] = useState({});
+  const producersRef = useRef(new Map());
+
+  const updateDebugInfo = (key, value) => {
+    setDebugInfo(prev => ({ ...prev, [key]: value }));
+  };
 
   useEffect(() => {
-    // Initialize the socket connection
-    const newSocket = io('http://172.20.10.6:3000');
-    setSocket(newSocket); // Save the socket instance in state
+    const newSocket = io('http://localhost:3000');
+    setSocket(newSocket);
 
     newSocket.on('connect', () => {
       console.log('Socket connected:', newSocket.id);
-      setupDevice(newSocket); // Pass the initialized socket
+      updateDebugInfo('socketStatus', 'Connected');
+      setupDevice(newSocket);
     });
 
-    // Clean up the socket connection on component unmount
     return () => {
+      cleanup();
       newSocket.disconnect();
     };
   }, []);
 
-  // Function to handle device setup
+  const cleanup = () => {
+    // Cleanup producers
+    producersRef.current.forEach(producer => {
+      try {
+        producer.close();
+      } catch (error) {
+        console.error('Error closing producer:', error);
+      }
+    });
+    producersRef.current.clear();
+
+    // Cleanup transport
+    if (transport) {
+      try {
+        transport.close();
+      } catch (error) {
+        console.error('Error closing transport:', error);
+      }
+    }
+
+    // Cleanup local stream
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+    }
+  };
+
   async function setupDevice(socket) {
     try {
       if (!socket) {
-        console.error('Socket is not initialized');
-        return;
+        throw new Error('Socket is not initialized');
       }
 
-      // Request RTP capabilities from the server
-      const rtpCapabilities = await new Promise((resolve, reject) => {
+      const { rtpCapabilities } = await new Promise((resolve, reject) => {
         socket.emit('getRtpCapabilities', (response) => {
-          if (response.error) {
-            reject(response.error);
-          } else {
-            resolve(response.rtpCapabilities);
-          }
+          if (response.error) reject(new Error(response.error));
+          else resolve(response);
         });
       });
 
-      // Initialize the mediasoup device
+      console.log('RTP Capabilities:', rtpCapabilities);
+      updateDebugInfo('rtpCapabilities', rtpCapabilities);
+
       const newDevice = new Device();
       await newDevice.load({ routerRtpCapabilities: rtpCapabilities });
 
       setDevice(newDevice);
+      updateDebugInfo('deviceStatus', 'Loaded');
       console.log('Device loaded successfully:', newDevice);
     } catch (error) {
       console.error('Error setting up device:', error);
+      updateDebugInfo('deviceError', error.message);
     }
   }
 
-  // Function to start streaming and producing media
   async function startStreaming() {
-    if (!roomId) {
-      console.error('Room ID is required');
-      return;
-    }
-
-    if (!socket) {
-      console.error('Socket is not initialized');
+    if (!roomId || !socket || !device) {
+      alert('Room ID, socket, or device not ready');
       return;
     }
 
     try {
+      if (isStreaming) {
+        cleanup();
+        setIsStreaming(false);
+        updateDebugInfo('streamingStatus', 'Stopped');
+        return;
+      }
+
       console.log('Requesting transport creation...');
-      const transportParams = await new Promise((resolve, reject) => {
+      updateDebugInfo('streamingStatus', 'Creating Transport');
+
+      const { transportParams } = await new Promise((resolve, reject) => {
         socket.emit('createTransport', { direction: 'send', roomId }, (response) => {
+          if (response.error) reject(new Error(response.error));
+          else resolve(response);
+        });
+      });
+
+      console.log('Transport params:', transportParams);
+      updateDebugInfo('transportParams', 'Received');
+
+      const sendTransport = device.createSendTransport(transportParams);
+      setTransport(sendTransport);
+
+      sendTransport.on('connect', ({ dtlsParameters }, callback, errback) => {
+        console.log('Connecting transport...');
+        updateDebugInfo('transportStatus', 'Connecting');
+        
+        socket.emit('connectTransport', {
+          transportId: sendTransport.id,
+          dtlsParameters
+        }, (response) => {
           if (response.error) {
-            console.error('Error creating transport:', response.error);
-            reject(response.error);
+            updateDebugInfo('transportError', response.error);
+            errback(new Error(response.error));
           } else {
-            console.log('Transport created successfully:', response.transportParams);
-            resolve(response.transportParams);
+            updateDebugInfo('transportStatus', 'Connected');
+            callback();
           }
         });
       });
 
-      const sendTransport = device.createSendTransport(transportParams);
-
-      // Handle transport connection
-      sendTransport.on('connect', async ({ dtlsParameters }, callback, errback) => {
-        console.log('Connecting transport...');
-        try {
-          socket.emit('connectTransport', { transportId: sendTransport.id, dtlsParameters }, (response) => {
-            if (response.error) {
-              console.error('Error during transport connection:', response.error);
-              errback(response.error);
-            } else {
-              console.log('Transport connected successfully:', sendTransport.id);
-              callback();
-            }
-          });
-        } catch (error) {
-          console.error('Transport connection error:', error);
-          errback(error);
-        }
+      sendTransport.on('connectionstatechange', (state) => {
+        console.log('Transport connection state:', state);
+        updateDebugInfo('transportState', state);
       });
 
-      // Handle media production
       sendTransport.on('produce', async ({ kind, rtpParameters }, callback, errback) => {
         console.log(`Producing ${kind} media...`);
-        try {
-          socket.emit(
-            'produce',
-            { roomId, transportId: sendTransport.id, kind, rtpParameters },
-            (response) => {
-              if (response.error) {
-                console.error('Error during production:', response.error);
-                errback(response.error);
-              } else {
-                console.log(`${kind} producer created successfully:`, response.producerId);
-                callback({ id: response.producerId });
-              }
-            }
-          );
-        } catch (error) {
-          console.error('Error during production:', error);
-          errback(error);
-        }
+        updateDebugInfo(`producing_${kind}`, 'Starting');
+        
+        socket.emit('produce', {
+          roomId,
+          transportId: sendTransport.id,
+          kind,
+          rtpParameters
+        }, (response) => {
+          if (response.error) {
+            updateDebugInfo(`produceError_${kind}`, response.error);
+            errback(new Error(response.error));
+          } else {
+            updateDebugInfo(`producer_${kind}`, response.producerId);
+            callback({ id: response.producerId });
+          }
+        });
       });
 
-      // Log media capture
       console.log('Getting local media...');
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      console.log('Local media captured:', stream);
+      updateDebugInfo('mediaStatus', 'Requesting');
+      
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true
+      });
+
+      console.log('Local media captured:', {
+        videoTracks: stream.getVideoTracks().length,
+        audioTracks: stream.getAudioTracks().length
+      });
+      
+      setLocalStream(stream);
+      updateDebugInfo('mediaStatus', 'Captured');
 
       const videoTrack = stream.getVideoTracks()[0];
-      setLocalStream(stream);
+      const audioTrack = stream.getAudioTracks()[0];
 
       const videoElement = document.getElementById('local-video');
-      videoElement.srcObject = stream;
+      if (videoElement) {
+        videoElement.srcObject = stream;
+        videoElement.onloadedmetadata = () => {
+          videoElement.play().catch(error => {
+            console.error('Error playing video:', error);
+            updateDebugInfo('videoPlayError', error.message);
+          });
+        };
+      }
 
-      const videoProducer = await sendTransport.produce({ track: videoTrack });
-      console.log('Video producer created:', videoProducer);
+      // Produce video
+      if (videoTrack) {
+        const videoProducer = await sendTransport.produce({ track: videoTrack });
+        console.log('Video producer created:', videoProducer.id);
+        producersRef.current.set('video', videoProducer);
+        
+        videoProducer.on('trackended', () => {
+          console.log('Video track ended');
+          updateDebugInfo('videoTrackStatus', 'Ended');
+        });
+        
+        videoProducer.on('transportclose', () => {
+          console.log('Video transport closed');
+          updateDebugInfo('videoTransportStatus', 'Closed');
+        });
+      }
 
-      const audioTrack = stream.getAudioTracks()[0];
+      // Produce audio
       if (audioTrack) {
         const audioProducer = await sendTransport.produce({ track: audioTrack });
-        console.log('Audio producer created:', audioProducer);
+        console.log('Audio producer created:', audioProducer.id);
+        producersRef.current.set('audio', audioProducer);
+        
+        audioProducer.on('trackended', () => {
+          console.log('Audio track ended');
+          updateDebugInfo('audioTrackStatus', 'Ended');
+        });
+        
+        audioProducer.on('transportclose', () => {
+          console.log('Audio transport closed');
+          updateDebugInfo('audioTransportStatus', 'Closed');
+        });
       }
+
+      setIsStreaming(true);
+      updateDebugInfo('streamingStatus', 'Active');
+
     } catch (error) {
       console.error('Error during streaming:', error);
+      updateDebugInfo('streamingError', error.message);
+      cleanup();
     }
   }
 
   return (
-    <div>
-      <h2>Lecture Room</h2>
-      <input
-        type="text"
-        placeholder="Enter Room ID"
-        value={roomId}
-        onChange={(e) => setRoomId(e.target.value)}
-      />
-      <button onClick={startStreaming}>Start Streaming</button>
-      <video id="local-video" autoPlay></video>
+    <div className="p-4">
+      <h2 className="text-xl font-bold mb-4">Lecture Room</h2>
+      <div className="space-y-4">
+        <input
+          type="text"
+          placeholder="Enter Room ID"
+          value={roomId}
+          onChange={(e) => setRoomId(e.target.value)}
+          className="border p-2 rounded w-full max-w-md"
+        />
+        <button
+          onClick={startStreaming}
+          className={`px-4 py-2 rounded ${
+            isStreaming ? 'bg-red-500' : 'bg-blue-500'
+          } text-white`}
+        >
+          {isStreaming ? 'Stop Streaming' : 'Start Streaming'}
+        </button>
+        <video
+          id="local-video"
+          autoPlay
+          playsInline
+          muted
+          className="w-full max-w-2xl mt-4 bg-black"
+          style={{ minHeight: '300px' }}
+        />
+        <div className="mt-4 p-4 bg-gray-100 rounded">
+          <h3 className="font-bold mb-2">Debug Information:</h3>
+          <pre className="whitespace-pre-wrap text-sm">
+            {JSON.stringify(debugInfo, null, 2)}
+          </pre>
+        </div>
+      </div>
     </div>
   );
 };

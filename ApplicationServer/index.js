@@ -14,7 +14,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import webhookRoutes from './router/webhook.routes.js';
 import transactionRoutes from './router/transaction.routes.js';
 import paymentRoutes from './router/payment.routes.js';
-
+import lectureRoutes from './router/lecture.routes.js';
 configDotenv();
 const app = express();
 connectDB();
@@ -32,7 +32,7 @@ app.use('/api/stripe', webhookRoutes);
 app.use('/api/payment',authenticateToken, paymentRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api',authenticateToken
-  , userRoutes, courseRoutes,courseDraft, enrollmentRoutes, reviewRoutes,transactionRoutes);
+  , userRoutes, courseRoutes,courseDraft, enrollmentRoutes, reviewRoutes,transactionRoutes,lectureRoutes);
   app.use(
     '/api1',
     userRoutes,
