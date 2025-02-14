@@ -107,3 +107,16 @@ jobs:
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             sudo systemctl restart nginx
           EOF
+
+      - name: Fix Permissions After Deployment
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            sudo chmod 755 /home/ubuntu
+            sudo chmod -R 755 /home/ubuntu/LMS
+            sudo chmod -R 755 /home/ubuntu/LMS/client
+            sudo chmod -R 755 /home/ubuntu/LMS/client/dist
+            sudo chmod -R 644 /home/ubuntu/LMS/client/dist/index.html
+            sudo chown -R ubuntu:www-data /home/ubuntu/LMS
+            sudo systemctl restart nginx
+          EOF
+
