@@ -1,61 +1,60 @@
-name: Deploy LMS
-
+name: Deploy to EC2
 on:
   push:
-    branches: [ main ]  # Runs deployment on push to main branch
+    branches: [ main ]  # or your default branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v2
 
-      # ✅ Setup SSH first, so it's available for debugging
-      - name: Setup SSH
+      - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      # ✅ Now, Debug SSH Connection (after setting up SSH)
-      - name: Debug SSH Connection
+      - name: Setup Environment
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo 'SSH Connection Successful'"
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
+            sudo apt update
+            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+            sudo apt install -y nodejs nginx git
+            sudo npm install -g pm2
+          '
 
-      # ✅ Deploy to EC2 (With Explicit Private Key)
+      - name: Create Directory
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
+            sudo mkdir -p /home/${{ secrets.EC2_USERNAME }}/LMS
+            sudo chown -R ${{ secrets.EC2_USERNAME }}:${{ secrets.EC2_USERNAME }} /home/${{ secrets.EC2_USERNAME }}/LMS
+          '
+
       - name: Deploy to EC2
         run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-          cd ~/LMS  # Navigate to your project folder on EC2
-
-          # Pull latest code from GitHub
-          git reset --hard
-          git pull origin main
-
-          # Install root dependencies
-          npm install
-
-          # Setup Client
-          cd client
-          npm install
-          npm run build
-          cd ..
-
-          # Setup Application Server
-          cd ApplicationServer
-          npm install
-          pm2 restart application-server || pm2 start server.js --name "application-server"
-          cd ..
-
-          # Setup Live Server
-          cd LiveServer
-          npm install
-          pm2 restart live-server || pm2 start server.js --name "live-server"
-          cd ..
-
-          # Restart Nginx
-          sudo systemctl restart nginx
-          EOF
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
+            cd /home/${{ secrets.EC2_USERNAME }}/LMS
+            git clone ${{ secrets.REPO_URL }} .
+          
+            # Install and build client
+            cd client
+            npm install
+            npm run build
+          
+            # Install and start ApplicationServer
+            cd ../ApplicationServer
+            npm install
+            pm2 delete app_server || true
+            pm2 start app.js --name app_server
+          
+            # Install and start LiveServer
+            cd ../LiveServer
+            npm install
+            pm2 delete live_server || true
+            pm2 start server.js --name live_server
+          
+            # Setup and start nginx
+            sudo systemctl enable nginx
+            sudo systemctl start nginx
