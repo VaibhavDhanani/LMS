@@ -26,16 +26,26 @@ const LectureStreaming = () => {
     const initLecture = async () => {
       try {
         const response = await getRoomToken(id, token);
-        setRoomId(response.data.roomToken);
-
+        const roomToken = response.data.roomToken;
+        setRoomId(roomToken);
+  
         const newSocket = io("http://172.20.10.6:3000");
         setSocket(newSocket);
-
+  
         newSocket.on("connect", () => {
           console.log("Socket connected:", newSocket.id);
+  
+          // Emit an event to create the room
           setupDevice(newSocket);
+          newSocket.emit("createRoom", { roomId: roomToken }, (ack) => {
+            if (ack.success) {
+              console.log("Room created successfully:", roomToken);
+            } else {
+              console.error("Error creating room:", ack.error);
+            }
+          });
         });
-
+  
         return () => {
           if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => track.stop());
@@ -46,9 +56,10 @@ const LectureStreaming = () => {
         console.error("Error fetching room ID:", error);
       }
     };
-
+  
     initLecture();
   }, []);
+  
 
   async function setupDevice(socket) {
     try {

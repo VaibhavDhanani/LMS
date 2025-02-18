@@ -28,6 +28,37 @@ const LiveLecture = () => {
   const { user, token } = useAuth();
   const { id } = useParams();
 
+  const renderConnectionStatus = () => {
+    if (connectionState.error) {
+      return (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{connectionState.error}</AlertDescription>
+        </Alert>
+      );
+    }
+  
+    if (connectionState.isLoading) {
+      return (
+        <div className="flex items-center gap-2 mb-4">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Connecting to lecture...</span>
+        </div>
+      );
+    }
+  
+    if (connectionState.status === 'waiting') {
+      return (
+        <div className="flex items-center gap-2 mb-4 text-gray-500">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Waiting for host to start...</span>
+        </div>
+      );
+    }
+  
+    return null;
+  };
+  
+
   useEffect(() => {
     connectToSocket();
     return () => {
@@ -57,12 +88,12 @@ const LiveLecture = () => {
 
   const connectToSocket = () => {
     setConnectionState(prev => ({ ...prev, isLoading: true }));
-    
+  
     const newSocket = io('http://localhost:3000', {
       reconnectionDelayMax: 10000,
       transports: ['websocket']
     });
-
+  
     newSocket.on('connect', () => {
       setConnectionState(prev => ({
         ...prev,
@@ -72,7 +103,7 @@ const LiveLecture = () => {
       socketRef.current = newSocket;
       joinLecture();
     });
-
+  
     newSocket.on('connect_error', (error) => {
       setConnectionState(prev => ({
         ...prev,
@@ -80,14 +111,24 @@ const LiveLecture = () => {
         error: 'Failed to connect to server'
       }));
     });
-
+  
     newSocket.on('disconnect', () => {
       setConnectionState(prev => ({
         ...prev,
         status: 'disconnected'
       }));
     });
+  
+    // Listen for new producers
+    newSocket.on('newProducer', async ({ producerId }) => {
+      console.log("New producer event received:", producerId);
+      if (device) {
+        await consumeMedia(device, roomId);
+      }
+    });
+    
   };
+  
 
   const initializeDevice = async () => {
     try {
@@ -114,34 +155,43 @@ const LiveLecture = () => {
   const joinLecture = async () => {
     try {
       setConnectionState(prev => ({ ...prev, isLoading: true }));
-
+  
       const response = await getRoomToken(id, token);
       const fetchedRoomToken = response.data.roomToken;
-      
+  
       if (!fetchedRoomToken) {
         throw new Error('Invalid room token');
       }
-
+  
       const joinResponse = await new Promise((resolve, reject) => {
         socketRef.current.emit('joinLecture', { roomId: fetchedRoomToken }, (response) => {
           if (response.error) reject(new Error(response.error));
           else resolve(response);
         });
       });
-
+  
       setRoomId(fetchedRoomToken);
       setProducers(joinResponse);
-
-      const deviceInstance = device || await initializeDevice();
-      await consumeMedia(deviceInstance, fetchedRoomToken);
-
-      setConnectionState(prev => ({
-        ...prev,
-        status: 'streaming',
-        isLoading: false,
-        error: null
-      }));
-
+  
+      if (!joinResponse || joinResponse.length === 0) {
+        setConnectionState(prev => ({
+          ...prev,
+          status: 'waiting',
+          isLoading: false,
+          error: 'Waiting for host to start the lecture...'
+        }));
+      } else {
+        const deviceInstance = device || await initializeDevice();
+        await consumeMedia(deviceInstance, fetchedRoomToken);
+  
+        setConnectionState(prev => ({
+          ...prev,
+          status: 'streaming',
+          isLoading: false,
+          error: null
+        }));
+      }
+  
     } catch (error) {
       setConnectionState(prev => ({
         status: 'error',
@@ -150,6 +200,7 @@ const LiveLecture = () => {
       }));
     }
   };
+  
 
   const consumeMedia = async (deviceInstance, currentRoomId) => {
     if (!currentRoomId || !deviceInstance) {
@@ -218,26 +269,6 @@ const LiveLecture = () => {
     }
   }, [remoteStream]);
 
-  const renderConnectionStatus = () => {
-    if (connectionState.error) {
-      return (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>{connectionState.error}</AlertDescription>
-        </Alert>
-      );
-    }
-
-    if (connectionState.isLoading) {
-      return (
-        <div className="flex items-center gap-2 mb-4">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Connecting to lecture...</span>
-        </div>
-      );
-    }
-
-    return null;
-  };
 
   return (
     <div className="p-4">
