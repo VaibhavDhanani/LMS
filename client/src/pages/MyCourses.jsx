@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from 'react-toastify';
 import {
   createDraft,
   getDrafts,
@@ -10,6 +11,7 @@ import { getInstructorCourse } from '../services/course.service';
 import * as MyCourseComponents from '../components/MyCoursePage/components.jsx';
 import { MoreVertical, Calendar, List } from 'lucide-react';
 import { scheduleLecture } from '../services/lecture.service.jsx';
+
 const MyCourses = () => {
   const [draftCourses, setDraftCourses] = useState([]);
   const [publishedCourses, setPublishedCourses] = useState([]);
@@ -27,16 +29,16 @@ const MyCourses = () => {
     description: ''
   });
   const [selectedCourseId, setSelectedCourseId] = useState(null);
+  const [courseToDelete, setCourseToDelete] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const { user, token } = useAuth();
   const navigate = useNavigate();
-  const [formMessage, setFormMessage] = useState(null); // For errors inside the form
-  const [formMessageType, setFormMessageType] = useState(null); // 'error' or 'success'
-  const [globalMessage, setGlobalMessage] = useState(null); // For success outside
-  const [globalMessageType, setGlobalMessageType] = useState(null);
+  const [formMessage, setFormMessage] = useState(null);
+  const [formMessageType, setFormMessageType] = useState(null);
 
   const handleScheduleSubmit = async (e) => {
     e.preventDefault();
-    setFormMessage(null); // Reset previous messages
+    setFormMessage(null);
 
     try {
       if (!selectedCourseId || !user?.id) {
@@ -51,33 +53,26 @@ const MyCourses = () => {
         instructorId: user.id,
       };
 
-      // Call API to schedule lecture
       const response = await scheduleLecture(lectureData, token);
 
-      // if (response.success) {
-      // Success message outside modal
-      setGlobalMessage("Lecture scheduled successfully!");
-      setGlobalMessageType("success");
-
-      // Reset form and close modal
-      setScheduleForm({
-        title: "",
-        date: "",
-        startTime: "",
-        duration: "",
-        description: "",
-      });
-      setIsScheduleModalOpen(false);
-      setSelectedCourseId(null);
-      // } else {
-      //   // Show error inside form (e.g., time clash)
-      //   console.log(response);
-      //   setFormMessage(response.message || "Failed to schedule lecture.");
-      //   setFormMessageType("error");
-      // }
+      if (response.success) {
+        toast.success("Lecture scheduled successfully!");
+        setScheduleForm({
+          title: "",
+          date: "",
+          startTime: "",
+          duration: "",
+          description: "",
+        });
+        setIsScheduleModalOpen(false);
+        setSelectedCourseId(null);
+      } else {
+        setFormMessage(response.message || "Failed to schedule lecture.");
+        setFormMessageType("error");
+      }
     } catch (error) {
       console.error("Error scheduling lecture:", error);
-      setFormMessage(error.response.data.message);
+      setFormMessage(error.response?.data?.message || "An error occurred while scheduling the lecture");
       setFormMessageType("error");
     }
   };
@@ -96,19 +91,27 @@ const MyCourses = () => {
 
   const fetchCourses = async () => {
     try {
-      const drafts = (await getDrafts(user.id, token)).map(course => ({
-        ...course,
-        isPublished: false, // Ensure drafts are marked
-      }));
-      const published = (await getInstructorCourse(user.id, token)).map(course => ({
-        ...course,
-        isPublished: true, // Ensure published courses are marked
-      }));
+      const draftResponse = await getDrafts(user.id, token);
+      const drafts = draftResponse.success
+        ? draftResponse.data.map(course => ({
+          ...course,
+          isPublished: false,
+        }))
+        : [];
+
+      const publishedResponse = await getInstructorCourse(user.id, token);
+      const published = publishedResponse.success
+        ? publishedResponse.data.map(course => ({
+          ...course,
+          isPublished: true,
+        }))
+        : [];
 
       setDraftCourses(drafts);
       setPublishedCourses(published);
     } catch (error) {
       console.error('Error fetching courses:', error);
+      toast.error('Failed to fetch courses. Please try again later.');
     }
   };
 
@@ -125,19 +128,30 @@ const MyCourses = () => {
         setNewCourseTitle('');
         setIsModalOpen(false);
         fetchCourses();
+        toast.success('Draft course created successfully!');
       } catch (error) {
         console.error('Error creating draft course:', error);
+        toast.error('Failed to create draft course. Please try again.');
       }
     }
   };
 
-  const handleDeleteDraft = async (courseId, e) => {
+  const handleDeleteDraftClick = (courseId, e) => {
     e.stopPropagation();
+    setCourseToDelete(courseId);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteDraft = async () => {
     try {
-      await deleteDraft(courseId, token);
+      await deleteDraft(courseToDelete, token);
       fetchCourses();
+      toast.success('Draft course deleted successfully!');
+      setIsDeleteModalOpen(false);
+      setCourseToDelete(null);
     } catch (error) {
       console.error('Error deleting draft course:', error);
+      toast.error('Failed to delete draft course. Please try again.');
     }
   };
 
@@ -145,7 +159,8 @@ const MyCourses = () => {
     const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' ||
       (statusFilter === 'draft' && !course.isPublished) ||
-      (statusFilter === 'active' && course.isPublished);
+      (statusFilter === 'active' && course.isPublished && course.isActive) ||
+      (statusFilter === 'inactive' && course.isPublished && !course.isActive);
     return matchesSearch && matchesStatus;
   });
 
@@ -182,14 +197,10 @@ const MyCourses = () => {
           >
             <option value="all">All</option>
             <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
             <option value="draft">Draft</option>
           </select>
         </div>
-        {globalMessage && (
-          <div className={`alert ${globalMessageType === "success" ? "alert-success" : "alert-error"}`}>
-            {globalMessage}
-          </div>
-        )}
 
         <div className="grid grid-cols-1 gap-6">
           {filteredCourses.map((course) => (
@@ -213,12 +224,12 @@ const MyCourses = () => {
                         <h3 className="text-xl font-semibold mb-1">{course.title}</h3>
                         {course.isPublished && (
                           <p className="text-gray-600">
-                            {course.studentCount || 0} students · {course.lessonCount || 0} lessons
+                            {course.enrolledStudents?.length || 0} students · {course.curriculum?.length || 0} lessons
                           </p>
                         )}
                       </div>
-                      <MyCourseComponents.Badge variant={course.isPublished ? "default" : "secondary"}>
-                        {course.isPublished ? "Active" : "Draft"}
+                      <MyCourseComponents.Badge variant={course.isPublished ? (course.isActive ? "default" : "secondary") : "secondary"}>
+                        {course.isPublished ? (course.isActive ? "Active" : "Inactive") : "Draft"}
                       </MyCourseComponents.Badge>
                     </div>
                   </div>
@@ -248,7 +259,7 @@ const MyCourses = () => {
                         <MyCourseComponents.Button
                           variant="ghost"
                           size="icon"
-                          onClick={(e) => handleDeleteDraft(course._id, e)}
+                          onClick={(e) => handleDeleteDraftClick(course._id, e)}
                         >
                           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
@@ -277,7 +288,6 @@ const MyCourses = () => {
                                 className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // Add navigation to manage lectures page
                                   navigate(`/course/${course._id}/lectures`);
                                 }}
                               >
@@ -293,11 +303,11 @@ const MyCourses = () => {
                 </div>
               </div>
             </MyCourseComponents.Card>
-
           ))}
         </div>
       </div>
 
+      {/* Create Course Modal */}
       <MyCourseComponents.Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -318,11 +328,14 @@ const MyCourses = () => {
           Create Draft
         </MyCourseComponents.Button>
       </MyCourseComponents.Modal>
+
+      {/* Schedule Lecture Modal */}
       <MyCourseComponents.Modal
         isOpen={isScheduleModalOpen}
         onClose={() => {
           setIsScheduleModalOpen(false);
           setSelectedCourseId(null);
+          setFormMessage(null);
         }}
         title="Schedule Live Lecture"
       >
@@ -396,6 +409,35 @@ const MyCourses = () => {
             Schedule Lecture
           </MyCourseComponents.Button>
         </form>
+      </MyCourseComponents.Modal>
+
+      {/* Delete Confirmation Modal */}
+      <MyCourseComponents.Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setCourseToDelete(null);
+        }}
+        title="Confirm Deletion"
+      >
+        <p className="mb-4">Are you sure you want to delete this draft course? This action cannot be undone.</p>
+        <div className="flex gap-4 justify-end">
+          <MyCourseComponents.Button
+            variant="outline"
+            onClick={() => {
+              setIsDeleteModalOpen(false);
+              setCourseToDelete(null);
+            }}
+          >
+            Cancel
+          </MyCourseComponents.Button>
+          <MyCourseComponents.Button
+            variant="destructive"
+            onClick={confirmDeleteDraft}
+          >
+            Delete
+          </MyCourseComponents.Button>
+        </div>
       </MyCourseComponents.Modal>
     </div>
   );

@@ -5,7 +5,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LoginForm } from './LoginForm';
 import { SignupForm } from './SignupForm';
-import { login as loginService,register as registerService  } from '@/services/auth.service';
+import { login as loginService, register as registerService } from '@/services/auth.service';
+import { toast } from 'react-toastify';  // Importing toast
+import 'react-toastify/dist/ReactToastify.css'; // Importing styles
+
 export const AuthForm = () => {
   const { login } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
@@ -36,15 +39,24 @@ export const AuthForm = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    try{
-    const response = await loginService(formData);
-      login(response.token);
-      localStorage.setItem('authToken', response.token);
-      Cookies.set('authToken', response.token, { expires: 1 });
-      alert('Login successful');
-      navigate('/'); 
+    try {
+      const response = await loginService(formData);
+      
+      // Check if login was successful
+      if (response.success) {
+        login(response.data.token);  // Assuming `token` is in the `data` object
+        localStorage.setItem('authToken', response.data.token);
+        Cookies.set('authToken', response.data.token, { expires: 1 });
+        toast.success('Login successful!'); // Display success message
+        navigate('/'); 
+      } else {
+        // Handle failure case
+        setError(response.message || 'An unexpected error occurred.');
+        toast.error(response.message || 'An unexpected error occurred.'); // Display error message
+      }
     } catch (error) {
       setError(error.message || 'An unexpected error occurred.');
+      toast.error(error.message || 'An unexpected error occurred.'); // Display error message
     } finally {
       setLoading(false);
     }
@@ -54,23 +66,34 @@ export const AuthForm = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
-
+  
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match.');
       setLoading(false);
+      toast.error('Passwords do not match.'); // Display error message
       return;
     }
-
+  
     try {
-      await registerService(formData);
-      alert('Signup successful! Please log in.');
-      setIsLogin(true); // Switch to login form
+      const response = await registerService(formData);
+  
+      // Check if registration was successful
+      if (response.success) {
+        toast.success('Signup successful! Please log in.'); // Display success message
+        setIsLogin(true); // Switch to login form
+      } else {
+        // Handle failure case
+        setError(response.message || 'An unexpected error occurred.');
+        toast.error(response.message || 'An unexpected error occurred.'); // Display error message
+      }
     } catch (error) {
       setError(error.message || 'An unexpected error occurred.');
+      toast.error(error.message || 'An unexpected error occurred.'); // Display error message
     } finally {
       setLoading(false);
     }
   };
+  
 
   const handleChange = (e) => {
     const { name, value } = e.target;

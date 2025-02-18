@@ -58,7 +58,8 @@ const courseSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: "Review"
     }
-  ]
+  ],
+  lastUpdated: { type: Date, default: Date.now },
 });
 
 const Course = mongoose.model("Course", courseSchema);

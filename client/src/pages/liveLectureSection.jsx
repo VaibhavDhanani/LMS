@@ -11,6 +11,7 @@ import {
   joinLecture,
   fetchStudentLectures 
 } from '../services/lecture.service.jsx';
+import { toast } from 'react-toastify';
 
 const ManageLiveLectures = () => {
     const { courseId } = useParams();
@@ -18,6 +19,7 @@ const ManageLiveLectures = () => {
     const { user, token } = useAuth();
     const [lectures, setLectures] = useState([]);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedLecture, setSelectedLecture] = useState(null);
     const [editForm, setEditForm] = useState({
         title: '',
@@ -42,6 +44,11 @@ const ManageLiveLectures = () => {
             }
         } catch (error) {
             console.error('Error fetching lectures:', error);
+            toast.error({
+                title: "Failed to fetch lectures",
+                description: "Please check your connection and try again.",
+                variant: "destructive"
+            });
         }
     };
 
@@ -53,6 +60,11 @@ const ManageLiveLectures = () => {
             }
         } catch (error) {
             console.error('Error starting lecture:', error);
+            toast.error({
+                title: "Failed to start lecture",
+                description: "There was a problem starting the lecture. Please try again.",
+                variant: "destructive"
+            });
         }
     };
 
@@ -60,18 +72,23 @@ const ManageLiveLectures = () => {
         try {
             const response = await joinLecture(lectureId, user.id, token);
             if (response.success) {
-                // if (response.data.isStarted) {
+                if (response.data && response.data.isStarted) {
                     navigate(`/livelecture/view/${lectureId}`);
-                // } else {
-                //     MyCourseComponents.toast({
-                //         title: "Lecture not started",
-                //         description: "Please wait for the instructor to start the lecture.",
-                //         variant: "warning"
-                //     });
-                // }
+                } else {
+                    toast.warn({
+                        title: "Lecture not started",
+                        description: "Please wait for the instructor to start the lecture.",
+                        variant: "warning"
+                    });
+                }
             }
         } catch (error) {
             console.error('Error joining lecture:', error);
+            toast.error({
+                title: "Failed to join lecture",
+                description: "There was a problem joining the lecture. Please try again.",
+                variant: "destructive"
+            });
         }
     };
 
@@ -93,19 +110,43 @@ const ManageLiveLectures = () => {
             await updateLecture(selectedLecture._id, editForm, token);
             fetchLectureData();
             setIsEditModalOpen(false);
+            toast.success({
+                title: "Lecture updated",
+                description: "The lecture details have been successfully updated.",
+                variant: "success"
+            });
         } catch (error) {
             console.error('Error updating lecture:', error);
+            toast.error({
+                title: "Update failed",
+                description: "Failed to update the lecture. Please try again.",
+                variant: "destructive"
+            });
         }
     };
 
-    const handleDeleteLecture = async (lectureId) => {
-        if (window.confirm('Are you sure you want to delete this lecture?')) {
-            try {
-                await deleteLecture(lectureId, token);
-                fetchLectureData();
-            } catch (error) {
-                console.error('Error deleting lecture:', error);
-            }
+    const confirmDeleteLecture = (lecture) => {
+        setSelectedLecture(lecture);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleDeleteLecture = async () => {
+        try {
+            await deleteLecture(selectedLecture._id, token);
+            fetchLectureData();
+            setIsDeleteModalOpen(false);
+            toast.success({
+                title: "Lecture deleted",
+                description: "The lecture has been successfully deleted.",
+                variant: "success"
+            });
+        } catch (error) {
+            console.error('Error deleting lecture:', error);
+            toast.error({
+                title: "Deletion failed",
+                description: "Failed to delete the lecture. Please try again.",
+                variant: "destructive"
+            });
         }
     };
 
@@ -159,7 +200,7 @@ const ManageLiveLectures = () => {
                     <MyCourseComponents.Button
                         variant="destructive"
                         size="sm"
-                        onClick={() => handleDeleteLecture(lecture._id)}
+                        onClick={() => confirmDeleteLecture(lecture)}
                     >
                         <Trash2 className="w-4 h-4 mr-2" />
                         Delete
@@ -222,77 +263,114 @@ const ManageLiveLectures = () => {
                 )}
 
                 {user.isInstructor && (
-                    <MyCourseComponents.Modal
-                        isOpen={isEditModalOpen}
-                        onClose={() => setIsEditModalOpen(false)}
-                        title="Edit Live Lecture"
-                    >
-                    <form onSubmit={handleUpdateLecture} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Lecture Title
-                            </label>
-                            <input
-                                type="text"
-                                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                value={editForm.title}
-                                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Date
-                            </label>
-                            <input
-                                type="date"
-                                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                value={editForm.date}
-                                onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Start Time
-                            </label>
-                            <input
-                                type="time"
-                                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                value={editForm.startTime}
-                                onChange={(e) => setEditForm({ ...editForm, startTime: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Duration (minutes)
-                            </label>
-                            <input
-                                type="number"
-                                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                value={editForm.duration}
-                                onChange={(e) => setEditForm({ ...editForm, duration: e.target.value })}
-                                required
-                                min="1"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Description
-                            </label>
-                            <textarea
-                                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                value={editForm.description}
-                                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                                rows="3"
-                            />
-                        </div>
-                        <MyCourseComponents.Button type="submit" className="w-full">
-                            Update Lecture
-                        </MyCourseComponents.Button>
-                    </form>
-                    </MyCourseComponents.Modal>
+                    <>
+                        <MyCourseComponents.Modal
+                            isOpen={isEditModalOpen}
+                            onClose={() => setIsEditModalOpen(false)}
+                            title="Edit Live Lecture"
+                        >
+                            <form onSubmit={handleUpdateLecture} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Lecture Title
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={editForm.title}
+                                        onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Date
+                                    </label>
+                                    <input
+                                        type="date"
+                                        className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={editForm.date}
+                                        onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Start Time
+                                    </label>
+                                    <input
+                                        type="time"
+                                        className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={editForm.startTime}
+                                        onChange={(e) => setEditForm({ ...editForm, startTime: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Duration (minutes)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={editForm.duration}
+                                        onChange={(e) => setEditForm({ ...editForm, duration: e.target.value })}
+                                        required
+                                        min="1"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Description
+                                    </label>
+                                    <textarea
+                                        className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={editForm.description}
+                                        onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                                        rows="3"
+                                    />
+                                </div>
+                                <div className="flex justify-end gap-2 pt-4">
+                                    <MyCourseComponents.Button 
+                                        variant="outline" 
+                                        onClick={() => setIsEditModalOpen(false)}
+                                    >
+                                        Cancel
+                                    </MyCourseComponents.Button>
+                                    <MyCourseComponents.Button type="submit">
+                                        Update Lecture
+                                    </MyCourseComponents.Button>
+                                </div>
+                            </form>
+                        </MyCourseComponents.Modal>
+
+                        <MyCourseComponents.Modal
+                            isOpen={isDeleteModalOpen}
+                            onClose={() => setIsDeleteModalOpen(false)}
+                            title="Delete Lecture"
+                        >
+                            <div className="py-4">
+                                <p className="text-gray-700 mb-4">
+                                    Are you sure you want to delete the lecture "{selectedLecture?.title}"?
+                                    This action cannot be undone.
+                                </p>
+                                <div className="flex justify-end gap-2 pt-2">
+                                    <MyCourseComponents.Button
+                                        variant="outline"
+                                        onClick={() => setIsDeleteModalOpen(false)}
+                                    >
+                                        Cancel
+                                    </MyCourseComponents.Button>
+                                    <MyCourseComponents.Button
+                                        variant="destructive"
+                                        onClick={handleDeleteLecture}
+                                    >
+                                        Delete
+                                    </MyCourseComponents.Button>
+                                </div>
+                            </div>
+                        </MyCourseComponents.Modal>
+                    </>
                 )}
             </div>
         </div>
