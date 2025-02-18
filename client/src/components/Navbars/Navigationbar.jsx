@@ -72,14 +72,16 @@ const Navigationbar = () => {
         </div>
         
         {user && user.isInstructor && (
+          <div className='flex'>
             <div className="flex-1">
               <a
                   className="btn btn-ghost text-xl"
                   onClick={() => navigate('/mycourses')}
               >
-                My Courses
+                My Courses  
               </a>
             </div>
+        </div>
         )}
         {user && !user.isInstructor && (
             <div className="flex-1">
@@ -91,6 +93,15 @@ const Navigationbar = () => {
               </a>
             </div>
         )}
+                    <div className="flex-1">
+            <a
+                className="btn btn-ghost text-xl"
+                onClick={() => navigate('/livelectures/section')}
+            >
+              Live Lecture
+            </a>
+          </div>
+
         
         <div className="flex-none gap-2">
           <div className="form-control relative search-container">

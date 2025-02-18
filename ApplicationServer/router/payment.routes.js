@@ -92,7 +92,7 @@ router.post('/verify/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   const {course,user} = req.body;
   const { price, discountEnabled,discount } = course.pricing;
-  const discountedPrice = price * (discountEnabled ? discount/100  : 1);
+  const discountedPrice = price * (discountEnabled ? 1- (discount/100)  : 1);
   const lineItems = [
     {
       price_data: {
