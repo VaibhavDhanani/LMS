@@ -16,6 +16,9 @@ import MyLearningPage from "@/pages/MyLearnings.jsx";
 import ManageLiveLectures from './pages/liveLectureSection.jsx';
 import LectureStreaming from './pages/lectureStreaming.page.jsx';
 import LiveLecture from './pages/livelecture.jsx';
+import InstructorProfilePage from "@/pages/InstructorProfile.page.jsx";
+
+
 const AppRoutes = () => (
   <Routes>
     {/* Public Routes */}
@@ -59,7 +62,9 @@ const AppRoutes = () => (
         <Route path="/livelectures/section" element={<ManageLiveLectures />} />
         <Route path="/livelecture/:id" element={<LectureStreaming />} />
         <Route path="/livelecture/view/:id" element={<LiveLecture/>} />
-          <Route path="/aihelp" element={<ChatbotInterface />}/>
+        <Route path="/aihelp" element={<ChatbotInterface />}/>
+ 				<Route path="/instructors" element={<InstructorProfilePage/>}/>
+
       </Route>
     </Route>
         <Route path="/lectureroom" element={<LectureRoom />} />
