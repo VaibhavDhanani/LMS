@@ -128,13 +128,20 @@ export const getStudentCourse = async (req, res) => {
 
 // Update a course
 export const updateCourse = async (req, res) => {
-  console.log(req.params.id,req.body);
   try {
+    // Set the updatedAt field manually
+    req.body.updatedAt = Date.now();
+
+    // Update the course
     const course = await Course.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
+
+    // If the course is not found
     if (!course) return res.status(404).json({ message: 'Course not found' });
+
+    // Return the updated course
     res.status(200).json(course);
   } catch (error) {
     res.status(400).json({ error: error.message });
