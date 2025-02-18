@@ -2,50 +2,48 @@ import mongoose from "mongoose";
 
 const courseDraftSchema = new mongoose.Schema(
     {
-      title: { type: String, required: true, trim: true },
-      subtitle: { type: String, required: false, trim: true },
-      description: { type: String, required: false, trim: true },
-      instructor: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-      },
-      details: {
-        totalHours: { type: Number, required: false, min: 0 },
-        level: { type: String, required: false, enum: ["Beginner", "Intermediate", "Advanced"] },
-      },
-      learnPoints: { type: [String], required: false },
-      technologies: { type: [String], required: false },
-      prerequisites: { type: [String], required: false },
-      requirements: { type: [String], required: false },
-      thumbnail: { type: String, required: false },
-      promotionalVideo: { type: String },
-
-      curriculum: [
-        {
-          section: { type: String, required: false, trim: true },
-          lectures: [
-            {
-              title: { type: String, required: false, trim: true },
-              description: { type: String, trim: true },
-              video: { type: String },
-              duration: { type: String, required: false },
-              preview: { type: Boolean, default: false },
-            },
-          ],
+        title: { type: String, required: true, trim: true },
+        subtitle: { type: String, default: "", trim: true },
+        description: { type: String, default: "", trim: true },
+        instructor: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
         },
-      ],
-
-      targetStudents: { type: [String], required: true },
-      topics: { type: [String], required: true },
-      pricing: {
-        price: { type: Number, required: false, min: 0 },
-        discountEnabled: { type: Boolean, default: false },
-        discount: { type: Number, min: 0, default: 0 },
-      },
-
-      createdAt: { type: Date, default: Date.now, immutable: true },
-      lastUpdated: { type: Date, default: Date.now },
+        details: {
+            totalMinutes: { type: Number, default: 0, min: 0 },
+            level: { type: String, default: "Beginner", enum: ["Beginner", "Intermediate", "Advanced"] },
+            language: { type: String, default: "English" },
+        },
+        learnPoints: { type: [String], default: [] },
+        technologies: { type: [String], default: [] },
+        prerequisites: { type: [String], default: [] },
+        requirements: { type: [String], default: [] },
+        thumbnail: { type: String, default: "" },
+        promotionalVideo: { type: String, default: "" },
+        curriculum: [
+            {
+                section: { type: String, default: "", trim: true },
+                lectures: [
+                    {
+                        title: { type: String, default: "", trim: true },
+                        description: { type: String, default: "", trim: true },
+                        video: { type: String, default: "" },
+                        duration: { type: String, default: "" },
+                        preview: { type: Boolean, default: false },
+                    },
+                ],
+            },
+        ],
+        targetStudents: { type: [String], default: [] },
+        topics: { type: [String], default: [] },
+        pricing: {
+            price: { type: Number, default: 0, min: 0 },
+            discountEnabled: { type: Boolean, default: false },
+            discount: { type: Number, default: 0, min: 0 },
+        },
+        createdAt: { type: Date, default: Date.now, immutable: true },
+        lastUpdated: { type: Date, default: Date.now },
     },
     { timestamps: true } // This automatically handles createdAt and updatedAt
 );
