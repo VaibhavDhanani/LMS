@@ -55,7 +55,7 @@ export const getCourseById = async  (courseId,token) => {
     const response = await db.get(`/courses/${courseId}`, {
       headers: { authorization: `Bearer ${token}` },
     });
-    return response.data;
+    return response.data.data;
   } catch (error) {
     console.error("Error fetching course:", error);
     throw error; // Re-throw the error for further handling

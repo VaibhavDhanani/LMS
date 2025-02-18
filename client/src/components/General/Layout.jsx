@@ -1,11 +1,15 @@
+// Layout.jsx
 import React from "react";
-import Navigationbar from "../Navbars/Navigationbar"
-import Footer from "../Footer/Footer"
+import Navigationbar from "../Navbars/Navigationbar";
+import Footer from "../Footer/Footer";
+
 const Layout = ({ children }) => {
   return (
-    <div className="container">
+    <div className="min-h-screen flex flex-col">
       <Navigationbar />
-      <main>{children}</main>
+      <div className="flex-1 bg-gray-100">
+        {children}
+      </div>
       <Footer />
     </div>
   );

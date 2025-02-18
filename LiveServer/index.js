@@ -14,15 +14,7 @@ const io = new Server(server, {
 
 let router; // Mediasoup router
 const mediasoupTransports = new Map(); // Store transports by ID
-const producers = new Map(); // Store producers by ID
-const consumers = new Map(); // Store consumers by ID
 const rooms = new Map(); // Map room IDs to an array of producers
-
-function createRoomIfNotExists(roomId) {
-  if (!rooms.has(roomId)) {
-    rooms.set(roomId, new Set());
-  }
-}
 
 // Initialize Mediasoup worker and router
 (async () => {
@@ -49,15 +41,26 @@ io.on('connection', (socket) => {
   console.log(`Client connected: ${socket.id}`);
 
   socket.on('joinLecture', ({ roomId }, callback) => {
-    const room = rooms.get(roomId);
-
-    if (!room) {
+    if (!rooms.has(roomId)) {
       return callback({ error: 'Room does not exist' });
     }
-
-    console.log(`Consumer joined room ${roomId}`);
-    callback([...room]); // Send the list of producer IDs
+  
+    const room = rooms.get(roomId);
+  
+    socket.join(roomId); // Add the socket to the room
+    room.consumers.add(socket.id); // Add consumer to the room
+    console.log(`Consumer ${socket.id} joined room ${roomId}`);
+  
+    // Notify other users in the room
+    socket.to(roomId).emit('userJoined', { userId: socket.id });
+  
+    // Send producers and consumers separately
+    callback({
+      producers: [...room.producers], // List of producer objects
+      consumers: [...room.consumers], // List of consumer socket IDs
+    });
   });
+  
 
   socket.on('getRtpCapabilities', (callback) => {
     if (!router) {
@@ -116,46 +119,64 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('createRoom', ({ roomId }, callback) => {
+    if (!rooms.has(roomId)) {
+      rooms.set(roomId, {
+        producers: new Set(), // Stores producer IDs
+        consumers: new Set(), // Stores consumer IDs
+      });
+  
+      console.log(`Room ${roomId} created`);
+      callback({ success: true });
+    } else {
+      callback({ error: 'Room already exists' });
+    }
+  });
+  
+  
   socket.on('produce', async ({ transportId, kind, rtpParameters, roomId }, callback) => {
     try {
-      createRoomIfNotExists(roomId);
-
+      if (!rooms.has(roomId)) {
+        return callback({ error: 'Room does not exist. Please create the room first.' });
+      }
+  
       console.log(`Producing ${kind} for client: ${socket.id} on transport: ${transportId}`);
-
+  
       const transport = mediasoupTransports.get(transportId);
       if (!transport) throw new Error('Transport not found');
-
+  
       const producer = await transport.produce({ kind, rtpParameters });
-
-      // Create a new object containing only the desired properties
+  
       const producerInfo = {
         id: producer.id,
         kind: producer.kind,
         rtpParameters: producer.rtpParameters,
+        socketId: socket.id, // Track which user created the producer
       };
-      // console.log(producerInfo);
-      // Add the simplified producer object to the room
-      rooms.get(roomId).add(producerInfo);
-
+  
+      rooms.get(roomId).producers.add(producerInfo);
       console.log(`Producer ${producer.id} added to room ${roomId}`);
-
-      // Handle producer close
+  
+      // Notify all consumers in the room about the new producer
+      io.to(roomId).emit('newProducer', producerInfo);
+  
       producer.on('close', () => {
         console.log(`Producer closed: ${producer.id}`);
-        producers.delete(producer.id);
-        // Remove from room
-        const producerRoom = rooms.get(roomId);
-        if (producerRoom) {
-          rooms.set(roomId, producerRoom.filter(id => id !== producer.id));
-        }
+        rooms.get(roomId).producers.delete(producerInfo);
+  
+        // Notify consumers that the producer is gone
+        io.to(roomId).emit('producerClosed', { producerId: producer.id });
       });
-
+  
       callback({ producerId: producer.id, roomId });
     } catch (error) {
       console.error('Error creating producer:', error);
       callback({ error: error.message });
     }
   });
+  
+    
+  
 
   socket.on('consume', async ({ roomId, transportId, rtpCapabilities }, callback) => {
     try {
@@ -165,37 +186,35 @@ io.on('connection', (socket) => {
         console.error(`Transport not found: ${transportId}`);
         return callback({ error: 'Transport not found' });
       }
-
+  
       // Retrieve the room object
       const room = rooms.get(roomId);
       if (!room) {
         return callback({ error: 'Room does not exist' });
       }
-
-      const consumers = [];  // Array to hold the consumers
-
-      // Iterate over all producers in the room
-      for (const producer of room) {
+  
+      const consumers = []; // Array to hold the consumers
+  
+      // ✅ Correct way to retrieve producers
+      for (const producer of room.producers) {  
         try {
-          // Create consumer for each producer in the room
-          console.log('Creating consumer for ' + producer.id );
+          console.log('Creating consumer for producer:', producer.id);
           const consumer = await transport.consume({
             producerId: producer.id,
             rtpCapabilities,
-            paused: false,  // Start consumer as unpaused
+            paused: false, // Start consumer as unpaused
           });
-
-          console.log(`Consumer created: ${consumer}`);
-
+  
+          console.log(`Consumer created: ${consumer.id}`);
+  
           // Handle consumer closure and clean up
           consumer.on('close', () => {
             console.log(`Consumer closed: ${consumer.id}`);
-            // Remove consumer from any data structure or perform cleanup as needed
           });
-
+  
           // If necessary, resume the consumer (though `paused: false` should make this unnecessary)
           await consumer.resume();
-
+  
           // Add consumer details to the consumers array
           consumers.push({
             producerId: producer.id,
@@ -203,35 +222,64 @@ io.on('connection', (socket) => {
             kind: consumer.kind,
             rtpParameters: consumer.rtpParameters,
           });
-          // consumers.push(consumer);
+  
         } catch (error) {
-          console.error('Error creating consumer for producer:', error);
+          console.error(`Error creating consumer for producer ${producer.id}:`, error);
         }
       }
-
+  
       // Send the list of consumers to the client
       callback(consumers);
-
+  
     } catch (error) {
-      console.error('Error in consume process:', {
-        error: error.message,
-        stack: error.stack,
-      });
+      console.error('Error in consume process:', error);
       callback({ error: error.message });
     }
   });
+  
 
 
   socket.on('disconnect', () => {
     console.log(`Client disconnected: ${socket.id}`);
-    // Clean up resources associated with the client
+  
+    // Iterate over all rooms to remove the producer if the socket disconnects
+    for (const [roomId, room] of rooms.entries()) {
+      const producersToRemove = [];
+  
+      for (const producer of room.producers) {
+        if (producer.socketId === socket.id) {
+          producersToRemove.push(producer);
+        }
+      }
+  
+      // Remove producers and notify consumers
+      for (const producer of producersToRemove) {
+        room.producers.delete(producer);
+        console.log(`Producer removed: ${producer.id} from room ${roomId}`);
+  
+        io.to(roomId).emit('producerClosed', { producerId: producer.id });
+      }
+  
+      // Remove consumer references
+      room.consumers.delete(socket.id);
+  
+      // If the room is empty, clean it up
+      if (room.producers.size === 0 && room.consumers.size === 0) {
+        rooms.delete(roomId);
+        console.log(`Room ${roomId} deleted as it's now empty`);
+      }
+    }
+  
+    // Cleanup transports
     for (const [transportId, transport] of mediasoupTransports.entries()) {
       if (transport._data && transport._data.socketId === socket.id) {
         console.log(`Cleaning up transport: ${transportId}`);
         transport.close();
+        mediasoupTransports.delete(transportId);
       }
     }
   });
+  
 });
 
 const PORT = 3000;

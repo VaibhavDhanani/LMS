@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export const SignupForm = ({ formData, handleChange, handleSubmit }) => {
+export const SignupForm = ({ formData,  handleChange, handleSubmit }) => {
   const [isPasswordEntering, setIsPasswordEntering] = useState(false);
 
   // Password validation rules
@@ -31,7 +31,7 @@ export const SignupForm = ({ formData, handleChange, handleSubmit }) => {
         </label>
         <input
           type="text"
-          name="username"
+          name="name"
           placeholder="Enter username"
           className="input input-bordered"
           value={formData.name}

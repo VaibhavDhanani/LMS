@@ -10,7 +10,7 @@ export const AuthForm = () => {
   const { login } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
-    username: '',
+    name: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -23,7 +23,7 @@ export const AuthForm = () => {
   const handleToggle = () => {
     setIsLogin((prev) => !prev);
     setFormData({
-      username: '',
+      name: '',
       email: '',
       password: '',
       confirmPassword: '',

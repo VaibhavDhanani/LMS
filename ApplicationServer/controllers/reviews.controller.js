@@ -18,74 +18,81 @@ const updateCourseRating = async (courseId) => {
 // Create a new review
 export const createReview = async (req, res) => {
   try {
-    const { content, rating, courseId, learnerId } = req.body;
+    const { content, rating, courseId, learnerId } = req.body.review;
     const ratingValue = parseFloat(rating); // Convert to number
     
     // Input validation
     if (!content || !rating || !courseId || !learnerId) {
-      return res.status(400).json({ error: "Missing required fields" });
+      console.log(content, rating, courseId,learnerId);
+      console.log(req.body)
+      return res.status(400).json({ message: "Missing required fields" });
     }
-
+    
     // Validate rating range
     if (ratingValue < 1 || ratingValue > 5) {
-      return res.status(400).json({ error: "Rating must be between 1 and 5" });
+      return res.status(400).json({ message: "Rating must be between 1 and 5" });
     }
-
+    
     // Validate course and learner existence
     const course = await Course.findById(courseId);
-    if (!course) return res.status(404).json({ error: "Course not found" });
-
+    if (!course) return res.status(404).json({ message: "Course not found" });
+    
     const learner = await User.findById(learnerId);
-    if (!learner) return res.status(404).json({ error: "Learner not found" });
-
+    if (!learner) return res.status(404).json({ message: "Learner not found" });
+    
     // Check if learner is verified
-    if (!learner.isVerified) {
-      return res.status(403).json({ error: "Only verified users can submit reviews" });
-    }
-
+    // if (!learner.isVerified) {
+    //   return res.status(403).json({ message: "Only verified users can submit reviews" });
+    // }
+    
     // Check if learner is enrolled in the course
-    const enrollment = await Enrollment.findOne({ 
-      courseId, 
-      learnerId 
-    });
-
-    if (!enrollment) {
-      return res.status(403).json({ 
-        error: "You must be enrolled in the course to submit a review" 
-      });
-    }
-
+    const user = await User.findById(learnerId)
+    const isEnrolled = user.enrolledCourses.includes(courseId);
+    
     // Check if learner has already reviewed this course
     const existingReview = await Review.findOne({ courseId, learnerId });
     if (existingReview) {
-      return res.status(400).json({ error: "You have already reviewed this course" });
+      return res.status(400).json({ message: "You have already reviewed this course" });
     }
-
+    
+    if (!isEnrolled) {
+      // console.log('User enrolled courses:', user.enrolledCourses);
+      // console.log('Course ID to check:', courseId);
+      // console.log('Is enrolled?:', isEnrolled);
+      // console.log('Type of courseId:', typeof courseId);
+      // console.log('Type of enrolled course IDs:', user.enrolledCourses.map(id => typeof id));
+      return res.status(403).json({
+        message: "You must be enrolled in the course to submit a review"
+      });
+    }
+    
+    
+    
     // Create the review
-    const review = await Review.create({ 
-      content, 
-      rating: ratingValue, 
-      courseId, 
-      learnerId 
+    const review = await Review.create({
+      content,
+      rating: ratingValue,
+      courseId,
+      learnerId
     });
-
+    
     // Update course reviews
     course.reviews.push(review._id);
     await course.save();
-
+    
     // Update the learner with the new review
     learner.reviews.push(review._id);
     await learner.save();
-
+    
     // Update course rating
     await updateCourseRating(courseId);
-
-    res.status(201).json(review);
+    
+    res.status(201).json({message: "Review has been created",data: review});
   } catch (error) {
     console.error('Review Creation Error:', error);
-    res.status(500).json({ 
-      error: "An unexpected error occurred", 
-      details: error.message 
+    res.status(500).json({
+      error: "An unexpected error occurred",
+      details: error.message
     });
   }
 };
