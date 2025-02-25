@@ -129,13 +129,11 @@ export const getStudentCourse = async (req, res) => {
 // Update a course
 export const updateCourse = async (req, res) => {
   try {
-    // Set the updatedAt field manually
-    req.body.updatedAt = Date.now();
-
     // Update the course
     const course = await Course.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
+      updatedAt: new Date() 
     });
 
     // If the course is not found
@@ -179,3 +177,25 @@ export const deleteCourse = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const updateCourseStatus = async(req,res)=>{
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+
+    const updatedCourse = await Course.findByIdAndUpdate(
+      id,
+      { isActive },
+      { new: true }
+    );
+
+    if (!updatedCourse) {
+      return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
+    res.json({ success: true, message: "Course status updated", data: updatedCourse });
+  } catch (error) {
+    console.error("Error updating course status:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+}

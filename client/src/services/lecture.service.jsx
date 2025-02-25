@@ -1,21 +1,21 @@
 import db from '../apis/database.js'
 
-export const scheduleLecture = async (lecture,token)=>{
-  try{
-    const response = await db.post('/lectures',lecture, {
+export const scheduleLecture = async (lecture, token) => {
+  try {
+    const response = await db.post('/lectures', lecture, {
       headers: { authorization: `Bearer ${token}` },
     });
     return {
       success: true,
-      message: response.data.message||"Lectures created successfully",
+      message: response.data.message || "Lecture created successfully",
       data: response.data.data,
     };
   } catch (error) {
-    console.error("Error creating lectures:", error);
+    console.error("Error creating lecture:", error);
 
     return {
       success: false,
-      message: "Failed to create lectures. Please try again later.",
+      message: error.response?.data?.message || "Failed to create lecture. Please try again later.",
       data: null,
     };
   }

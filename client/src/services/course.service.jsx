@@ -118,3 +118,27 @@ export const updateCourse = async (id, course, token) => {
     }
   };
   
+  export const updateCourseStatus = async (courseId, status, token) => {
+    try {
+      const response = await db.put(
+        `/courses/${courseId}/status`,
+        { isActive: status },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      return {
+        success: true,
+        message: response.data.message || "Course status updated successfully",
+        data: response.data.data,
+      };
+    } catch (error) {
+      console.error("Error updating course status:", error);
+      return {
+        success: false,
+        message: "Failed to update course status. Please try again later.",
+        data: null,
+      };
+    }
+  };
+  

@@ -91,12 +91,10 @@ export const getCourseDraftById = async (req, res) => {
 // Update a course draft by ID
 export const updateCourseDraft = async (req, res) => {
   try {
-    // Add the current timestamp to the update object
-    const updateData = { ...req.body, lastUpdated: new Date() };
 
     const updatedCourseDraft = await CourseDraft.findByIdAndUpdate(
       req.params.id,
-      updateData,
+      req.body,
       { new: true, runValidators: true }
     );
 

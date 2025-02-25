@@ -154,9 +154,7 @@ const Navigationbar = () => {
 
         <div className="hidden md:flex">
           <ul className="menu menu-horizontal px-1">
-            <li>
-              <a>My Learning</a>
-            </li>
+            
             <li>
               <a>Watch List</a>
             </li>

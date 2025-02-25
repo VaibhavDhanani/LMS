@@ -30,7 +30,6 @@ const courseSchema = new mongoose.Schema({
           video: { type: String },
           duration: { type: String, required: true },
           preview: { type: Boolean, default: false },
-          thumbnailurl: { type: String, required: false },
         },
       ],
     },
@@ -58,9 +57,10 @@ const courseSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: "Review"
     }
-  ],
-  lastUpdated: { type: Date, default: Date.now },
-});
+  ],  
+},
+  { timestamps: true } 
+);
 
 const Course = mongoose.model("Course", courseSchema);
 export default Course;

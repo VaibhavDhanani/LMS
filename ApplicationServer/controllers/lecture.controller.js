@@ -3,8 +3,9 @@ import mongoose from "mongoose";
 import jwt from "jsonwebtoken"; // Used for generating room tokens
 import User from "../models/user.js";
 const SECRET_KEY = "your_secret_key"; // Change this to a secure key
-
+import moment from "moment"; // Install using: npm install moment
 // ✅ Create Lecture (Checks for conflicts)
+
 export const createLecture = async (req, res) => {
   try {
     const { title, date, startTime, duration, description, courseId, instructorId } = req.body;
@@ -13,7 +14,25 @@ export const createLecture = async (req, res) => {
       return res.status(400).json({ message: "All fields are required." });
     }
 
-    // Check if a lecture exists for the same teacher at the same time
+    
+    const today = moment().startOf("day"); // Get today's date (00:00:00)
+    const maxDate = moment().add(7, "days").endOf("day"); // Get max date (end of 7th day)
+    const selectedDate = moment(date, "YYYY-MM-DD"); // Convert input date to moment format
+    
+    // Check if date is within today and the next 7 days
+    if (!selectedDate.isBetween(today, maxDate, null, "[]")) {
+      return res.status(400).json({ message: "Date must be within today and the next 7 days." });
+    }
+
+    // If selected date is today, ensure startTime is greater than the current time
+    if (selectedDate.isSame(today, "day")) {
+      const currentTime = moment().format("HH:mm"); // Current time in HH:mm format
+      if (startTime <= currentTime) {
+        return res.status(400).json({ message: "Start time must be later than the current time." });
+      }
+    }
+    
+    // Check if a lecture already exists for the instructor at the same date & time
     const existingLecture = await Lecture.findOne({ instructorId, date, startTime });
 
     if (existingLecture) {
@@ -37,6 +56,72 @@ export const createLecture = async (req, res) => {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
+// ✅ Update Lecture (Doesn't override status/roomToken unless provided)
+export const updateLecture = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, date, startTime, duration, description, courseId, instructorId, status, roomToken } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid Lecture ID" });
+    }
+
+    const existingLecture = await Lecture.findById(id);
+    if (!existingLecture) {
+      return res.status(404).json({ message: "Lecture not found" });
+    }
+
+    if (date && startTime) {
+      const today = moment().startOf("day");
+      const maxDate = moment().add(7, "days").endOf("day");
+      const selectedDate = moment(date, "YYYY-MM-DD");
+
+      if (!selectedDate.isBetween(today, maxDate, null, "[]")) {
+        return res.status(400).json({ message: "Date must be within today and the next 7 days." });
+      }
+
+      if (selectedDate.isSame(today, "day")) {
+        const currentTime = moment().format("HH:mm");
+        if (startTime <= currentTime) {
+          return res.status(400).json({ message: "Start time must be later than the current time." });
+        }
+      }
+
+      // Check if another lecture is already scheduled for this instructor at the same date and time
+      const conflictingLecture = await Lecture.findOne({
+        instructorId,
+        date,
+        startTime,
+        _id: { $ne: id }, // Exclude the current lecture being updated
+      });
+
+      if (conflictingLecture) {
+        return res.status(400).json({ message: "Lecture already scheduled for this time." });
+      }
+    }
+
+    const updatedLecture = await Lecture.findByIdAndUpdate(
+      id,
+      {
+        title,
+        date,
+        startTime,
+        duration,
+        description,
+        courseId,
+        instructorId,
+        ...(status && { status }),
+        ...(roomToken && { roomToken }),
+      },
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json(updatedLecture);
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
 
 // ✅ Get Lecture by ID
 export const getLectureById = async (req, res) => {
@@ -102,31 +187,6 @@ export const getStudentLecture = async (req, res) => {
   }
 };
 
-// ✅ Update Lecture (Doesn't override status/roomToken unless provided)
-export const updateLecture = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { title, date, startTime, duration, description, courseId, instructorId, status, roomToken } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid Lecture ID" });
-    }
-
-    const updatedLecture = await Lecture.findByIdAndUpdate(
-      id,
-      { title, date, startTime, duration, description, courseId, instructorId, ...(status && { status }), ...(roomToken && { roomToken }) },
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedLecture) {
-      return res.status(404).json({ message: "Lecture not found" });
-    }
-
-    res.status(200).json(updatedLecture);
-  } catch (error) {
-    res.status(500).json({ message: "Server Error", error: error.message });
-  }
-};
 
 // ✅ Delete Lecture
 export const deleteLecture = async (req, res) => {
