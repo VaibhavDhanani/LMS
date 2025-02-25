@@ -45,7 +45,7 @@ const courseDraftSchema = new mongoose.Schema(
         createdAt: { type: Date, default: Date.now, immutable: true },
         lastUpdated: { type: Date, default: Date.now },
     },
-    { timestamps: true } // This automatically handles createdAt and updatedAt
+    { timestamps: true } 
 );
 
 const CourseDraft = mongoose.model("CourseDraft", courseDraftSchema);

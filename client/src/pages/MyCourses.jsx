@@ -7,11 +7,10 @@ import {
   getDrafts,
   deleteDraft,
 } from '../services/draft.service';
-import { getInstructorCourse } from '../services/course.service';
+import { getInstructorCourse, updateCourseStatus } from '../services/course.service';
 import * as MyCourseComponents from '../components/MyCoursePage/components.jsx';
-import { MoreVertical, Calendar, List } from 'lucide-react';
-import { scheduleLecture } from '../services/lecture.service.jsx';
-
+import { MoreVertical, Calendar, List, ToggleLeft, ToggleRight } from 'lucide-react';
+import {ScheduleLectureModal} from '../forms/liveLecture.jsx';
 const MyCourses = () => {
   const [draftCourses, setDraftCourses] = useState([]);
   const [publishedCourses, setPublishedCourses] = useState([]);
@@ -21,61 +20,23 @@ const MyCourses = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [activeDropdownId, setActiveDropdownId] = useState(null);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  const [scheduleForm, setScheduleForm] = useState({
-    title: '',
-    date: '',
-    startTime: '',
-    duration: '',
-    description: ''
-  });
   const [selectedCourseId, setSelectedCourseId] = useState(null);
   const [courseToDelete, setCourseToDelete] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const { user, token } = useAuth();
   const navigate = useNavigate();
-  const [formMessage, setFormMessage] = useState(null);
-  const [formMessageType, setFormMessageType] = useState(null);
 
-  const handleScheduleSubmit = async (e) => {
-    e.preventDefault();
-    setFormMessage(null);
-
-    try {
-      if (!selectedCourseId || !user?.id) {
-        setFormMessage("Course ID or Teacher ID is missing.");
-        setFormMessageType("error");
-        return;
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest(".dropdown-menu")) {
+        setActiveDropdownId(null);
       }
+    };
 
-      const lectureData = {
-        ...scheduleForm,
-        courseId: selectedCourseId,
-        instructorId: user.id,
-      };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
 
-      const response = await scheduleLecture(lectureData, token);
-
-      if (response.success) {
-        toast.success("Lecture scheduled successfully!");
-        setScheduleForm({
-          title: "",
-          date: "",
-          startTime: "",
-          duration: "",
-          description: "",
-        });
-        setIsScheduleModalOpen(false);
-        setSelectedCourseId(null);
-      } else {
-        setFormMessage(response.message || "Failed to schedule lecture.");
-        setFormMessageType("error");
-      }
-    } catch (error) {
-      console.error("Error scheduling lecture:", error);
-      setFormMessage(error.response?.data?.message || "An error occurred while scheduling the lecture");
-      setFormMessageType("error");
-    }
-  };
 
   const handleDropdownClick = (courseId, e) => {
     e.stopPropagation();
@@ -152,6 +113,23 @@ const MyCourses = () => {
     } catch (error) {
       console.error('Error deleting draft course:', error);
       toast.error('Failed to delete draft course. Please try again.');
+    }
+  };
+
+  const toggleCourseStatus = async (courseId, status, token) => {
+    try {
+      const response = await updateCourseStatus(courseId, status, token);
+
+      if (response.success) {
+        toast.success(`Course ${status ? "Activated" : "Deactivated"} successfully!`);
+        fetchCourses(); // Add this to refresh the course list
+        setActiveDropdownId(null); // Close the dropdown after action
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      toast.error("Failed to update course status. Please try again.");
+      console.error("Error updating course status:", error);
     }
   };
 
@@ -247,7 +225,7 @@ const MyCourses = () => {
                         size="icon"
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(course.isPublished ? `/courseform/${course._id}/edit` : `/draft/${course._id}/edit`);
+                          navigate(course.isPublished ? `/courseform/${course._id}` : `/draft/${course._id}`);
                         }}
                       >
                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -255,7 +233,7 @@ const MyCourses = () => {
                           <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                         </svg>
                       </MyCourseComponents.Button>
-                      {!course.isPublished && (
+                      {!course.isPublished ? (
                         <MyCourseComponents.Button
                           variant="ghost"
                           size="icon"
@@ -265,39 +243,61 @@ const MyCourses = () => {
                             <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
                           </svg>
                         </MyCourseComponents.Button>
-                      )}
-                      <div className="relative">
-                        <MyCourseComponents.Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => handleDropdownClick(course._id, e)}
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </MyCourseComponents.Button>
-                        {activeDropdownId === course._id && (
-                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border">
-                            <div className="py-1">
-                              <button
-                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-                                onClick={(e) => handleScheduleClick(course._id, e)}
-                              >
-                                <Calendar className="w-4 h-4" />
-                                Schedule Live Lecture
-                              </button>
-                              <button
-                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/course/${course._id}/lectures`);
-                                }}
-                              >
-                                <List className="w-4 h-4" />
-                                Manage Live Lectures
-                              </button>
+                      ) :
+                        <div className="relative">
+                          <MyCourseComponents.Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => handleDropdownClick(course._id, e)}
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </MyCourseComponents.Button>
+                          {activeDropdownId === course._id && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border">
+                              <div className="py-1">
+                                <button
+                                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+                                  onClick={(e) => handleScheduleClick(course._id, e)}
+                                >
+                                  <Calendar className="w-4 h-4" />
+                                  Schedule Live Lecture
+                                </button>
+
+                                <button
+                                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/livelectures/section`);
+                                  }}
+                                >
+                                  <List className="w-4 h-4" />
+                                  Manage Live Lectures
+                                </button>
+
+                                <button
+                                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // Add this to prevent navigation
+                                    toggleCourseStatus(course._id, !course.isActive, token); // Add token parameter
+                                  }}
+                                >
+                                  {course.isActive ? (
+                                    <>
+                                      <ToggleLeft className="w-4 h-4 text-red-500" />
+                                      Deactivate Course
+                                    </>
+                                  ) : (
+                                    <>
+                                      <ToggleRight className="w-4 h-4 text-green-500" />
+                                      Activate Course
+                                    </>
+                                  )}
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
+                          )}
+                        </div>
+                      }
                     </div>
                   </div>
                 </div>
@@ -330,86 +330,17 @@ const MyCourses = () => {
       </MyCourseComponents.Modal>
 
       {/* Schedule Lecture Modal */}
-      <MyCourseComponents.Modal
+      <ScheduleLectureModal
         isOpen={isScheduleModalOpen}
-        onClose={() => {
-          setIsScheduleModalOpen(false);
+        onClose={() => setIsScheduleModalOpen(false)}
+        courseId={selectedCourseId}
+        instructorId={user.id}
+        token={token}
+        onScheduleSuccess={() => {
           setSelectedCourseId(null);
-          setFormMessage(null);
+          // Add any additional success handling if needed
         }}
-        title="Schedule Live Lecture"
-      >
-        <form onSubmit={handleScheduleSubmit} className="space-y-4">
-          {formMessage && (
-            <div className={`alert ${formMessageType === "error" ? "alert-error" : "alert-success"}`}>
-              {formMessage}
-            </div>
-          )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Lecture Title
-            </label>
-            <input
-              type="text"
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={scheduleForm.title}
-              onChange={(e) => setScheduleForm({ ...scheduleForm, title: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date
-            </label>
-            <input
-              type="date"
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={scheduleForm.date}
-              onChange={(e) => setScheduleForm({ ...scheduleForm, date: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Start Time
-            </label>
-            <input
-              type="time"
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={scheduleForm.startTime}
-              onChange={(e) => setScheduleForm({ ...scheduleForm, startTime: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Duration (minutes)
-            </label>
-            <input
-              type="number"
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={scheduleForm.duration}
-              onChange={(e) => setScheduleForm({ ...scheduleForm, duration: e.target.value })}
-              required
-              min="1"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={scheduleForm.description}
-              onChange={(e) => setScheduleForm({ ...scheduleForm, description: e.target.value })}
-              rows="3"
-            />
-          </div>
-          <MyCourseComponents.Button type="submit" className="w-full">
-            Schedule Lecture
-          </MyCourseComponents.Button>
-        </form>
-      </MyCourseComponents.Modal>
+      />
 
       {/* Delete Confirmation Modal */}
       <MyCourseComponents.Modal
