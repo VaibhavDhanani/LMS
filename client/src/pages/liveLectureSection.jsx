@@ -224,7 +224,7 @@ const ManageLiveLectures = () => {
                         <ScheduleLectureModal
                             isOpen={isEditModalOpen}
                             onClose={() => setIsEditModalOpen(false)}
-                            courseId={selectedLecture?._id}
+                            courseId={selectedLecture?.courseId}
                             instructorId={user.id}
                             token={token}
                             existingLecture={selectedLecture}

@@ -6,11 +6,13 @@ import { AuthProvider } from './context/AuthContext';
 import './index.css';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
+import { NotificationProvider } from './context/NotificationContext';
 // <StrictMode>
 createRoot(document.getElementById('root')).render(
     <Router>
       <AuthProvider>
+        <NotificationProvider>
+
         <AppRoutes />
         <ToastContainer 
         position="bottom-left"
@@ -22,7 +24,8 @@ createRoot(document.getElementById('root')).render(
         pauseOnFocusLoss
         draggable
         pauseOnHover
-      />
+        />
+        </NotificationProvider>
       </AuthProvider>
     </Router>
 );
