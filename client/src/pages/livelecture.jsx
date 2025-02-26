@@ -11,131 +11,97 @@ const LiveLecture = () => {
   // State management
   const [remoteStream, setRemoteStream] = useState(null);
   const [roomId, setRoomId] = useState('');
-  const [producers, setProducers] = useState(null);
   const [device, setDevice] = useState(null);
   const [connectionState, setConnectionState] = useState({
     status: 'disconnected',
     error: null,
-    isLoading: false
+    isLoading: false,
+    transportReady: false
   });
   
-  // Refs
+  // Refs for persistent values
   const videoRef = useRef(null);
   const socketRef = useRef(null);
   const consumersRef = useRef(new Map());
+  const recvTransportRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
   
   // Hooks
   const { user, token } = useAuth();
   const { id } = useParams();
 
-  const renderConnectionStatus = () => {
-    if (connectionState.error) {
-      return (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>{connectionState.error}</AlertDescription>
-        </Alert>
-      );
-    }
-  
-    if (connectionState.isLoading) {
-      return (
-        <div className="flex items-center gap-2 mb-4">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Connecting to lecture...</span>
-        </div>
-      );
-    }
-  
-    if (connectionState.status === 'waiting') {
-      return (
-        <div className="flex items-center gap-2 mb-4 text-gray-500">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Waiting for host to start...</span>
-        </div>
-      );
-    }
-  
-    return null;
-  };
-  
+  const setupRecvTransport = async (deviceInstance, transportParams) => {
+    try {
+      const recvTransport = deviceInstance.createRecvTransport({
+        ...transportParams,
+        iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }],
+      });
 
-  useEffect(() => {
-    connectToSocket();
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-      cleanup();
-    };
-  }, []);
+      recvTransport.on('connect', ({ dtlsParameters }, callback, errback) => {
+        socketRef.current.emit('connectTransport', {
+          transportId: recvTransport.id,
+          dtlsParameters
+        }, (response) => {
+          if (response.error) errback(new Error(response.error));
+          else callback();
+        });
+      });
 
-  const cleanup = () => {
-    // Clean up consumers
-    consumersRef.current.forEach(consumer => {
-      try {
-        consumer.close();
-      } catch (error) {
-        console.warn('Error closing consumer:', error);
-      }
-    });
-    consumersRef.current.clear();
+      // Store transport reference
+      recvTransportRef.current = recvTransport;
+      
+      setConnectionState(prev => ({
+        ...prev,
+        transportReady: true
+      }));
 
-    // Clean up stream
-    if (remoteStream) {
-      remoteStream.getTracks().forEach(track => track.stop());
+      return recvTransport;
+    } catch (error) {
+      console.error('Transport setup failed:', error);
+      throw error;
     }
   };
 
-  const connectToSocket = () => {
-    setConnectionState(prev => ({ ...prev, isLoading: true }));
-  
-    const newSocket = io('http://localhost:3000', {
-      reconnectionDelayMax: 10000,
-      transports: ['websocket']
-    });
-  
-    newSocket.on('connect', () => {
-      setConnectionState(prev => ({
-        ...prev,
-        status: 'connected',
-        error: null
-      }));
-      socketRef.current = newSocket;
-      joinLecture();
-    });
-  
-    newSocket.on('connect_error', (error) => {
-      setConnectionState(prev => ({
-        ...prev,
-        status: 'error',
-        error: 'Failed to connect to server'
-      }));
-    });
-  
-    newSocket.on('disconnect', () => {
-      setConnectionState(prev => ({
-        ...prev,
-        status: 'disconnected'
-      }));
-    });
-  
-    // Listen for new producers
-    newSocket.on('newProducer', async ({ producerId }) => {
-      console.log("New producer event received:", producerId);
-      if (device) {
-        await consumeMedia(device, roomId);
+  const consumeProducer = async (producerInfo) => {
+    try {
+      if (!recvTransportRef.current || !device) {
+        throw new Error('Transport or device not ready');
       }
-    });
-    
+
+      const { consumerParams } = await new Promise((resolve, reject) => {
+        socketRef.current.emit('consumeProducer', {
+          transportId: recvTransportRef.current.id,
+          producerId: producerInfo.producerId,
+          rtpCapabilities: device.rtpCapabilities
+        }, (response) => {
+          if (response.error) reject(new Error(response.error));
+          else resolve(response);
+        });
+      });
+
+      const consumer = await recvTransportRef.current.consume({
+        ...consumerParams,
+        producerId: producerInfo.producerId,
+      });
+
+      consumersRef.current.set(consumer.id, consumer);
+      await consumer.resume();
+
+      // Update stream with new track
+      setRemoteStream(prev => {
+        const newStream = prev || new MediaStream();
+        newStream.addTrack(consumer.track);
+        return newStream;
+      });
+
+    } catch (error) {
+      console.error('Failed to consume producer:', error);
+      throw error;
+    }
   };
-  
 
   const initializeDevice = async () => {
     try {
-      if (!socketRef.current) {
-        throw new Error('Socket not connected');
-      }
-
       const { rtpCapabilities } = await new Promise((resolve, reject) => {
         socketRef.current.emit('getRtpCapabilities', (response) => {
           if (response.error) reject(new Error(response.error));
@@ -152,128 +118,211 @@ const LiveLecture = () => {
     }
   };
 
-  const joinLecture = async () => {
-    try {
-      setConnectionState(prev => ({ ...prev, isLoading: true }));
-  
-      const response = await getRoomToken(id, token);
-      const fetchedRoomToken = response.data.roomToken;
-  
-      if (!fetchedRoomToken) {
-        throw new Error('Invalid room token');
+  const setupSocketListeners = (socket) => {
+    socket.on('connect', async () => {
+      console.log('Socket connected');
+      setConnectionState(prev => ({
+        ...prev,
+        status: 'connected',
+        error: null
+      }));
+      await joinLecture();
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Socket disconnected');
+      setConnectionState(prev => ({
+        ...prev,
+        status: 'disconnected',
+        transportReady: false
+      }));
+
+      // Attempt reconnection after delay
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
       }
-  
-      const joinResponse = await new Promise((resolve, reject) => {
-        socketRef.current.emit('joinLecture', { roomId: fetchedRoomToken }, (response) => {
-          if (response.error) reject(new Error(response.error));
-          else resolve(response);
-        });
-      });
-  
-      setRoomId(fetchedRoomToken);
-      setProducers(joinResponse);
-  
-      if (!joinResponse || joinResponse.length === 0) {
-        setConnectionState(prev => ({
-          ...prev,
-          status: 'waiting',
-          isLoading: false,
-          error: 'Waiting for host to start the lecture...'
-        }));
-      } else {
-        const deviceInstance = device || await initializeDevice();
-        await consumeMedia(deviceInstance, fetchedRoomToken);
-  
+      reconnectTimeoutRef.current = setTimeout(connectToSocket, 5000);
+    });
+
+    socket.on('newProducer', async (producerInfo) => {
+      console.log('New producer detected:', producerInfo);
+      try {
+        if (!device) {
+          const deviceInstance = await initializeDevice();
+          setDevice(deviceInstance);
+        }
+
+        if (!connectionState.transportReady) {
+          const { transportParams } = await new Promise((resolve, reject) => {
+            socket.emit('createTransport', { direction: 'recv' }, (response) => {
+              if (response.error) reject(new Error(response.error));
+              else resolve(response);
+            });
+          });
+          await setupRecvTransport(device, transportParams);
+        }
+
+        await consumeProducer(producerInfo);
+        
         setConnectionState(prev => ({
           ...prev,
           status: 'streaming',
-          isLoading: false,
-          error: null
+          isLoading: false
+        }));
+      } catch (error) {
+        console.error('Failed to handle new producer:', error);
+        setConnectionState(prev => ({
+          ...prev,
+          error: 'Failed to connect to stream'
         }));
       }
-  
+    });
+
+    socket.on('producerClosed', ({ producerId }) => {
+      console.log('Producer closed:', producerId);
+      if (consumersRef.current.has(producerId)) {
+        const consumer = consumersRef.current.get(producerId);
+        consumer.close();
+        consumersRef.current.delete(producerId);
+
+        // Remove track from stream
+        setRemoteStream(prev => {
+          if (!prev) return null;
+          const newStream = new MediaStream();
+          prev.getTracks().forEach(track => {
+            if (track.id !== consumer.track.id) {
+              newStream.addTrack(track);
+            }
+          });
+          return newStream;
+        });
+      }
+    });
+  };
+
+  const connectToSocket = () => {
+    if (socketRef.current?.connected) return;
+
+    setConnectionState(prev => ({ ...prev, isLoading: true }));
+    
+    const socket = io('http://localhost:3000', {
+      reconnectionDelayMax: 10000,
+      transports: ['websocket']
+    });
+
+    setupSocketListeners(socket);
+    socketRef.current = socket;
+  };
+
+  const joinLecture = async () => {
+    try {
+      const response = await getRoomToken(id, token);
+      const roomToken = response.data.roomToken;
+      
+      if (!roomToken) {
+        throw new Error('Invalid room token');
+      }
+
+      setRoomId(roomToken);
+
+      const joinResponse = await new Promise((resolve, reject) => {
+        socketRef.current.emit('joinLecture', { roomId: roomToken }, (response) => {
+          if (response.error) reject(new Error(response.error));
+          else resolve(response);
+        });
+      });
+
+      // If there are active producers, set up device and consume
+      if (joinResponse.activeProducers?.length > 0) {
+        const deviceInstance = device || await initializeDevice();
+        const { transportParams } = await new Promise((resolve, reject) => {
+          socketRef.current.emit('createTransport', { direction: 'recv' }, (response) => {
+            if (response.error) reject(new Error(response.error));
+            else resolve(response);
+          });
+        });
+        
+        await setupRecvTransport(deviceInstance, transportParams);
+        
+        // Consume all active producers
+        for (const producer of joinResponse.activeProducers) {
+          await consumeProducer(producer);
+        }
+        
+        setConnectionState(prev => ({
+          ...prev,
+          status: 'streaming',
+          isLoading: false
+        }));
+      } else {
+        setConnectionState(prev => ({
+          ...prev,
+          status: 'waiting',
+          isLoading: false
+        }));
+      }
     } catch (error) {
+      console.error('Join lecture failed:', error);
       setConnectionState(prev => ({
+        ...prev,
         status: 'error',
-        isLoading: false,
-        error: `Failed to join lecture: ${error.message}`
+        error: `Failed to join lecture: ${error.message}`,
+        isLoading: false
       }));
     }
   };
-  
 
-  const consumeMedia = async (deviceInstance, currentRoomId) => {
-    if (!currentRoomId || !deviceInstance) {
-      throw new Error('Missing required parameters for media consumption');
-    }
-
-    try {
-      const { transportParams } = await new Promise((resolve, reject) => {
-        socketRef.current.emit('createTransport', { direction: 'recv' }, (response) => {
-          if (response.error) reject(new Error(response.error));
-          else resolve(response);
-        });
-      });
-
-      const recvTransport = deviceInstance.createRecvTransport({
-        ...transportParams,
-        iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }],
-      });
-
-      recvTransport.on('connect', ({ dtlsParameters }, callback, errback) => {
-        socketRef.current.emit('connectTransport', {
-          transportId: recvTransport.id,
-          dtlsParameters
-        }, (response) => {
-          if (response.error) errback(new Error(response.error));
-          else callback();
-        });
-      });
-
-      const consumeResponses = await new Promise((resolve, reject) => {
-        socketRef.current.emit('consume', {
-          transportId: recvTransport.id,
-          rtpCapabilities: deviceInstance.rtpCapabilities,
-          roomId: currentRoomId,
-        }, (response) => {
-          if (response.error) reject(new Error(response.error));
-          else resolve(response);
-        });
-      });
-
-      const mediaStreams = new MediaStream();
-
-      for (const consumerInfo of consumeResponses) {
-        const consumer = await recvTransport.consume({
-          id: consumerInfo.id,
-          producerId: consumerInfo.producerId,
-          kind: consumerInfo.kind,
-          rtpParameters: consumerInfo.rtpParameters,
-        });
-
-        consumersRef.current.set(consumer.id, consumer);
-        await consumer.resume();
-        mediaStreams.addTrack(consumer.track);
+  // Initial connection
+  useEffect(() => {
+    connectToSocket();
+    return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
       }
+      cleanup();
+    };
+  }, []);
 
-      setRemoteStream(mediaStreams);
-
-    } catch (error) {
-      throw new Error(`Media consumption failed: ${error.message}`);
-    }
-  };
-
+  // Update video element when stream changes
   useEffect(() => {
     if (videoRef.current && remoteStream) {
       videoRef.current.srcObject = remoteStream;
     }
   }, [remoteStream]);
 
+  const cleanup = () => {
+    consumersRef.current.forEach(consumer => {
+      try {
+        consumer.close();
+      } catch (error) {
+        console.warn('Error closing consumer:', error);
+      }
+    });
+    consumersRef.current.clear();
+
+    if (recvTransportRef.current) {
+      try {
+        recvTransportRef.current.close();
+      } catch (error) {
+        console.warn('Error closing transport:', error);
+      }
+    }
+
+    if (remoteStream) {
+      remoteStream.getTracks().forEach(track => track.stop());
+    }
+
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+    }
+  };
+
+  // ... rest of your component (render method etc.) remains the same
 
   return (
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4">Live Lecture Stream</h2>
-      {renderConnectionStatus()}
+  
       <div className="relative">
         <video
           ref={videoRef}

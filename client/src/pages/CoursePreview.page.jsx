@@ -107,24 +107,26 @@ const CoursePreviewPage = () => {
   useEffect(() => {
     const fetchCourse = async () => {
       try {
-        const fetchedCourse = await getCourseById(id,token);
-        if (fetchedCourse) {
-          setCourse(fetchedCourse);
+        const fetchedCourse = await getCourseById(id, token);
+        
+        if (fetchedCourse.success) {
+          setCourse(fetchedCourse.data); // ✅ Store only the course data
         } else {
-          console.error('Course not found!');
+          console.error(fetchedCourse.message);
         }
       } catch (error) {
         console.error('Error fetching course:', error);
       }
     };
+  
     fetchCourse();
-  }, [id]);
+  }, [id, token]); // ✅ Include token in dependency array if it changes
+  
 
   if (!course) {
     return <div className="container mx-auto px-4 py-8">Loading course...</div>;
   }
 
-  // console.log(course);
 
   return (
       <div className="container mx-auto px-4 py-8">
