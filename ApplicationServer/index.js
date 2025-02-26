@@ -15,6 +15,8 @@ import webhookRoutes from './router/webhook.routes.js';
 import transactionRoutes from './router/transaction.routes.js';
 import paymentRoutes from './router/payment.routes.js';
 import lectureRoutes from './router/lecture.routes.js';
+import publicCourseRoutes from './router/publicCourse.routes.js';
+import notificationRoutes from './router/notification.routes.js';
 configDotenv();
 const app = express();
 connectDB();
@@ -22,8 +24,9 @@ connectDB();
 app.use(express.json());
 app.use(
   cors({
-    origin: '*', // Allow requests from this origin
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed HTTP methods
+    origin: 'http://localhost:5173', // Allow requests from this origin
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed HTTP methods,
+    credentials: true,
   }),
 );
 
@@ -31,8 +34,9 @@ app.use(
 app.use('/api/stripe', webhookRoutes);
 app.use('/api/payment',authenticateToken, paymentRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api',publicCourseRoutes);
 app.use('/api',authenticateToken
-  , userRoutes, courseRoutes,courseDraft, enrollmentRoutes, reviewRoutes,transactionRoutes,lectureRoutes);
+  , userRoutes, courseRoutes,courseDraft, enrollmentRoutes, reviewRoutes,transactionRoutes,lectureRoutes,notificationRoutes);
   app.use(
     '/api1',
     userRoutes,

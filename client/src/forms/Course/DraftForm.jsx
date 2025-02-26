@@ -11,6 +11,7 @@ import TargetStudentsStep from "./TargetStudentsStep";
 import ReviewStep from "./ReviewStep";
 import { getDraftById, updateDraft, publishDraft } from "../../services/draft.service.jsx";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "react-toastify";
 
 const CourseForm = () => {
   const { id } = useParams();
@@ -66,16 +67,25 @@ const CourseForm = () => {
     "Review & Publish",
   ];
   
+
   useEffect(() => {
     if (id) {
       setLoading(true);
       getDraftById(id, token)
-          .then((data) => {
-            setFormData(data);
+        .then((response) => {
+          if (response.success) {
+            setFormData(response.data);
             setSaveStatus("All changes saved");
-          })
-          .catch(() => setError("Error fetching draft. Please try again later."))
-          .finally(() => setLoading(false));
+          } else {
+            toast.error(response.message);
+            setError(response.message);
+          }
+        })
+        .catch(() => {
+          toast.error("Error fetching draft. Please try again later.");
+          setError("Error fetching draft. Please try again later.");
+        })
+        .finally(() => setLoading(false));
     }
   }, [id]);
   
@@ -87,10 +97,16 @@ const CourseForm = () => {
   const handleSaveChanges = async () => {
     setSaveStatus("Saving...");
     try {
-      await updateDraft(id, formData, token);
-      setSaveStatus("All changes saved");
-      setError("");
+      const response = await updateDraft(id, formData, token);
+      if (response.success) {
+        toast.success("Draft saved successfully!");
+        setSaveStatus("All changes saved");
+        setError("");
+      } else {
+        throw new Error(response.message);
+      }
     } catch (err) {
+      toast.error("Failed to save changes. Please try again.");
       setError("Failed to save changes. Please try again.");
       setSaveStatus("Save failed");
     }
@@ -100,15 +116,24 @@ const CourseForm = () => {
     setShowConfirmModal(false);
     setLoading(true);
     try {
-      await updateDraft(id, formData, token);
-      await publishDraft(id, formData, token);
-      navigate("/mycourses");
+      const saveResponse = await updateDraft(id, formData, token);
+      if (!saveResponse.success) throw new Error(saveResponse.message);
+  
+      const publishResponse = await publishDraft(id, formData, token);
+      if (publishResponse.success) {
+        toast.success("Course published successfully!");
+        navigate("/mycourses");
+      } else {
+        throw new Error(publishResponse.message);
+      }
     } catch (err) {
+      toast.error("Failed to publish the course. Please try again.");
       setError("Failed to publish the course. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+  
   
   const renderStep = () => {
     switch (currentStep) {

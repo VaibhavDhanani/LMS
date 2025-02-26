@@ -21,7 +21,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '1h' }
     );
     
-    res.json({ token }); // Send the token in the response
+    res.json({ data: {token} }); // Send the token in the response
   } catch (error) {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
@@ -32,7 +32,13 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
     const isInstructor = (role === 'true')? true : false;
-    const existingUser = await User.findOne({ name });
+    const existingUser = await User.findOne({
+      $or: [
+        { name: name },  // Search by name
+        { email: email }  // Search by email
+      ]
+    });
+    
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
@@ -52,7 +58,7 @@ router.post('/register', async (req, res) => {
       { expiresIn: '1h' },
     );
 
-    res.status(201).json({ token });
+    res.status(201).json({ data: {token} });
   } catch (error) {
     res
       .status(500)
