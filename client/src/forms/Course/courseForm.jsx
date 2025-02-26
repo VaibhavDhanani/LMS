@@ -11,6 +11,7 @@ import TargetStudentsStep from "./TargetStudentsStep";
 import ReviewStep from "./ReviewStep";
 import { getCourseById, updateCourse } from "../../services/course.service.jsx";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "react-toastify";
 const CourseForm = () => {
   const { id } = useParams();
   const [currentStep, setCurrentStep] = useState(0);
@@ -49,33 +50,52 @@ const CourseForm = () => {
     "Review & Publish",
   ];
 
-  useEffect(() => {
-    if (id) {
-      setLoading(true);
-      getCourseById(id,token)
-        .then((data) => {
-          console.log(data);
-          setFormData(data)
-        })
-        .catch((error) => setError("Error fetching draft. Please try again later."))
-        .finally(() => setLoading(false));
-    }
 
-  },[id]);
+  useEffect(() => {
+    if (!id) return;
+  
+    const fetchCourse = async () => {
+      setLoading(true);
+      try {
+        const response = await getCourseById(id, token);
+        if (response.success) {
+          setFormData(response.data);
+        } else {
+          toast.error(response.message);
+        }
+      } catch (error) {
+        toast.error("Error fetching course. Please try again later.");
+        setError("Error fetching course. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchCourse();
+  }, [id, token]);
+  
 
   const updateFormData = (field, value) => {
     setFormData((prevState) => ({ ...prevState, [field]: value }));
   };
 
-  const handleSaveChanges = () => {
-    updateCourse(id, formData,token)
-      .then(() => {
-        console.log("Draft saved successfully!");
-        setError(""); // Clear error if successful
-      })
-      .catch(() => setError("Failed to save changes. Please try again."));
+  const handleSaveChanges = async () => {
+    try {
+      const response = await updateCourse(id, formData, token);
+  
+      if (response.success) {
+        toast.success("Draft saved successfully!");
+        setError(""); // Clear any previous errors
+      } else {
+        toast.error(response.message || "Failed to save changes. Please try again.");
+        setError(response.message || "Failed to save changes. Please try again.");
+      }
+    } catch (error) {
+      toast.error("An error occurred while saving. Please try again.");
+      setError("An error occurred while saving. Please try again.");
+    }
   };
-
+  
   const renderStep = () => {
     switch (currentStep) {
       case 0:

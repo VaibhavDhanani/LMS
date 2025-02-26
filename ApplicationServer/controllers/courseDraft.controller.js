@@ -54,7 +54,7 @@ export const createCourseDraft = async (req, res) => {
 export const getAllCourseDrafts = async (req, res) => {
   try {
     const courseDrafts = await CourseDraft.find().populate("instructor", "username email"); // Populate instructor details if needed
-    res.status(200).json(courseDrafts);
+    res.status(200).json({data: courseDrafts});
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching course drafts", error });
@@ -65,7 +65,7 @@ export const getUserCourseDrafts = async (req, res) => {
   const { instructorId } = req.params;
   try {
       const drafts = await CourseDraft.find({ instructorId }).populate("instructor", "username email");
-      res.status(200).json(drafts);
+      res.status(200).json({data: drafts});
   } catch (error) {
       res.status(500).json({ error: 'Unable to fetch drafts for user' });
   }
@@ -91,12 +91,10 @@ export const getCourseDraftById = async (req, res) => {
 // Update a course draft by ID
 export const updateCourseDraft = async (req, res) => {
   try {
-    // Add the current timestamp to the update object
-    const updateData = { ...req.body, lastUpdated: new Date() };
 
     const updatedCourseDraft = await CourseDraft.findByIdAndUpdate(
       req.params.id,
-      updateData,
+      req.body,
       { new: true, runValidators: true }
     );
 
@@ -123,7 +121,7 @@ export const deleteCourseDraft = async (req, res) => {
       return res.status(404).json({ message: "Course draft not found" });
     }
 
-    res.status(200).json({ message: "Course draft deleted successfully", deletedCourseDraft });
+    res.status(200).json({ message: "Course draft deleted successfully", data: deletedCourseDraft });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error deleting course draft", error });

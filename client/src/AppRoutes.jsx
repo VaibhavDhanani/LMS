@@ -18,7 +18,6 @@ import LectureStreaming from './pages/lectureStreaming.page.jsx';
 import LiveLecture from './pages/livelecture.jsx';
 import InstructorProfilePage from "@/pages/InstructorProfile.page.jsx";
 
-
 const AppRoutes = () => (
   <Routes>
     {/* Public Routes */}
@@ -30,6 +29,8 @@ const AppRoutes = () => (
         </Layout>
       }
     />
+      <Route path="/courses/:id" element={
+        <Layout><CoursePreviewPage /></Layout>} />
     <Route
       path="/auth"
       element={
@@ -48,7 +49,6 @@ const AppRoutes = () => (
           </Layout>
         }
       >
-        <Route path="/courses/:id" element={<CoursePreviewPage />} />
         <Route path="/my-courses/:id" element={<ViewLecturePage />} />
         <Route path="/success" element={<h1>Success</h1>} />
         <Route path="/cancel" element={<h1>Cancel</h1>} />

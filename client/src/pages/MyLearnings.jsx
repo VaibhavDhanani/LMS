@@ -12,15 +12,20 @@ const MyLearningPage = () => {
     const fetchEnrolledCourses = async () => {
       try {
         setLoading(true);
-        const data = await getStudentEnrolledCourses(user.id,token);
-        setEnrolledCourses(data);
+        const response = await getStudentEnrolledCourses(user.id, token);
+        if (response.success) {
+          setEnrolledCourses(response.data);  // Update with the fetched data
+        } else {
+          // Handle failure if needed (you can display a message or handle it differently)
+          console.error(response.message);
+        }
       } catch (error) {
         console.error("Error fetching enrolled courses:", error);
       } finally {
         setLoading(false);
       }
     };
-
+  
     if (user && token) {
       fetchEnrolledCourses();
     }
