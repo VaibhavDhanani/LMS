@@ -34,9 +34,11 @@ const LiveLecture = () => {
     try {
       const recvTransport = deviceInstance.createRecvTransport({
         ...transportParams,
-        iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }],
+        iceServers: [
+          { urls: ['stun:stun.l.google.com:19302'] }
+        ],
       });
-
+      console.log(recvTransport);
       recvTransport.on('connect', ({ dtlsParameters }, callback, errback) => {
         socketRef.current.emit('connectTransport', {
           transportId: recvTransport.id,
@@ -159,6 +161,7 @@ const LiveLecture = () => {
               else resolve(response);
             });
           });
+          // console.log(transportParams);
           await setupRecvTransport(device, transportParams);
         }
 
