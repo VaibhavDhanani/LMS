@@ -2,12 +2,16 @@ import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getAllCourse } from "@/services/course.service.jsx";
+import { useNotifications } from '@/context/NotificationContext';
 
 const Navigationbar = () => {
   const [allCourses, setAllCourses] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
 
   const fetchAllCourses = async () => {
     try {
@@ -45,7 +49,6 @@ const Navigationbar = () => {
     setIsSearching(true);
   };
 
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -55,13 +58,48 @@ const Navigationbar = () => {
       if (!event.target.closest('.search-container')) {
         setIsSearching(false);
       }
+      if (!event.target.closest('.notification-container') && isNotificationsOpen) {
+        setIsNotificationsOpen(false);
+      }
     };
 
     document.addEventListener('click', handleClickOutside);
     return () => {
       document.removeEventListener('click', handleClickOutside);
     };
-  }, []);
+  }, [isNotificationsOpen]);
+
+  // Handle notification click
+  const handleNotificationClick = (notification) => {
+    // Stop the click event from bubbling up
+
+    markAsRead(notification._id);
+
+    // Navigate to the relevant page based on notification type
+    if (notification.link) {
+      navigate(notification.link);
+    }
+
+    setIsNotificationsOpen(false);
+  };
+
+  // Format notification time
+  const formatNotificationTime = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays}d ago`;
+
+    return date.toLocaleDateString();
+  };
 
   return (
     <div className="navbar bg-base-100 border border-black">
@@ -93,18 +131,16 @@ const Navigationbar = () => {
           </a>
         </div>
       )}
-      {user &&(
-
+      {user && (
         <div className="flex-1">
-        <a
-          className="btn btn-ghost text-xl"
-          onClick={() => navigate('/livelectures/section')}
-        >
-          Live Lecture
-        </a>
-      </div>
-        )}
-
+          <a
+            className="btn btn-ghost text-xl"
+            onClick={() => navigate('/livelectures/section')}
+          >
+            Live Lecture
+          </a>
+        </div>
+      )}
 
       <div className="flex-none gap-2">
         <div className="form-control relative search-container">
@@ -152,9 +188,100 @@ const Navigationbar = () => {
           )}
         </div>
 
+        {/* Notifications */}
+        {user && (
+          <div className="dropdown dropdown-end notification-container">
+            <div
+              tabIndex={0}
+              role="button"
+              className="btn btn-ghost btn-circle"
+              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+            >
+              <div className="indicator">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="badge badge-sm badge-primary indicator-item">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </div>
+            </div>
+            {isNotificationsOpen && (
+              <div className="mt-3 z-[1] card card-compact dropdown-content w-80 bg-base-100 shadow-lg">
+                <div className="card-body">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-lg">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={markAllAsRead}
+                        className="text-xs text-blue-500 hover:text-blue-700"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
+                  </div>
+                  <div className="divider my-0"></div>
+                  {notifications.length === 0 ? (
+                    <div className="py-4 text-center text-gray-500">
+                      No notifications
+                    </div>
+                  ) : (
+                    <div className="max-h-96 overflow-y-auto">
+                      {notifications.map((notification) => (
+                        <button
+                          key={notification._id}
+                          onClick={() => handleNotificationClick(notification)}
+                          className={`w-full text-left p-2 hover:bg-gray-100 cursor-pointer border-b ${!notification.isRead ? 'bg-blue-50' : ''
+                            }`}
+                        >
+                          <div className="flex justify-between">
+                            <h4
+                              className={`font-medium ${!notification.isRead ? 'font-bold text-blue-800' : ''
+                                }`}
+                            >
+                              {notification.title || 'Notification'}
+                            </h4>
+                            <span className="text-xs text-gray-500">
+                              {formatNotificationTime(notification.createdAt)}
+                            </span>
+                          </div>
+                          <p className="text-sm">{notification.message}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="card-actions mt-2">
+                    <button
+                      className="btn btn-primary btn-sm btn-block"
+                      onClick={() => {
+                        navigate('/notifications');
+                        setIsNotificationsOpen(false);
+                      }}
+                    >
+                      View All
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="hidden md:flex">
           <ul className="menu menu-horizontal px-1">
-            
             <li>
               <a>Watch List</a>
             </li>
@@ -214,13 +341,11 @@ const Navigationbar = () => {
             Logout
           </button>
         ) : (
-
-
-          <a href="/auth">            
-          <button
-            className="btn btn-error ml-4 hidden md:block"
-          >Login</button></a>
-
+          <a href="/auth">
+            <button
+              className="btn btn-error ml-4 hidden md:block"
+            >Login</button>
+          </a>
         )}
       </div>
     </div>

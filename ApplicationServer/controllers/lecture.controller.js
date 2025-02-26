@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken"; // Used for generating room tokens
 import User from "../models/user.js";
 const SECRET_KEY = "your_secret_key"; // Change this to a secure key
 import moment from "moment"; // Install using: npm install moment
+import notificationManager from "../utills/notificationManager.js";
+
 // ✅ Create Lecture (Checks for conflicts)
 
 export const createLecture = async (req, res) => {
@@ -51,7 +53,15 @@ export const createLecture = async (req, res) => {
     });
 
     await newLecture.save();
-    res.status(201).json(newLecture);
+
+    const notification = await notificationManager.createNotificationsForCourse(courseId,{
+      type: 'lecture_scheduled',
+      lecture : newLecture._id,
+      title: newLecture.title,
+      message: `A new lecture "${title}" has been scheduled for ${new Date(startTime).toLocaleString()}`,
+      isTimeSensitive: false,
+    });
+    res.status(201).json({data : newLecture});
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
@@ -100,6 +110,14 @@ export const updateLecture = async (req, res) => {
       }
     }
 
+    // Check if significant details have changed
+    const isLectureUpdated =
+      title !== existingLecture.title ||
+      date !== existingLecture.date ||
+      startTime !== existingLecture.startTime ||
+      duration !== existingLecture.duration ||
+      description !== existingLecture.description;
+
     const updatedLecture = await Lecture.findByIdAndUpdate(
       id,
       {
@@ -116,11 +134,24 @@ export const updateLecture = async (req, res) => {
       { new: true, runValidators: true }
     );
 
+    // Send notification only if significant details have changed
+    if (isLectureUpdated) {
+      console.log(courseId);
+      await notificationManager.createNotificationsForCourse(courseId, {
+        type: "lecture_updated",
+        lecture: updatedLecture._id,
+        title: `Lecture Updated: ${updatedLecture.title}`,
+        message: `The lecture "${updatedLecture.title}" has been updated to ${new Date(startTime).toLocaleString()}`,
+        isTimeSensitive: false,
+      });
+    }
+
     res.status(200).json(updatedLecture);
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
+
 
 
 // ✅ Get Lecture by ID
@@ -192,6 +223,7 @@ export const getStudentLecture = async (req, res) => {
 export const deleteLecture = async (req, res) => {
   try {
     const { id } = req.params;
+    
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid Lecture ID" });
     }
@@ -201,18 +233,27 @@ export const deleteLecture = async (req, res) => {
       return res.status(404).json({ message: "Lecture not found" });
     }
 
+    // Send notification for lecture cancellation
+    await notificationManager.createNotificationsForCourse(deletedLecture.courseId, {
+      type: "lecture_canceled",
+      lecture: deletedLecture._id,
+      title: `Lecture Canceled: ${deletedLecture.title}`,
+      message: `The lecture "${deletedLecture.title}" scheduled for ${new Date(deletedLecture.startTime).toLocaleString()} has been canceled.`,
+      isTimeSensitive: true,
+    });
+
     res.status(200).json({ message: "Lecture deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
 
+
 // ✅ Start Lecture (Generates room token)
 
 export const startLecture = async (req, res) => {
   try {
     const { id } = req.params;
-    // const userId = req.user.id; // Extracted from auth middleware
 
     // Validate ID format
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -225,16 +266,6 @@ export const startLecture = async (req, res) => {
       return res.status(404).json({ message: "Lecture not found" });
     }
 
-    // Ensure the user is the instructor of the course
-    // const course = await Course.findById(lecture.courseId);
-    // if (!course) {
-    //   return res.status(404).json({ message: "Course not found" });
-    // }
-
-    // if (course.instructorId.toString() !== userId) {
-    //   return res.status(403).json({ message: "Unauthorized: You are not the instructor of this course." });
-    // }
-
     // If lecture is already ongoing, return the existing token
     if (lecture.status === "ongoing") {
       return res.status(200).json({ message: "Lecture is already ongoing", roomToken: lecture.roomToken });
@@ -242,9 +273,7 @@ export const startLecture = async (req, res) => {
 
     // Generate a unique JWT-based room token
     const roomToken = jwt.sign(
-      { lectureId: id, 
-        // instructorId: userId 
-      },
+      { lectureId: id },
       SECRET_KEY,
       { expiresIn: "3h" }
     );
@@ -254,11 +283,21 @@ export const startLecture = async (req, res) => {
     lecture.roomToken = roomToken;
     await lecture.save();
 
+    // Send notification to users
+    await notificationManager.createNotificationsForCourse(lecture.courseId, {
+      type: "lecture_started",
+      lecture: lecture._id,
+      title: `Lecture Started: ${lecture.title}`,
+      message: `The lecture "${lecture.title}" has started. Join now!`,
+      isTimeSensitive: true,
+    });
+
     res.status(200).json({ message: "Lecture started", roomToken });
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
+
 
 
 // ✅ Student Joins Lecture (Fetches room token)
