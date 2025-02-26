@@ -29,7 +29,7 @@ const LectureStreaming = () => {
         const roomToken = response.data.roomToken;
         setRoomId(roomToken);
   
-        const newSocket = io("http://172.20.10.6:3000");
+        const newSocket = io("http://localhost:3000");
         setSocket(newSocket);
   
         newSocket.on("connect", () => {

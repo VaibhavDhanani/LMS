@@ -89,7 +89,7 @@ io.on('connection', (socket) => {
     try {
       console.log(`Creating ${direction} transport for client: ${socket.id}`);
       const transport = await router.createWebRtcTransport({
-        listenIps: [{ ip: '0.0.0.0', announcedIp: '172.20.10.6' }],
+        listenIps: [{ ip: '0.0.0.0', announcedIp: '0.0.0.0' }],
         enableUdp: true,
         enableTcp: true,
         preferUdp: true,
@@ -176,7 +176,57 @@ io.on('connection', (socket) => {
     }
   });
   
+  socket.on('consumeProducer', async ({ transportId, producerId,rtpCapabilities }, callback) => {
+    try {
+      // Retrieve transport object for the consumer
+      const transport = mediasoupTransports.get(transportId);
+      if (!transport) {
+        console.error(`Transport not found: ${transportId}`);
+        return callback({ error: 'Transport not found' });
+      }
   
+  
+      // const consumers = []; // Array to hold the consumers
+  
+      // ✅ Correct way to retrieve producers
+        try {
+          console.log('Creating consumer for producer:', producerId);
+          const consumer = await transport.consume({
+            producerId: producerId,
+            rtpCapabilities,
+            paused: false, // Start consumer as unpaused
+          });
+  
+          console.log(`Consumer created: ${consumer.id}`);
+  
+          // Handle consumer closure and clean up
+          consumer.on('close', () => {
+            console.log(`Consumer closed: ${consumer.id}`);
+          });
+  
+          // If necessary, resume the consumer (though `paused: false` should make this unnecessary)
+          await consumer.resume();
+  
+          // Add consumer details to the consumers array
+          // consumers.push({
+          //   producerId: producer.id,
+          //   id: consumer.id,
+          //   kind: consumer.kind,
+          //   rtpParameters: consumer.rtpParameters,
+          // });
+  
+        } catch (error) {
+          console.error(`Error creating consumer for producer ${producerId}:`, error);
+        }
+  
+      // Send the list of consumers to the client
+      callback();
+  
+    } catch (error) {
+      console.error('Error in consume process:', error);
+      callback({ error: error.message });
+    }
+  });  
 
   socket.on('consume', async ({ roomId, transportId, rtpCapabilities }, callback) => {
     try {
@@ -264,10 +314,10 @@ io.on('connection', (socket) => {
       room.consumers.delete(socket.id);
   
       // If the room is empty, clean it up
-      // if (room.producers.size === 0 && room.consumers.size === 0) {
-      //   rooms.delete(roomId);
-      //   console.log(`Room ${roomId} deleted as it's now empty`);
-      // }
+      if (room.producers.size === 0 && room.consumers.size === 0) {
+        rooms.delete(roomId);
+        console.log(`Room ${roomId} deleted as it's now empty`);
+      }
     }
   
     // Cleanup transports
