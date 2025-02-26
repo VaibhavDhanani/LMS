@@ -4,21 +4,33 @@ import { getAllCourse } from "@/services/course.service";
 import { useAuth } from "@/context/AuthContext";
 
 const CourseSection = () => {
-  const [courses, SetCourse] = useState([]); // Initialize with an empty array
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
   const { user, token } = useAuth();
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true); // Set loading to true before API call
       try {
-        const data = await getAllCourse(token);
-        SetCourse(data);
+        const response = await getAllCourse();
+        
+        if (response.success) {
+          setCourses(response.data);
+        } else {
+          setErrorMessage(response.message || "Failed to fetch courses.");
+        }
       } catch (error) {
         console.error("Error fetching courses:", error);
+        setErrorMessage("An error occurred while fetching courses.");
+      } finally {
+        setLoading(false); // Set loading to false after API call
       }
     };
 
-    fetchData(); // Call the async function
-  }, [token]); // Add `token` to the dependency array in case it changes
+    fetchData();
+  }, [token]); // Re-run when the token changes
 
   return (
     <>
@@ -28,19 +40,22 @@ const CourseSection = () => {
         </h1>
       )}
       <div className="p-4 space-y-8">
-
-        {/* Render the dynamically fetched courses */}
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Available Courses</h2>
-          <div className="flex gap-4 overflow-x-auto pb-4">
-            {courses && courses.length > 0 ? (
-              courses.map((course, idx) => (
+          
+          {loading ? (
+            <p>Loading courses...</p>
+          ) : errorMessage ? (
+            <p className="text-red-500">{errorMessage}</p>
+          ) : courses.length > 0 ? (
+            <div className="flex gap-4 overflow-x-auto pb-4">
+              {courses.map((course, idx) => (
                 <CourseCard key={idx} course={course} />
-              ))
-            ) : (
-              <p>No courses available at the moment.</p>
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p>No courses available at the moment.</p>
+          )}
         </div>
       </div>
     </>

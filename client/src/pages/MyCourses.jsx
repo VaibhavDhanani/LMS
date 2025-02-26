@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from 'react-toastify';
 import {
   createDraft,
   getDrafts,
   deleteDraft,
 } from '../services/draft.service';
-import { getInstructorCourse } from '../services/course.service';
+import { getInstructorCourse, updateCourseStatus } from '../services/course.service';
 import * as MyCourseComponents from '../components/MyCoursePage/components.jsx';
-import { MoreVertical, Calendar, List } from 'lucide-react';
-import { scheduleLecture } from '../services/lecture.service.jsx';
+import { MoreVertical, Calendar, List, ToggleLeft, ToggleRight } from 'lucide-react';
+import {ScheduleLectureModal} from '../forms/liveLecture.jsx';
 const MyCourses = () => {
   const [draftCourses, setDraftCourses] = useState([]);
   const [publishedCourses, setPublishedCourses] = useState([]);
@@ -19,68 +20,23 @@ const MyCourses = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [activeDropdownId, setActiveDropdownId] = useState(null);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  const [scheduleForm, setScheduleForm] = useState({
-    title: '',
-    date: '',
-    startTime: '',
-    duration: '',
-    description: ''
-  });
   const [selectedCourseId, setSelectedCourseId] = useState(null);
+  const [courseToDelete, setCourseToDelete] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const { user, token } = useAuth();
   const navigate = useNavigate();
-  const [formMessage, setFormMessage] = useState(null); // For errors inside the form
-  const [formMessageType, setFormMessageType] = useState(null); // 'error' or 'success'
-  const [globalMessage, setGlobalMessage] = useState(null); // For success outside
-  const [globalMessageType, setGlobalMessageType] = useState(null);
 
-  const handleScheduleSubmit = async (e) => {
-    e.preventDefault();
-    setFormMessage(null); // Reset previous messages
-
-    try {
-      if (!selectedCourseId || !user?.id) {
-        setFormMessage("Course ID or Teacher ID is missing.");
-        setFormMessageType("error");
-        return;
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest(".dropdown-menu")) {
+        setActiveDropdownId(null);
       }
+    };
 
-      const lectureData = {
-        ...scheduleForm,
-        courseId: selectedCourseId,
-        instructorId: user.id,
-      };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
 
-      // Call API to schedule lecture
-      const response = await scheduleLecture(lectureData, token);
-
-      // if (response.success) {
-      // Success message outside modal
-      setGlobalMessage("Lecture scheduled successfully!");
-      setGlobalMessageType("success");
-
-      // Reset form and close modal
-      setScheduleForm({
-        title: "",
-        date: "",
-        startTime: "",
-        duration: "",
-        description: "",
-      });
-      setIsScheduleModalOpen(false);
-      setSelectedCourseId(null);
-      // } else {
-      //   // Show error inside form (e.g., time clash)
-      //   console.log(response);
-      //   setFormMessage(response.message || "Failed to schedule lecture.");
-      //   setFormMessageType("error");
-      // }
-    } catch (error) {
-      console.error("Error scheduling lecture:", error);
-      setFormMessage(error.response.data.message);
-      setFormMessageType("error");
-    }
-  };
 
   const handleDropdownClick = (courseId, e) => {
     e.stopPropagation();
@@ -96,19 +52,27 @@ const MyCourses = () => {
 
   const fetchCourses = async () => {
     try {
-      const drafts = (await getDrafts(user.id, token)).map(course => ({
-        ...course,
-        isPublished: false, // Ensure drafts are marked
-      }));
-      const published = (await getInstructorCourse(user.id, token)).map(course => ({
-        ...course,
-        isPublished: true, // Ensure published courses are marked
-      }));
+      const draftResponse = await getDrafts(user.id, token);
+      const drafts = draftResponse.success
+        ? draftResponse.data.map(course => ({
+          ...course,
+          isPublished: false,
+        }))
+        : [];
+
+      const publishedResponse = await getInstructorCourse(user.id, token);
+      const published = publishedResponse.success
+        ? publishedResponse.data.map(course => ({
+          ...course,
+          isPublished: true,
+        }))
+        : [];
 
       setDraftCourses(drafts);
       setPublishedCourses(published);
     } catch (error) {
       console.error('Error fetching courses:', error);
+      toast.error('Failed to fetch courses. Please try again later.');
     }
   };
 
@@ -125,19 +89,47 @@ const MyCourses = () => {
         setNewCourseTitle('');
         setIsModalOpen(false);
         fetchCourses();
+        toast.success('Draft course created successfully!');
       } catch (error) {
         console.error('Error creating draft course:', error);
+        toast.error('Failed to create draft course. Please try again.');
       }
     }
   };
 
-  const handleDeleteDraft = async (courseId, e) => {
+  const handleDeleteDraftClick = (courseId, e) => {
     e.stopPropagation();
+    setCourseToDelete(courseId);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteDraft = async () => {
     try {
-      await deleteDraft(courseId, token);
+      await deleteDraft(courseToDelete, token);
       fetchCourses();
+      toast.success('Draft course deleted successfully!');
+      setIsDeleteModalOpen(false);
+      setCourseToDelete(null);
     } catch (error) {
       console.error('Error deleting draft course:', error);
+      toast.error('Failed to delete draft course. Please try again.');
+    }
+  };
+
+  const toggleCourseStatus = async (courseId, status, token) => {
+    try {
+      const response = await updateCourseStatus(courseId, status, token);
+
+      if (response.success) {
+        toast.success(`Course ${status ? "Activated" : "Deactivated"} successfully!`);
+        fetchCourses(); // Add this to refresh the course list
+        setActiveDropdownId(null); // Close the dropdown after action
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      toast.error("Failed to update course status. Please try again.");
+      console.error("Error updating course status:", error);
     }
   };
 
@@ -145,7 +137,8 @@ const MyCourses = () => {
     const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' ||
       (statusFilter === 'draft' && !course.isPublished) ||
-      (statusFilter === 'active' && course.isPublished);
+      (statusFilter === 'active' && course.isPublished && course.isActive) ||
+      (statusFilter === 'inactive' && course.isPublished && !course.isActive);
     return matchesSearch && matchesStatus;
   });
 
@@ -182,14 +175,10 @@ const MyCourses = () => {
           >
             <option value="all">All</option>
             <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
             <option value="draft">Draft</option>
           </select>
         </div>
-        {globalMessage && (
-          <div className={`alert ${globalMessageType === "success" ? "alert-success" : "alert-error"}`}>
-            {globalMessage}
-          </div>
-        )}
 
         <div className="grid grid-cols-1 gap-6">
           {filteredCourses.map((course) => (
@@ -213,12 +202,12 @@ const MyCourses = () => {
                         <h3 className="text-xl font-semibold mb-1">{course.title}</h3>
                         {course.isPublished && (
                           <p className="text-gray-600">
-                            {course.studentCount || 0} students · {course.lessonCount || 0} lessons
+                            {course.enrolledStudents?.length || 0} students · {course.curriculum?.length || 0} lessons
                           </p>
                         )}
                       </div>
-                      <MyCourseComponents.Badge variant={course.isPublished ? "default" : "secondary"}>
-                        {course.isPublished ? "Active" : "Draft"}
+                      <MyCourseComponents.Badge variant={course.isPublished ? (course.isActive ? "default" : "secondary") : "secondary"}>
+                        {course.isPublished ? (course.isActive ? "Active" : "Inactive") : "Draft"}
                       </MyCourseComponents.Badge>
                     </div>
                   </div>
@@ -236,7 +225,7 @@ const MyCourses = () => {
                         size="icon"
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(course.isPublished ? `/courseform/${course._id}/edit` : `/draft/${course._id}/edit`);
+                          navigate(course.isPublished ? `/courseform/${course._id}` : `/draft/${course._id}`);
                         }}
                       >
                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -244,60 +233,81 @@ const MyCourses = () => {
                           <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                         </svg>
                       </MyCourseComponents.Button>
-                      {!course.isPublished && (
+                      {!course.isPublished ? (
                         <MyCourseComponents.Button
                           variant="ghost"
                           size="icon"
-                          onClick={(e) => handleDeleteDraft(course._id, e)}
+                          onClick={(e) => handleDeleteDraftClick(course._id, e)}
                         >
                           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
                           </svg>
                         </MyCourseComponents.Button>
-                      )}
-                      <div className="relative">
-                        <MyCourseComponents.Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => handleDropdownClick(course._id, e)}
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </MyCourseComponents.Button>
-                        {activeDropdownId === course._id && (
-                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border">
-                            <div className="py-1">
-                              <button
-                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-                                onClick={(e) => handleScheduleClick(course._id, e)}
-                              >
-                                <Calendar className="w-4 h-4" />
-                                Schedule Live Lecture
-                              </button>
-                              <button
-                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  // Add navigation to manage lectures page
-                                  navigate(`/course/${course._id}/lectures`);
-                                }}
-                              >
-                                <List className="w-4 h-4" />
-                                Manage Live Lectures
-                              </button>
+                      ) :
+                        <div className="relative">
+                          <MyCourseComponents.Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => handleDropdownClick(course._id, e)}
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </MyCourseComponents.Button>
+                          {activeDropdownId === course._id && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border">
+                              <div className="py-1">
+                                <button
+                                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+                                  onClick={(e) => handleScheduleClick(course._id, e)}
+                                >
+                                  <Calendar className="w-4 h-4" />
+                                  Schedule Live Lecture
+                                </button>
+
+                                <button
+                                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/livelectures/section`);
+                                  }}
+                                >
+                                  <List className="w-4 h-4" />
+                                  Manage Live Lectures
+                                </button>
+
+                                <button
+                                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // Add this to prevent navigation
+                                    toggleCourseStatus(course._id, !course.isActive, token); // Add token parameter
+                                  }}
+                                >
+                                  {course.isActive ? (
+                                    <>
+                                      <ToggleLeft className="w-4 h-4 text-red-500" />
+                                      Deactivate Course
+                                    </>
+                                  ) : (
+                                    <>
+                                      <ToggleRight className="w-4 h-4 text-green-500" />
+                                      Activate Course
+                                    </>
+                                  )}
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
+                          )}
+                        </div>
+                      }
                     </div>
                   </div>
                 </div>
               </div>
             </MyCourseComponents.Card>
-
           ))}
         </div>
       </div>
 
+      {/* Create Course Modal */}
       <MyCourseComponents.Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -318,84 +328,47 @@ const MyCourses = () => {
           Create Draft
         </MyCourseComponents.Button>
       </MyCourseComponents.Modal>
-      <MyCourseComponents.Modal
+
+      {/* Schedule Lecture Modal */}
+      <ScheduleLectureModal
         isOpen={isScheduleModalOpen}
-        onClose={() => {
-          setIsScheduleModalOpen(false);
+        onClose={() => setIsScheduleModalOpen(false)}
+        courseId={selectedCourseId}
+        instructorId={user.id}
+        token={token}
+        onScheduleSuccess={() => {
           setSelectedCourseId(null);
+          // Add any additional success handling if needed
         }}
-        title="Schedule Live Lecture"
+      />
+
+      {/* Delete Confirmation Modal */}
+      <MyCourseComponents.Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setCourseToDelete(null);
+        }}
+        title="Confirm Deletion"
       >
-        <form onSubmit={handleScheduleSubmit} className="space-y-4">
-          {formMessage && (
-            <div className={`alert ${formMessageType === "error" ? "alert-error" : "alert-success"}`}>
-              {formMessage}
-            </div>
-          )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Lecture Title
-            </label>
-            <input
-              type="text"
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={scheduleForm.title}
-              onChange={(e) => setScheduleForm({ ...scheduleForm, title: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date
-            </label>
-            <input
-              type="date"
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={scheduleForm.date}
-              onChange={(e) => setScheduleForm({ ...scheduleForm, date: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Start Time
-            </label>
-            <input
-              type="time"
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={scheduleForm.startTime}
-              onChange={(e) => setScheduleForm({ ...scheduleForm, startTime: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Duration (minutes)
-            </label>
-            <input
-              type="number"
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={scheduleForm.duration}
-              onChange={(e) => setScheduleForm({ ...scheduleForm, duration: e.target.value })}
-              required
-              min="1"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={scheduleForm.description}
-              onChange={(e) => setScheduleForm({ ...scheduleForm, description: e.target.value })}
-              rows="3"
-            />
-          </div>
-          <MyCourseComponents.Button type="submit" className="w-full">
-            Schedule Lecture
+        <p className="mb-4">Are you sure you want to delete this draft course? This action cannot be undone.</p>
+        <div className="flex gap-4 justify-end">
+          <MyCourseComponents.Button
+            variant="outline"
+            onClick={() => {
+              setIsDeleteModalOpen(false);
+              setCourseToDelete(null);
+            }}
+          >
+            Cancel
           </MyCourseComponents.Button>
-        </form>
+          <MyCourseComponents.Button
+            variant="destructive"
+            onClick={confirmDeleteDraft}
+          >
+            Delete
+          </MyCourseComponents.Button>
+        </div>
       </MyCourseComponents.Modal>
     </div>
   );

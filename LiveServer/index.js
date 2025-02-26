@@ -39,7 +39,21 @@ const rooms = new Map(); // Map room IDs to an array of producers
 
 io.on('connection', (socket) => {
   console.log(`Client connected: ${socket.id}`);
-
+  
+  socket.on('createRoom', ({ roomId }, callback) => {
+    if (!rooms.has(roomId)) {
+      rooms.set(roomId, {
+        producers: new Set(), // Stores producer IDs
+        consumers: new Set(), // Stores consumer IDs
+      });
+  
+      console.log(`Room ${roomId} created`);
+      callback({ success: true });
+    } else {
+      callback({ error: 'Room already exists' });
+    }
+  });
+  
   socket.on('joinLecture', ({ roomId }, callback) => {
     if (!rooms.has(roomId)) {
       return callback({ error: 'Room does not exist' });
@@ -119,19 +133,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('createRoom', ({ roomId }, callback) => {
-    if (!rooms.has(roomId)) {
-      rooms.set(roomId, {
-        producers: new Set(), // Stores producer IDs
-        consumers: new Set(), // Stores consumer IDs
-      });
-  
-      console.log(`Room ${roomId} created`);
-      callback({ success: true });
-    } else {
-      callback({ error: 'Room already exists' });
-    }
-  });
   
   
   socket.on('produce', async ({ transportId, kind, rtpParameters, roomId }, callback) => {
@@ -158,7 +159,7 @@ io.on('connection', (socket) => {
       console.log(`Producer ${producer.id} added to room ${roomId}`);
   
       // Notify all consumers in the room about the new producer
-      io.to(roomId).emit('newProducer', producerInfo);
+      io.to(roomId).emit('newProducer', {producerInfo});
   
       producer.on('close', () => {
         console.log(`Producer closed: ${producer.id}`);
@@ -175,7 +176,6 @@ io.on('connection', (socket) => {
     }
   });
   
-    
   
 
   socket.on('consume', async ({ roomId, transportId, rtpCapabilities }, callback) => {
@@ -264,10 +264,10 @@ io.on('connection', (socket) => {
       room.consumers.delete(socket.id);
   
       // If the room is empty, clean it up
-      if (room.producers.size === 0 && room.consumers.size === 0) {
-        rooms.delete(roomId);
-        console.log(`Room ${roomId} deleted as it's now empty`);
-      }
+      // if (room.producers.size === 0 && room.consumers.size === 0) {
+      //   rooms.delete(roomId);
+      //   console.log(`Room ${roomId} deleted as it's now empty`);
+      // }
     }
   
     // Cleanup transports
