@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext.jsx';
 import * as MyCourseComponents from '../components/MyCoursePage/components.jsx';
 import { Calendar, Clock, Users, Video, Edit, Trash2, ExternalLink } from 'lucide-react';
 import {
