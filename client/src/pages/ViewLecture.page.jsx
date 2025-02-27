@@ -120,15 +120,15 @@ const ViewLecturePage = () => {
 	useEffect(() => {
 		const fetchCourse = async () => {
 			try {
-				const fetchedCourse = await getCourseById(id, token);
-				if (fetchedCourse) {
-					setCourse(fetchedCourse);
+				const res = await getCourseById(id, token);
+				if (res.success) {
+					setCourse(res.data);
 					if (
-						fetchedCourse.curriculum &&
-						fetchedCourse.curriculum.length > 0 &&
-						fetchedCourse.curriculum[0].lectures.length > 0
+						course.curriculum &&
+						course.curriculum.length > 0 &&
+						course.curriculum[0].lectures.length > 0
 					) {
-						setCurrentLecture(fetchedCourse.curriculum[0].lectures[0]);
+						setCurrentLecture(course.curriculum[0].lectures[0]);
 					}
 				} else {
 					console.error("Course not found!");

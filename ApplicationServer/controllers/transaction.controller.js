@@ -80,3 +80,102 @@ export const createTransaction = async (req, res) => {
   }
 };
 
+export const getCourseTransactions = async (courseId, startDate, endDate) => {
+  try {
+    
+    // Build query object
+    const query = { courseId, status: 'success' };
+    
+    // Add date filtering if provided
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) {
+        query.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        // Set time to end of day for the end date
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = endDateTime;
+      }
+    }
+
+    // Fetch all successful transactions for this course
+    const transactions = await Transaction.find(query)
+      .populate('userId', 'firstName lastName email')
+      .sort({ createdAt: 1 });
+
+    // Calculate total revenue
+    const totalRevenue = transactions.reduce((sum, transaction) => {
+      return sum + transaction.paymentAmount;
+    }, 0);
+
+    // Group transactions by month for chart data
+    const monthlySales = transactions.reduce((acc, transaction) => {
+      // Format date to get month name
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const date = new Date(transaction.createdAt);
+      const month = monthNames[date.getMonth()];
+      const year = date.getFullYear();
+      const monthYear = `${month}`;
+      
+      // If month already exists in accumulator, add to it
+      if (acc[monthYear]) {
+        acc[monthYear].sales += transaction.paymentAmount;
+        acc[monthYear].enrollments += 1;
+      } else {
+        // Otherwise create new entry
+        acc[monthYear] = {
+          month: monthYear,
+          sales: transaction.paymentAmount,
+          enrollments: 1
+        };
+      }
+      
+      return acc;
+    }, {});
+    
+    // Convert to array format suitable for charts
+    const monthlySalesArray = Object.values(monthlySales);
+    
+    return {
+      success: true,
+      data: {
+        totalRevenue,
+        totalEnrollments: transactions.length,
+        transactions,
+        monthlySales: monthlySalesArray
+      }
+    };
+  } catch (error) {
+    console.error('Error fetching course transactions:', error);
+    return {
+      success: false,
+      message: 'Failed to fetch transaction data',
+      error: error.message
+    };
+  }
+};
+
+
+export const getTransactionsByCourse = async (req, res) => {
+  try {
+    const { id: courseId } = req.params;
+    const { startDate, endDate } = req.query;
+    
+    const result = await getCourseTransactions(courseId, startDate, endDate);
+    console.log(result);
+    if (result.success) {
+      return res.status(200).json(result);
+    } else {
+      return res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Error in transaction controller:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error processing transaction data',
+      error: error.message
+    });
+  }
+};

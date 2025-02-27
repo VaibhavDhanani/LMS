@@ -15,7 +15,7 @@ const io = new Server(server, {
 let router; // Mediasoup router
 const mediasoupTransports = new Map(); // Store transports by ID
 const rooms = new Map(); // Map room IDs to an array of producers
-
+const consumersMap = new Map(); 
 // Initialize Mediasoup worker and router
 (async () => {
   const worker = await createWorker();
@@ -176,7 +176,7 @@ io.on('connection', (socket) => {
     }
   });
   
-  socket.on('consumeProducer', async ({ transportId, producerId,rtpCapabilities }, callback) => {
+  socket.on('consumeProducer', async ({ transportId, producerId, rtpCapabilities }, callback) => {
     try {
       // Retrieve transport object for the consumer
       const transport = mediasoupTransports.get(transportId);
@@ -185,101 +185,36 @@ io.on('connection', (socket) => {
         return callback({ error: 'Transport not found' });
       }
   
+      console.log('Creating consumer for producer:', producerId);
+      const consumer = await transport.consume({
+        producerId: producerId,
+        rtpCapabilities,
+        paused: false, // Start consumer immediately
+      });
   
-      // const consumers = []; // Array to hold the consumers
+      console.log(`Consumer created: ${consumer.id}`);
   
-      // ✅ Correct way to retrieve producers
-        try {
-          console.log('Creating consumer for producer:', producerId);
-          const consumer = await transport.consume({
-            producerId: producerId,
-            rtpCapabilities,
-            paused: false, // Start consumer as unpaused
-          });
-  
-          console.log(`Consumer created: ${consumer.id}`);
-  
-          // Handle consumer closure and clean up
-          consumer.on('close', () => {
-            console.log(`Consumer closed: ${consumer.id}`);
-          });
-  
-          // If necessary, resume the consumer (though `paused: false` should make this unnecessary)
-          await consumer.resume();
-  
-          // Add consumer details to the consumers array
-          // consumers.push({
-          //   producerId: producer.id,
-          //   id: consumer.id,
-          //   kind: consumer.kind,
-          //   rtpParameters: consumer.rtpParameters,
-          // });
-  
-        } catch (error) {
-          console.error(`Error creating consumer for producer ${producerId}:`, error);
-        }
-  
-      // Send the list of consumers to the client
-      callback();
-  
-    } catch (error) {
-      console.error('Error in consume process:', error);
-      callback({ error: error.message });
-    }
-  });  
-
-  socket.on('consume', async ({ roomId, transportId, rtpCapabilities }, callback) => {
-    try {
-      // Retrieve transport object for the consumer
-      const transport = mediasoupTransports.get(transportId);
-      if (!transport) {
-        console.error(`Transport not found: ${transportId}`);
-        return callback({ error: 'Transport not found' });
+      // Store the consumer in a global map
+      if (!consumersMap.has(socket.id)) {
+        consumersMap.set(socket.id, []);
       }
+      consumersMap.get(socket.id).push(consumer);
   
-      // Retrieve the room object
-      const room = rooms.get(roomId);
-      if (!room) {
-        return callback({ error: 'Room does not exist' });
-      }
+      // Handle consumer closure
+      consumer.on('close', () => {
+        console.log(`Consumer closed: ${consumer.id}`);
+      });
   
-      const consumers = []; // Array to hold the consumers
+      // If necessary, resume the consumer
+      await consumer.resume();
   
-      // ✅ Correct way to retrieve producers
-      for (const producer of room.producers) {  
-        try {
-          console.log('Creating consumer for producer:', producer.id);
-          const consumer = await transport.consume({
-            producerId: producer.id,
-            rtpCapabilities,
-            paused: false, // Start consumer as unpaused
-          });
-  
-          console.log(`Consumer created: ${consumer.id}`);
-  
-          // Handle consumer closure and clean up
-          consumer.on('close', () => {
-            console.log(`Consumer closed: ${consumer.id}`);
-          });
-  
-          // If necessary, resume the consumer (though `paused: false` should make this unnecessary)
-          await consumer.resume();
-  
-          // Add consumer details to the consumers array
-          consumers.push({
-            producerId: producer.id,
-            id: consumer.id,
-            kind: consumer.kind,
-            rtpParameters: consumer.rtpParameters,
-          });
-  
-        } catch (error) {
-          console.error(`Error creating consumer for producer ${producer.id}:`, error);
-        }
-      }
-  
-      // Send the list of consumers to the client
-      callback(consumers);
+      // Send consumer details back to client
+      callback({
+        id: consumer.id,
+        producerId: producerId, // Fixed incorrect reference
+        kind: consumer.kind,
+        rtpParameters: consumer.rtpParameters,
+      });
   
     } catch (error) {
       console.error('Error in consume process:', error);
@@ -287,8 +222,6 @@ io.on('connection', (socket) => {
     }
   });
   
-
-
   socket.on('disconnect', () => {
     console.log(`Client disconnected: ${socket.id}`);
   

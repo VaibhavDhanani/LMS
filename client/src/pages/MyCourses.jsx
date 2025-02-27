@@ -184,7 +184,7 @@ const MyCourses = () => {
           {filteredCourses.map((course) => (
             <MyCourseComponents.Card
               key={course._id}
-              onClick={() => navigate(course.isPublished ? `/courseform/${course._id}` : `/draft/${course._id}`)}
+              onClick={() => navigate(course.isPublished ? `/courses-analytics/${course._id}` : `/draft/${course._id}`)}
               className="w-full"
             >
               <div className="flex flex-col md:flex-row">

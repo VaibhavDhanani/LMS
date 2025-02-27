@@ -137,10 +137,13 @@ const LectureStreaming = () => {
       const videoElement = document.getElementById('local-video');
       videoElement.srcObject = stream;
 
+      
       const videoTrack = stream.getVideoTracks()[0];
+      console.log("Video track enabled:", videoTrack.enabled);
       videoProducerRef.current = await sendTransport.produce({ track: videoTrack });
-
+      
       const audioTrack = stream.getAudioTracks()[0];
+      console.log("Audio track enabled:", audioTrack?.enabled);
       if (audioTrack) {
         audioProducerRef.current = await sendTransport.produce({ track: audioTrack });
       }
