@@ -17,6 +17,7 @@ import ManageLiveLectures from './pages/liveLectureSection.jsx';
 import LectureStreaming from './pages/lectureStreaming.page.jsx';
 import LiveLecture from './pages/livelecture.jsx';
 import InstructorProfilePage from "@/pages/InstructorProfile.page.jsx";
+import CourseAnalyticsPage from './pages/Course.page.jsx';
 
 const AppRoutes = () => (
   <Routes>
@@ -50,6 +51,7 @@ const AppRoutes = () => (
         }
       >
         <Route path="/my-courses/:id" element={<ViewLecturePage />} />
+        <Route path="/courses-analytics/:id" element={<CourseAnalyticsPage />} />
         <Route path="/success" element={<h1>Success</h1>} />
         <Route path="/cancel" element={<h1>Cancel</h1>} />
         <Route path="/courses" element={<HomePage />} />
