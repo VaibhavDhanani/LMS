@@ -16,8 +16,9 @@ const Navigationbar = () => {
   const fetchAllCourses = async () => {
     try {
       const authToken = localStorage.getItem("authToken");
-      const courses = await getAllCourse(authToken);
-      return courses;
+      const {data} = await getAllCourse(authToken);
+      // console.log(courses)
+      return data;
     } catch (error) {
       console.error("Error fetching courses:", error);
       return [];
