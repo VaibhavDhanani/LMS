@@ -45,19 +45,22 @@ jobs:
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             cd /home/${{ secrets.EC2_USER }}
 
-            # ✅ Remove LMS directory if it exists
+            # ✅ Backup .env files before pulling the latest code
+            cp LMS/ApplicationServer/.env ~/application-server.env.backup || true
+            cp LMS/LiveServer/.env ~/live-server.env.backup || true
+
+            # ✅ Pull the latest code from GitHub
             sudo rm -rf LMS
+            git clone ${{ secrets.REPO_URL }} LMS
 
-            # ✅ Add GitHub to known hosts (Fix SSH verification failure)
-            mkdir -p ~/.ssh
-            ssh-keyscan github.com >> ~/.ssh/known_hosts
-
-            # ✅ Clone the repository using SSH
-            GIT_SSH_COMMAND="ssh -i ~/.ssh/github-deploy-key -o StrictHostKeyChecking=no" git clone ${{ secrets.REPO_URL }} LMS
+            # ✅ Restore the .env files after deployment
+            mv ~/application-server.env.backup LMS/ApplicationServer/.env || true
+            mv ~/live-server.env.backup LMS/LiveServer/.env || true
 
             # ✅ Ensure correct permissions
             sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} LMS
           EOF
+      
       
       
 
@@ -68,7 +71,7 @@ jobs:
             cd /home/${{ secrets.EC2_USER }}/LMS
           
             echo "Setting up Client..."
-            cd client
+            cd Client
             npm install
             npm run build
             cd ..
@@ -113,10 +116,9 @@ jobs:
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             sudo chmod 755 /home/ubuntu
             sudo chmod -R 755 /home/ubuntu/LMS
-            sudo chmod -R 755 /home/ubuntu/LMS/client
-            sudo chmod -R 755 /home/ubuntu/LMS/client/dist
-            sudo chmod -R 644 /home/ubuntu/LMS/client/dist/index.html
+            sudo chmod -R 755 /home/ubuntu/LMS/Client
+            sudo chmod -R 755 /home/ubuntu/LMS/Client/dist
+            sudo chmod -R 644 /home/ubuntu/LMS/Client/dist/index.html
             sudo chown -R ubuntu:www-data /home/ubuntu/LMS
             sudo systemctl restart nginx
           EOF
-
