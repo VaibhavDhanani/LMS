@@ -19,7 +19,6 @@ const ProfileDetails = ({ user }) => {
             _id: user._id,
             name: e.target.name.value,
             email: e.target.email.value,
-            headline: e.target.headline.value,
             biography: e.target.biography.value
         };
 
@@ -76,25 +75,13 @@ const ProfileDetails = ({ user }) => {
                         <span className="label-text">Email</span>
                     </label>
                     <input
+                        disabled
                         type="email"
                         name="email"
                         placeholder="Email"
                         className="input input-bordered w-full"
                         defaultValue={user.email}
                         required
-                    />
-                </div>
-
-                <div className="form-control">
-                    <label className="label">
-                        <span className="label-text">Headline</span>
-                    </label>
-                    <input
-                        type="text"
-                        name="headline"
-                        placeholder="Professional Headline"
-                        className="input input-bordered w-full"
-                        defaultValue={user.headline}
                     />
                 </div>
 

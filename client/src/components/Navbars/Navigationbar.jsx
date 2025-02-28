@@ -110,7 +110,7 @@ const Navigationbar = () => {
       </div>
 
       {user && user.isInstructor && (
-        <div className='flex'>
+        <>
           <div className="flex-1">
             <a
               className="btn btn-ghost text-xl"
@@ -119,7 +119,15 @@ const Navigationbar = () => {
               My Courses
             </a>
           </div>
-        </div>
+          <div className="flex-1">
+            <a
+              className="btn btn-ghost text-xl"
+              onClick={() => navigate('/sales')}
+              >
+            Sales
+            </a>
+          </div>
+              </>
       )}
       {user && !user.isInstructor && (
         <div className="flex-1">
@@ -137,7 +145,7 @@ const Navigationbar = () => {
             className="btn btn-ghost text-xl"
             onClick={() => navigate('/livelectures/section')}
           >
-            Live Lecture
+            Live Lectures
           </a>
         </div>
       )}
@@ -280,13 +288,6 @@ const Navigationbar = () => {
           </div>
         )}
 
-        <div className="hidden md:flex">
-          <ul className="menu menu-horizontal px-1">
-            <li>
-              <a>Watch List</a>
-            </li>
-          </ul>
-        </div>
 
         <div className="dropdown dropdown-end">
           <div
@@ -308,13 +309,12 @@ const Navigationbar = () => {
             {user ? (
               <>
                 <li>
-                  <a href="/user/profile" className="justify-between">
+                  <a href= {user.isInstructor?"/instructor/profile":"/user/profile"} className="justify-between">
                     Profile
-                    <span className="badge">New</span>
                   </a>
                 </li>
                 <li>
-                  <a>Settings</a>
+                  <a>WishList</a>
                 </li>
                 <li>
                   <button onClick={logout}>Logout</button>
