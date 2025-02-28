@@ -37,7 +37,7 @@ jobs:
             npm install
             cd ../LiveServer
             npm install
-            cd ../client
+            cd ../Client
             npm install
             npm run build
             echo "✅ Dependencies installed and frontend built"
