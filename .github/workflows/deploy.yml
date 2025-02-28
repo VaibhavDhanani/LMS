@@ -2,124 +2,63 @@ name: Deploy to EC2
 
 on:
   push:
-    branches: [ main ]  # Runs deployment on push to the main branch
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      # ✅ Configure SSH First
-      - name: Configure SSH
+      - name: Set up SSH Authentication
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      # ✅ Setup Server Environment (Node.js, Nginx, PM2)
-      - name: Setup Environment
+      - name: Deploy Code to EC2
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            sudo apt update -y
-            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-            sudo apt install -y nodejs nginx git
-            sudo npm install -g pm2
-          EOF
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            set -e  # Exit on any error
+            
+            echo "🚀 Starting Deployment on EC2..."
 
-      # ✅ Create LMS Directory and Set Permissions
-      - name: Create Project Directory
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            sudo rm -rf /home/${{ secrets.EC2_USER }}/LMS
-            mkdir -p /home/${{ secrets.EC2_USER }}/LMS
-            sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} /home/${{ secrets.EC2_USER }}/LMS
-          EOF
+            # Ensure LMS directory exists
+            sudo rm -rf /home/ubuntu/LMS
+            mkdir -p /home/ubuntu/LMS
+            cd /home/ubuntu/LMS
 
-      # ✅ Clone Project from GitHub
-      - name: Clone and Setup Project
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            cd /home/${{ secrets.EC2_USER }}
+            # Clone the latest code
+            git clone --depth=1 git@github.com:${{ secrets.GITHUB_REPOSITORY }} . || git pull origin main
+            echo "✅ Repository updated"
 
-            # ✅ Backup .env files before pulling the latest code
-            cp LMS/ApplicationServer/.env ~/application-server.env.backup || true
-            cp LMS/LiveServer/.env ~/live-server.env.backup || true
-
-            # ✅ Pull the latest code from GitHub
-            sudo rm -rf LMS
-            git clone ${{ secrets.REPO_URL }} LMS
-
-            # ✅ Restore the .env files after deployment
-            mv ~/application-server.env.backup LMS/ApplicationServer/.env || true
-            mv ~/live-server.env.backup LMS/LiveServer/.env || true
-
-            # ✅ Ensure correct permissions
-            sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} LMS
-          EOF
-      
-      
-      
-
-      # ✅ Install Dependencies and Build Project
-      - name: Install Dependencies and Build
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            cd /home/${{ secrets.EC2_USER }}/LMS
-          
-            echo "Setting up Client..."
-            cd client
+            # Install dependencies
+            cd ApplicationServer
+            npm install
+            cd ../LiveServer
+            npm install
+            cd ../client
             npm install
             npm run build
-            cd ..
-          
-            echo "Setting up Application Server..."
-            cd ApplicationServer
-            npm install
-            cd ..
-          
-            echo "Setting up Live Server..."
-            cd LiveServer
-            npm install
-            cd ..
-          EOF
+            echo "✅ Dependencies installed and frontend built"
 
-      # ✅ Start Backend and Live Server Using PM2
-      - name: Start Applications
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            cd /home/${{ secrets.EC2_USER }}/LMS
-          
-            echo "Starting Application Server..."
-            cd ApplicationServer
-            pm2 restart application-server || pm2 start app.js --name application-server
-            cd ..
-          
-            echo "Starting Live Server..."
-            cd LiveServer
-            pm2 restart live-server || pm2 start server.js --name live-server
-            cd ..
-          EOF
+            # Ensure .env files are correctly placed
+            ls -lah /home/ubuntu/LMS/ApplicationServer/.env
+            ls -lah /home/ubuntu/LMS/LiveServer/.env
 
-      # ✅ Configure and Restart Nginx
-      - name: Configure and Restart Nginx
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            # Restart backend servers
+            pm2 restart application-server || pm2 start /home/ubuntu/LMS/ApplicationServer/app.js --name application-server
+            pm2 restart live-server || pm2 start /home/ubuntu/LMS/LiveServer/server.js --name live-server
+            pm2 save
+            echo "✅ Backend services restarted"
+
+            # Restart Nginx
             sudo systemctl restart nginx
-          EOF
+            echo "✅ Nginx restarted"
 
-      - name: Fix Permissions After Deployment
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            sudo chmod 755 /home/ubuntu
-            sudo chmod -R 755 /home/ubuntu/LMS
-            sudo chmod -R 755 /home/ubuntu/LMS/client
-            sudo chmod -R 755 /home/ubuntu/LMS/client/dist
-            sudo chmod -R 644 /home/ubuntu/LMS/client/dist/index.html
-            sudo chown -R ubuntu:www-data /home/ubuntu/LMS
-            sudo systemctl restart nginx
+            echo "🚀 Deployment Successful!"
           EOF
-
