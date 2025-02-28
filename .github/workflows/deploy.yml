@@ -33,7 +33,7 @@ jobs:
             cd /home/ubuntu/LMS
 
             # Clone the latest code
-            git clone --depth=1 git@github.com:${{ secrets.GITHUB_REPOSITORY }} . || git pull origin main
+            git clone --depth=1 git@github.com:${{ secrets.REPO_URL }} . || git pull origin main
             echo "✅ Repository updated"
 
             # Install dependencies
