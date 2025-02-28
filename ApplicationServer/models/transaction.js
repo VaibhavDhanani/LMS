@@ -4,12 +4,12 @@ const transactionSchema = new mongoose.Schema(
   {
     courseId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Course', // Reference to the Course model
+      ref: "Course", // Reference to the Course model
       required: true,
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User', // Reference to the User model
+      ref: "User", // Reference to the User model
       required: true,
     },
     paymentAmount: {
@@ -19,7 +19,7 @@ const transactionSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['success', 'failed', 'pending'],
+      enum: ["success", "failed", "pending"],
       required: true,
     },
     metadata: {
@@ -32,8 +32,9 @@ const transactionSchema = new mongoose.Schema(
       unique: true, // Enforces uniqueness for each transaction
     },
   },
+  { timestamps: true } // Enables automatic createdAt and updatedAt fields
 );
 
-const Transaction = mongoose.model('Transaction', transactionSchema);
+const Transaction = mongoose.model("Transaction", transactionSchema);
 
 export default Transaction;

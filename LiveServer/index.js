@@ -15,7 +15,7 @@ const io = new Server(server, {
 let router; // Mediasoup router
 const mediasoupTransports = new Map(); // Store transports by ID
 const rooms = new Map(); // Map room IDs to an array of producers
-
+const consumersMap = new Map(); 
 // Initialize Mediasoup worker and router
 (async () => {
   const worker = await createWorker();
@@ -46,7 +46,7 @@ io.on('connection', (socket) => {
         producers: new Set(), // Stores producer IDs
         consumers: new Set(), // Stores consumer IDs
       });
-  
+      socket.join(roomId);
       console.log(`Room ${roomId} created`);
       callback({ success: true });
     } else {
@@ -74,6 +74,40 @@ io.on('connection', (socket) => {
       consumers: [...room.consumers], // List of consumer socket IDs
     });
   });
+
+  socket.on('sendChatMessage', (messageData, callback) => {
+    try {
+      const { roomId, senderId, senderName, message, timestamp, isHost } = messageData;
+      
+      // Validate the message data
+      if (!roomId || !message) {
+        return callback({ error: 'Invalid message data' });
+      }
+
+      // Add any server-side validation or processing here
+      
+      // Broadcast the message to all clients in the room except the sender
+      socket.to(roomId).emit('chatMessage', {
+        senderId,
+        senderName,
+        message,
+        timestamp,
+        isHost
+      });
+
+      // Acknowledge successful sending
+      callback({ success: true });
+    } catch (error) {
+      console.error('Error handling chat message:', error);
+      callback({ error: 'Failed to send message' });
+    }
+  });
+  
+  // You can also add events for typing indicators, read receipts, etc.
+  socket.on('typing', ({ roomId, userId, isTyping }) => {
+    socket.to(roomId).emit('userTyping', { userId, isTyping });
+  });
+
   
 
   socket.on('getRtpCapabilities', (callback) => {
@@ -89,7 +123,7 @@ io.on('connection', (socket) => {
     try {
       console.log(`Creating ${direction} transport for client: ${socket.id}`);
       const transport = await router.createWebRtcTransport({
-        listenIps: [{ ip: '0.0.0.0', announcedIp: '172.20.10.6' }],
+        listenIps: [{ ip: '0.0.0.0', announcedIp: '192.168.31.172' }],
         enableUdp: true,
         enableTcp: true,
         preferUdp: true,
@@ -176,9 +210,7 @@ io.on('connection', (socket) => {
     }
   });
   
-  
-
-  socket.on('consume', async ({ roomId, transportId, rtpCapabilities }, callback) => {
+  socket.on('consumeProducer', async ({ transportId, producerId, rtpCapabilities }, callback) => {
     try {
       // Retrieve transport object for the consumer
       const transport = mediasoupTransports.get(transportId);
@@ -187,49 +219,36 @@ io.on('connection', (socket) => {
         return callback({ error: 'Transport not found' });
       }
   
-      // Retrieve the room object
-      const room = rooms.get(roomId);
-      if (!room) {
-        return callback({ error: 'Room does not exist' });
+      console.log('Creating consumer for producer:', producerId);
+      const consumer = await transport.consume({
+        producerId: producerId,
+        rtpCapabilities,
+        paused: false, // Start consumer immediately
+      });
+  
+      console.log(`Consumer created: ${consumer.id}`);
+  
+      // Store the consumer in a global map
+      if (!consumersMap.has(socket.id)) {
+        consumersMap.set(socket.id, []);
       }
+      consumersMap.get(socket.id).push(consumer);
   
-      const consumers = []; // Array to hold the consumers
+      // Handle consumer closure
+      consumer.on('close', () => {
+        console.log(`Consumer closed: ${consumer.id}`);
+      });
   
-      // ✅ Correct way to retrieve producers
-      for (const producer of room.producers) {  
-        try {
-          console.log('Creating consumer for producer:', producer.id);
-          const consumer = await transport.consume({
-            producerId: producer.id,
-            rtpCapabilities,
-            paused: false, // Start consumer as unpaused
-          });
+      // If necessary, resume the consumer
+      await consumer.resume();
   
-          console.log(`Consumer created: ${consumer.id}`);
-  
-          // Handle consumer closure and clean up
-          consumer.on('close', () => {
-            console.log(`Consumer closed: ${consumer.id}`);
-          });
-  
-          // If necessary, resume the consumer (though `paused: false` should make this unnecessary)
-          await consumer.resume();
-  
-          // Add consumer details to the consumers array
-          consumers.push({
-            producerId: producer.id,
-            id: consumer.id,
-            kind: consumer.kind,
-            rtpParameters: consumer.rtpParameters,
-          });
-  
-        } catch (error) {
-          console.error(`Error creating consumer for producer ${producer.id}:`, error);
-        }
-      }
-  
-      // Send the list of consumers to the client
-      callback(consumers);
+      // Send consumer details back to client
+      callback({
+        id: consumer.id,
+        producerId: producerId, // Fixed incorrect reference
+        kind: consumer.kind,
+        rtpParameters: consumer.rtpParameters,
+      });
   
     } catch (error) {
       console.error('Error in consume process:', error);
@@ -237,8 +256,6 @@ io.on('connection', (socket) => {
     }
   });
   
-
-
   socket.on('disconnect', () => {
     console.log(`Client disconnected: ${socket.id}`);
   
@@ -264,10 +281,10 @@ io.on('connection', (socket) => {
       room.consumers.delete(socket.id);
   
       // If the room is empty, clean it up
-      // if (room.producers.size === 0 && room.consumers.size === 0) {
-      //   rooms.delete(roomId);
-      //   console.log(`Room ${roomId} deleted as it's now empty`);
-      // }
+      if (room.producers.size === 0 && room.consumers.size === 0) {
+        rooms.delete(roomId);
+        console.log(`Room ${roomId} deleted as it's now empty`);
+      }
     }
   
     // Cleanup transports

@@ -2,11 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import { Device } from "mediasoup-client";
-import { getRoomToken } from '../services/lecture.service';
+import { getRoomToken } from '../../services/lecture.service';
 import { useAuth } from "@/context/AuthContext";
 import { Video, VideoOff, Mic, MicOff, Play,PhoneOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
+import LectureChat from "@/components/LiveLecture/LectureChat";
 const LectureStreaming = () => {
   const [device, setDevice] = useState(null);
   const [localStream, setLocalStream] = useState(null);
@@ -18,6 +18,9 @@ const LectureStreaming = () => {
   const videoProducerRef = useRef(null);
   const audioProducerRef = useRef(null);
   const streamRef = useRef(null);
+  const socketRef = useRef(null);  
+  const roomTokenRef = useRef(null);
+  
 
   const { id } = useParams();
   const { user, token } = useAuth();
@@ -28,9 +31,11 @@ const LectureStreaming = () => {
         const response = await getRoomToken(id, token);
         const roomToken = response.data.roomToken;
         setRoomId(roomToken);
+        roomTokenRef.current = roomToken;
   
-        const newSocket = io("http://172.20.10.6:3000");
+        const newSocket = io("http://localhost:3000");
         setSocket(newSocket);
+        socketRef.current = newSocket;
   
         newSocket.on("connect", () => {
           console.log("Socket connected:", newSocket.id);
@@ -137,9 +142,10 @@ const LectureStreaming = () => {
       const videoElement = document.getElementById('local-video');
       videoElement.srcObject = stream;
 
+      
       const videoTrack = stream.getVideoTracks()[0];
       videoProducerRef.current = await sendTransport.produce({ track: videoTrack });
-
+      
       const audioTrack = stream.getAudioTracks()[0];
       if (audioTrack) {
         audioProducerRef.current = await sendTransport.produce({ track: audioTrack });
@@ -224,6 +230,13 @@ const LectureStreaming = () => {
           </Button>
         </div>
       </div>
+      {socketRef.current && roomTokenRef.current && (
+        <LectureChat 
+          socket={socketRef.current} 
+          roomId={roomTokenRef.current} 
+          isHost={true} // Consumer is not the host
+        />
+      )}
     </div>
   );
 };
