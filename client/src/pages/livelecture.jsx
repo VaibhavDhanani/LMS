@@ -10,8 +10,10 @@ import { Loader2 } from 'lucide-react';
 const LiveLecture = () => {
   // State management
   const [remoteStream, setRemoteStream] = useState(null);
-  const [connectionStatus, setConnectionStatus] = useState('connecting'); // 'connecting', 'connected', 'error', 'reconnecting'
+  const [connectionStatus, setConnectionStatus] = useState('connecting'); // 'connecting', 'connected', 'waiting', 'error', 'reconnecting'
   const [error, setError] = useState(null);
+  const [producersAvailable, setProducersAvailable] = useState(false);
+  const [joinedRoom, setJoinedRoom] = useState(false);
 
   // Refs for persistent values
   const videoRef = useRef(null);
@@ -34,6 +36,8 @@ const LiveLecture = () => {
     const initLecture = async () => {
       try {
         setConnectionStatus('connecting');
+        setError(null);
+        setJoinedRoom(false);
 
         // Get room token
         const response = await getRoomToken(id, token);
@@ -61,29 +65,29 @@ const LiveLecture = () => {
   useEffect(() => {
     if (videoRef.current && remoteStream) {
       videoRef.current.srcObject = remoteStream;
-      
+
       const playVideo = async () => {
         try {
           // Try to play with muted first (browsers are more permissive with muted autoplay)
-          videoRef.current.muted = true;
+          // videoRef.current.muted = true;
           await videoRef.current.play();
-          console.log("Video is playing (muted)");
-          
+          // console.log("Video is playing (muted)");
+
           // After successful muted play, try unmuting if needed
           if (remoteStream.getAudioTracks().length > 0) {
             // Show UI that tells user to click to unmute
-            setError("Media is playing muted. Click to enable audio.");
+            // setError("Media is playing muted. Click the video to enable audio.");
           }
         } catch (err) {
           console.error("Video playback error:", err);
-          
+
           if (err.name === "NotAllowedError") {
             // Make the error message more prominent
             setError("Autoplay blocked. Please click the video to start playback.");
           }
         }
       };
-      
+
       playVideo();
     }
   }, [remoteStream]);
@@ -122,8 +126,9 @@ const LiveLecture = () => {
         // Then join the lecture room
         await joinLecture(socket, roomToken, deviceInstance);
 
-        setConnectionStatus('connected');
-        setError(null);
+        setJoinedRoom(true);
+        
+        // Connection status will be set based on producer availability in joinLecture
       } catch (error) {
         console.error('Failed during connection setup:', error);
         setError('Connection setup failed. Please refresh the page.');
@@ -153,6 +158,8 @@ const LiveLecture = () => {
     socket.on('newProducer', async ({ producerInfo }) => {
       console.log('New producer detected:', producerInfo);
       try {
+        setProducersAvailable(true);
+        
         // Make sure we have a device
         if (!deviceRef.current) {
           console.log('Device not found in ref, setting up device again');
@@ -166,6 +173,12 @@ const LiveLecture = () => {
 
         // Consume the new producer
         await consumeProducer(socket, producerInfo, deviceRef.current);
+        
+        // Update connection status if we were waiting
+        if (connectionStatus === 'waiting') {
+          setConnectionStatus('connected');
+          setError(null);
+        }
       } catch (error) {
         console.error('Failed to handle new producer:', error);
         setError(`Failed to receive media: ${error.message}`);
@@ -175,6 +188,13 @@ const LiveLecture = () => {
     socket.on('producerClosed', ({ producerId }) => {
       console.log('Producer closed:', producerId);
       handleProducerClosed(producerId);
+      
+      // Check if we still have any active producers
+      if (consumersRef.current.size === 0) {
+        setProducersAvailable(false);
+        setConnectionStatus('waiting');
+        setError('The host has disconnected. Waiting for them to reconnect...');
+      }
     });
 
     // Add more robust error handling
@@ -258,18 +278,25 @@ const LiveLecture = () => {
       });
 
       console.log('Joined lecture room:', joinResponse);
+      setJoinedRoom(true);
 
       // If there are active producers, set up transport and consume
-      if (joinResponse.activeProducers?.length > 0) {
+      if (joinResponse.producers?.length > 0) {
+        setProducersAvailable(true);
+        setConnectionStatus('connected');
+        
         // Create receive transport
         await createRecvTransport(socket, deviceInstance);
 
         // Consume all active producers
-        for (const producer of joinResponse.activeProducers) {
+        for (const producer of joinResponse.producers) {
           await consumeProducer(socket, producer, deviceInstance);
         }
       } else {
         console.log('No active producers in the room yet');
+        setProducersAvailable(false);
+        setConnectionStatus('waiting');
+        setError(null); // Clear any previous errors
       }
     } catch (error) {
       console.error('Join lecture failed:', error);
@@ -408,23 +435,10 @@ const LiveLecture = () => {
           stream.addTrack(consumer.track);
           console.log(`Added ${consumer.track.kind} track to stream`);
         }
-        // And log the entire stream
-        console.log("Current stream tracks:", stream.getTracks().map(t => ({
-          kind: t.kind,
-          id: t.id,
-          enabled: t.enabled,
-          readyState: t.readyState
-        })));
 
         return stream;
       });
-      // Add in your consumeProducer function after adding the track
-      console.log(`Added ${consumer.track.kind} track to stream. Track ID: ${consumer.track.id}`, {
-        enabled: consumer.track.enabled,
-        readyState: consumer.track.readyState,
-        muted: consumer.track.muted
-      });
-
+      setConnectionStatus("connected");
 
       return consumer;
     } catch (error) {
@@ -500,6 +514,7 @@ const LiveLecture = () => {
     try {
       setConnectionStatus('connecting');
       setError(null);
+      setJoinedRoom(false);
 
       // Use existing room token if available
       if (!roomTokenRef.current) {
@@ -516,89 +531,91 @@ const LiveLecture = () => {
     }
   };
 
-  // Render different UI based on connection status
-  const renderConnectionState = () => {
+  // Render different content based on connection status
+  const renderContent = () => {
     switch (connectionStatus) {
       case 'connecting':
         return (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/10 z-10">
-            <div className="flex flex-col items-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="mt-2 text-sm">Connecting to lecture...</p>
-            </div>
+          <div className="flex flex-col items-center justify-center h-64 bg-gray-100 rounded-lg">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+            <p className="text-lg font-medium">Connecting to lecture room...</p>
           </div>
         );
-
-      case 'reconnecting':
+      
+      case 'waiting':
         return (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/10 z-10">
-            <div className="flex flex-col items-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="mt-2 text-sm">Reconnecting...</p>
-              <button
-                onClick={handleReconnect}
-                className="mt-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
-              >
-                Reconnect manually
-              </button>
-            </div>
+          <div className="flex flex-col items-center justify-center h-64 bg-gray-100 rounded-lg">
+            <Loader2 className="h-12 w-12 animate-spin text-blue-500 mb-4" />
+            {joinedRoom ? (
+              <>
+                <p className="text-lg font-medium">Successfully joined the lecture room!</p>
+                <p className="text-md mt-2">Waiting for the host to start sharing...</p>
+                <p className="text-sm text-gray-500 mt-2">You'll automatically join when the host connects</p>
+              </>
+            ) : (
+              <p className="text-lg font-medium">Waiting for host to start the lecture...</p>
+            )}
           </div>
         );
-
+      
       case 'error':
         return (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/10 z-10">
-            <div className="flex flex-col items-center text-center">
-              <p className="mt-2 text-sm text-red-500">{error || 'Failed to connect'}</p>
-              <button
-                onClick={handleReconnect}
-                className="mt-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
-              >
-                Try again
-              </button>
-            </div>
+          <div className="flex flex-col items-center justify-center h-64 bg-red-50 rounded-lg border border-red-200">
+            <p className="text-lg font-medium text-red-600 mb-4">Connection Error</p>
+            <p className="text-sm text-red-500 mb-4">{error}</p>
+            <button 
+              onClick={handleReconnect}
+              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+            >
+              Try Again
+            </button>
           </div>
         );
-
+      
+      case 'connected':
+      case 'reconnecting':
+        return (
+          <div className="relative">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              controls
+              className="w-full max-w-2xl mx-auto bg-black rounded-lg"
+              style={{ minHeight: '300px' }}
+              onClick={() => {
+                if (videoRef.current) {
+                  videoRef.current.muted = false;
+                  if (videoRef.current.paused) {
+                    videoRef.current.play()
+                      .then(() => console.log("Video played via click"))
+                      .catch(err => console.error('Play failed via click:', err));
+                  }
+                }
+              }}
+            />
+            {connectionStatus === 'reconnecting' && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
+                <div className="bg-white p-4 rounded-md">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-2 mx-auto" />
+                  <p className="text-center">Reconnecting...</p>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      
       default:
         return null;
     }
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 flex flex-col items-center">
       <h2 className="text-xl font-bold mb-4">Live Lecture Stream</h2>
 
-      {error && connectionStatus !== 'error' && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <div className="relative">
-        {renderConnectionState()}
-
-        <video
-  ref={videoRef}
-  autoPlay
-  playsInline
-  controls
-  className="w-full max-w-2xl mt-4 bg-black rounded-lg"
-  style={{ minHeight: '300px' }}
-  onLoadedMetadata={() => console.log("Video loadedmetadata event fired")}
-  onCanPlay={() => console.log("Video canplay event fired")}
-  onPlaying={() => console.log("Video playing event fired")}
-  onWaiting={() => console.log("Video waiting event - buffering")}
-  onStalled={() => console.log("Video stalled event fired")}
-  onError={(e) => console.error("Video element error:", e.target.error)}
-  onClick={() => {
-    if (videoRef.current && videoRef.current.paused) {
-      videoRef.current.play()
-        .then(() => console.log("Video played via click"))
-        .catch(err => console.error('Play failed via click:', err));
-    }
-  }}
-/>
+      <div className="w-full max-w-2xl">
+        {renderContent()}
       </div>
     </div>
   );
