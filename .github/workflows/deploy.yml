@@ -27,14 +27,10 @@ jobs:
             
             echo "🚀 Starting Deployment on EC2..."
 
-            # Ensure LMS directory exists
-            sudo rm -rf /home/ubuntu/LMS
-            mkdir -p /home/ubuntu/LMS
+            
             cd /home/ubuntu/LMS
-
-            # Clone the latest code
-            git clone git@github.com:${{ secrets.REPO_URL }} . || git pull origin main
-            echo "✅ Repository updated"
+            git pull origin main
+            echo "✅ Codebase updated"
 
             # Install dependencies
             cd ApplicationServer
