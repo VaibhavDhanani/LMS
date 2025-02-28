@@ -4,9 +4,8 @@ import io from 'socket.io-client';
 import { getRoomToken } from '../services/lecture.service';
 import { useAuth } from '@/context/AuthContext';
 import { useParams } from "react-router-dom";
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
-
+import LectureChat from '../components/LiveLecture/LectureChat.jsx';
 const LiveLecture = () => {
   // State management
   const [remoteStream, setRemoteStream] = useState(null);
@@ -617,6 +616,13 @@ const LiveLecture = () => {
       <div className="w-full max-w-2xl">
         {renderContent()}
       </div>
+      {socketRef.current && roomTokenRef.current && (
+        <LectureChat 
+          socket={socketRef.current} 
+          roomId={roomTokenRef.current} 
+          isHost={false} // Consumer is not the host
+        />
+      )}
     </div>
   );
 };

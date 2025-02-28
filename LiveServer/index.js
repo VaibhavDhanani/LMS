@@ -46,7 +46,7 @@ io.on('connection', (socket) => {
         producers: new Set(), // Stores producer IDs
         consumers: new Set(), // Stores consumer IDs
       });
-  
+      socket.join(roomId);
       console.log(`Room ${roomId} created`);
       callback({ success: true });
     } else {
@@ -74,6 +74,40 @@ io.on('connection', (socket) => {
       consumers: [...room.consumers], // List of consumer socket IDs
     });
   });
+
+  socket.on('sendChatMessage', (messageData, callback) => {
+    try {
+      const { roomId, senderId, senderName, message, timestamp, isHost } = messageData;
+      
+      // Validate the message data
+      if (!roomId || !message) {
+        return callback({ error: 'Invalid message data' });
+      }
+
+      // Add any server-side validation or processing here
+      
+      // Broadcast the message to all clients in the room except the sender
+      socket.to(roomId).emit('chatMessage', {
+        senderId,
+        senderName,
+        message,
+        timestamp,
+        isHost
+      });
+
+      // Acknowledge successful sending
+      callback({ success: true });
+    } catch (error) {
+      console.error('Error handling chat message:', error);
+      callback({ error: 'Failed to send message' });
+    }
+  });
+  
+  // You can also add events for typing indicators, read receipts, etc.
+  socket.on('typing', ({ roomId, userId, isTyping }) => {
+    socket.to(roomId).emit('userTyping', { userId, isTyping });
+  });
+
   
 
   socket.on('getRtpCapabilities', (callback) => {
