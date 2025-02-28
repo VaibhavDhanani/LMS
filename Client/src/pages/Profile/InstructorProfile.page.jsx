@@ -5,12 +5,11 @@ import {useAuth} from "@/context/AuthContext.jsx";
 import {getUser} from "@/services/user.service.jsx";
 import { LoadingSpinner } from '@/components/ui/loading.jsx';
 import ProfileDetails from "@/components/User/ProfileDetails.jsx";
-import {UserCourses} from "@/components/User/UserCourses.jsx";
-import {UserLearning} from "@/components/User/UserLearning.jsx";
 import {UserWishlist} from "@/components/User/UserWishlist.jsx";
 import {AccountSettings} from "@/components/User/AccountSettings.jsx";
+import { UserCourses } from '@/components/User/UserCourses';
 
-const UserProfilePage = () => {
+const InstructorProfilePage = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const { user } = useAuth();
   const authToken = localStorage.getItem('authToken');
@@ -43,8 +42,6 @@ const UserProfilePage = () => {
         return <ProfileDetails user={loggedUser} />;
       case 'courses':
         return <UserCourses user={loggedUser} />;
-      case 'learning':
-        return <UserLearning user={loggedUser} />;
       case 'wishlist':
         return <UserWishlist user={loggedUser} />;
       case 'settings':
@@ -74,8 +71,7 @@ const UserProfilePage = () => {
               <div className="w-full mt-4 space-y-2">
                 {[
                   { icon: <User />, label: 'Profile', value: 'profile' },
-                  { icon: <Book />, label: 'My Courses', value: 'courses' },
-                  { icon: <PlayCircle />, label: 'My Learning', value: 'learning' },
+      			{ icon: <Book />, label: 'My Courses', value: 'courses' },
                   { icon: <Heart />, label: 'Wishlist', value: 'wishlist' },
                   { icon: <Settings />, label: 'Account Settings', value: 'settings' }
                 ].map((item) => (
@@ -117,4 +113,4 @@ const UserProfilePage = () => {
   );
 };
 
-export default UserProfilePage;
+export default InstructorProfilePage;

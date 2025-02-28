@@ -12,7 +12,6 @@ createRoot(document.getElementById('root')).render(
     <Router>
       <AuthProvider>
         <NotificationProvider>
-
         <AppRoutes />
         <ToastContainer 
         position="bottom-left"

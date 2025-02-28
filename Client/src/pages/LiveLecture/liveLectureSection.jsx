@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import * as MyCourseComponents from '../components/MyCoursePage/components.jsx';
+import * as MyCourseComponents from '../../components/MyCoursePage/components.jsx';
 import { Calendar, Clock, Users, Video, Edit, Trash2, ExternalLink } from 'lucide-react';
 import {
     fetchLectures as fetchLiveLectures,
@@ -10,7 +10,7 @@ import {
     startLecture,
     joinLecture,
     fetchStudentLectures
-} from '../services/lecture.service.jsx';
+} from '../../services/lecture.service.jsx';
 import { toast } from 'react-toastify';
 import { ScheduleLectureModal } from '@/forms/liveLecture.jsx';
 const ManageLiveLectures = () => {

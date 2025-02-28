@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import { Device } from "mediasoup-client";
-import { getRoomToken } from '../services/lecture.service';
+import { getRoomToken } from '../../services/lecture.service';
 import { useAuth } from "@/context/AuthContext";
 import { Video, VideoOff, Mic, MicOff, Play,PhoneOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
