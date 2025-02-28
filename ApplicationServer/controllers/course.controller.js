@@ -1,6 +1,6 @@
 import Course from '../models/course.js';
 import User from '../models/user.js';
-
+import mongoose from 'mongoose';
 // Create a new course
 export const createCourse = async (req, res) => {
   try {
@@ -86,11 +86,18 @@ export const getCourseById = async (req, res) => {
 
 
 export const getInstructorCourse =async(req, res) => {
-  try{
-    const { id: instructor } = req.params; // Destructure the instructor directly
-    const courses = await Course.find({ instructor }) // Query using the instructorId
-     .populate("instructor", "name email profilePicture review")
-     .populate("reviews", "rating content");
+    const { id } = req.params; // Destructure the instructor directly
+    const { isActive } = req.query; // Capture query params
+    try {
+      let query = {
+        instructor: id, 
+    };
+      if (isActive !== undefined) {
+        query.isActive = isActive === "true"; // Convert to boolean
+      } 
+      const courses = await Course.find(query ) // Query using the instructorId
+      .populate("instructor", "name email profilePicture review")
+      .populate("reviews", "rating content");
 
      if(!courses) return  res.status(404).json({ message: "Course not found" });
 

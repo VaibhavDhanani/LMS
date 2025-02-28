@@ -38,10 +38,11 @@ export const getAllCourse = async () => {
   }
 };
 
-export const getInstructorCourse = async (instructorId, token) => {
+export const getInstructorCourse = async (instructorId, token,params={}) => {
   try {
     const response = await db.get(`/courses/users/${instructorId}`, {
       headers: { authorization: `Bearer ${token}` },
+      params
     });
     return {
       success: true,

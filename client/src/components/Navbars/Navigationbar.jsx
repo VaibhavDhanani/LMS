@@ -130,6 +130,7 @@ const Navigationbar = () => {
               </>
       )}
       {user && !user.isInstructor && (
+          <>
         <div className="flex-1">
           <a
             className="btn btn-ghost text-xl"
@@ -138,6 +139,15 @@ const Navigationbar = () => {
             My Learnings
           </a>
         </div>
+        <div className="flex-1">
+        <a
+          className="btn btn-ghost text-xl"
+          onClick={() => navigate('/transactions')}
+        >
+           Transactions
+        </a>
+      </div>
+      </>
       )}
       {user && (
         <div className="flex-1">
