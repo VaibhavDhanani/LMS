@@ -1,13 +1,13 @@
 // eslint-disable-next-line no-unused-vars
-import React, {useEffect, useState} from 'react';
-import { User, Book, PlayCircle, Heart, Settings, LogOut } from 'lucide-react';
-import {useAuth} from "@/context/AuthContext.jsx";
-import {getUser} from "@/services/user.service.jsx";
 import { LoadingSpinner } from '@/components/ui/loading.jsx';
+import { AccountSettings } from "@/components/User/AccountSettings.jsx";
 import ProfileDetails from "@/components/User/ProfileDetails.jsx";
-import {UserLearning} from "@/components/User/UserLearning.jsx";
-import {UserWishlist} from "@/components/User/UserWishlist.jsx";
-import {AccountSettings} from "@/components/User/AccountSettings.jsx";
+import { UserLearning } from "@/components/User/UserLearning.jsx";
+import { UserWishlist } from "@/components/User/UserWishlist.jsx";
+import { useAuth } from "@/context/AuthContext.jsx";
+import { getUser } from "@/services/user.service.jsx";
+import { Heart, LogOut, PlayCircle, Settings, User } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const UserProfilePage = () => {
   const [activeTab, setActiveTab] = useState('profile');
@@ -16,14 +16,13 @@ const UserProfilePage = () => {
   const [loggedUser, setLoggedUser] = useState(null);
 
   useEffect(() => {
-    let mounted = true;
 
     const fetchUser = async () => {
       try {
         const userData = await getUser(user.id, authToken);
-        if (mounted) {
-          setLoggedUser(userData);
-        }
+        
+        setLoggedUser(userData);
+        
       } catch (error) {
         console.error(error);
       }
@@ -31,10 +30,7 @@ const UserProfilePage = () => {
 
     fetchUser();
 
-    return () => {
-      mounted = false;
-    };
-  }, [authToken, user.id]);
+  }, [authToken, user.id,activeTab]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -51,6 +47,9 @@ const UserProfilePage = () => {
     }
   };
 
+  console.log(loggedUser);
+
+  if(!loggedUser) {return <LoadingSpinner variant="primary" size="large" />}
 
   return (
     <div className="min-h-screen bg-base-200 p-8">
@@ -61,12 +60,12 @@ const UserProfilePage = () => {
             <div className="card-body items-center text-center">
               <div className="avatar online">
                 <div className="w-24 rounded-full">
-                  <img src={user.profilePicture} alt="Profile" />
+                  <img src={loggedUser.profilePicture} alt="Profile" />
                 </div>
               </div>
-              <h2 className="card-title">{user.name}</h2>
-              <p className="text-sm text-gray-500">{user.email}</p>
-              <p className="badge badge-primary">{user.type}</p>
+              <h2 className="card-title">{loggedUser.name}</h2>
+              <p className="text-sm text-gray-500">{loggedUser.email}</p>
+              <p className="badge badge-secondary">Student</p>
 
               <div className="w-full mt-4 space-y-2">
                 {[

@@ -4,6 +4,7 @@ export const getUser = async (userId,authToken) => {
     const response = await db.get(`/users/${userId}`,{
         headers: { Authorization: `Bearer ${authToken}` }
     })
+    console.log("service" ,response.data)
     return response.data.data
 }
 
