@@ -41,6 +41,7 @@ export const createCourse = async (req, res) => {
 
 // Get all courses
 export const getAllCourses = async (req, res) => {
+
   try {
     const courses = await Course.find()
         .populate({
@@ -55,7 +56,7 @@ export const getAllCourses = async (req, res) => {
     if (!courses.length) {
       return res.status(404).json({ message: "No courses found" });
     }
-
+    console.log("I am running")
     res.status(200).json({ message: "success", data: courses });
   } catch (error) {
     console.error("Error fetching courses:", error);
