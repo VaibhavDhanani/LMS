@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Select from "react-select";
+import Select from "react-select/dist";
 import { FaReact, FaNodeJs, FaJs, FaPython, FaDocker } from "react-icons/fa";
 import {
   SiMongodb, SiExpress, SiTypescript, SiNextdotjs, SiVuedotjs,
