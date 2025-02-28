@@ -157,6 +157,74 @@ export const getCourseTransactions = async (courseId, startDate, endDate) => {
   }
 };
 
+export const getSalesData = async (req, res) => {
+  try {
+    const { id: instructor } = req.params;
+    const { startDate, endDate } = req.query;
+    
+    // Fetch all courses created by the instructor
+    const courses = await Course.find({instructor}).select('_id title isActive');
+    if (!courses.length) {
+      return res.status(404).json({ success: false, message: 'No courses found for this instructor' });
+    }
+
+    let totalRevenue = 0;
+    let totalEnrollments = 0;
+    let courseBreakdown = [];
+    let monthlySales = {};
+
+    // Iterate through each course and fetch transactions
+    for (const course of courses) {
+      const courseTransactions = await getCourseTransactions(course._id, startDate, endDate);
+
+      if (courseTransactions.success) {
+        totalRevenue += courseTransactions.data.totalRevenue;
+        totalEnrollments += courseTransactions.data.totalEnrollments;
+        
+        // Store course-specific revenue and enrollments
+        courseBreakdown.push({
+          courseId: course._id,
+          title: course.title,
+          revenue: courseTransactions.data.totalRevenue,
+          enrollments: courseTransactions.data.totalEnrollments,
+          isActive: course.isActive,
+        });
+
+        // Merge monthly sales data
+        courseTransactions.data.monthlySales.forEach(({ month, sales, enrollments }) => {
+          if (monthlySales[month]) {
+            monthlySales[month].sales += sales;
+            monthlySales[month].enrollments += enrollments;
+          } else {
+            monthlySales[month] = { month, sales, enrollments };
+          }
+        });
+      }
+    }
+
+    // Convert monthly sales object to an array
+    const monthlySalesArray = Object.values(monthlySales);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        totalRevenue,
+        totalEnrollments,
+        monthlySales: monthlySalesArray,
+        courseBreakdown
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching sales data:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch sales data',
+      error: error.message
+    });
+  }
+};
+
 
 export const getTransactionsByCourse = async (req, res) => {
   try {
@@ -164,7 +232,6 @@ export const getTransactionsByCourse = async (req, res) => {
     const { startDate, endDate } = req.query;
     
     const result = await getCourseTransactions(courseId, startDate, endDate);
-    console.log(result);
     if (result.success) {
       return res.status(200).json(result);
     } else {
@@ -176,6 +243,28 @@ export const getTransactionsByCourse = async (req, res) => {
       success: false,
       message: 'Server error processing transaction data',
       error: error.message
+    });
+  }
+};
+
+export const getUserTransactions = async (req, res) => {
+  try {
+
+    // Fetch user transactions, populate course details, and sort by latest transaction
+    const transactions = await Transaction.find(req.params)
+      .populate('courseId', 'title') // Populating only the course title
+      .sort({ createdAt: -1 });
+    // Return response
+    res.status(200).json({
+      success: true,
+      message: "Transactions fetched successfully",
+      data: transactions,
+    });
+  } catch (error) {
+    console.error("Error fetching transactions:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch transactions. Please try again later.",
     });
   }
 };

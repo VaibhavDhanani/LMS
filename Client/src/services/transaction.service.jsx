@@ -21,3 +21,50 @@ export const getCourseTransactions = async (courseId, token, params = {}) => {
       };
     }
   };
+
+export const getOverallSalesData = async (userId,token,params ={})=>{
+  try {
+
+    const response = await db.get(`/transactions/instructor/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      params
+    });
+    
+    return {
+      success : true,
+      data : response.data.data,
+      message : response.data.message || 'Overall sales data fetched successfully'
+    };
+  } catch (error) {
+    console.error('Error fetching overall sales data:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch overall sales data'
+    };
+  }
+}
+
+export const getUserTransactions = async (userId,token)=>{
+  try{
+
+    const response = await db.get(`/transactions/user/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    return {
+      success : true,
+      data : response.data.data,
+      message : response.data.message || 'User transactions fetched successfully'
+    };
+  }catch(e){
+    console.error('Error fetching user transactions:', e);
+    return {
+      success: false,
+      message: e.response?.data?.message || 'Failed to fetch user transaction data'
+    };
+  }
+}
