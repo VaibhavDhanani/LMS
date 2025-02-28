@@ -1,9 +1,9 @@
 import React, {useEffect, useState} from "react";
-import {getStudentEnrolledCourses} from "@/services/course.service.jsx";
+import { getInstructorCourse } from "@/services/course.service.jsx";
 import {Link} from "react-router-dom";
 
 export const UserCourses = ({user}) => {
-    const [enrolledCourses, setEnrolledCourses] = useState([]);
+    const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const authToken = localStorage.getItem("authToken");
 
@@ -12,8 +12,10 @@ export const UserCourses = ({user}) => {
         const fetchEnrolledCourses = async () => {
             try {
                 setLoading(true);
-                const data = await getStudentEnrolledCourses(user._id,authToken);
-                setEnrolledCourses(data);
+                const res = await getInstructorCourse(user._id,authToken);
+                if(res.success){
+                    setCourses(res.data);
+                }
             } catch (error) {
                 console.error("Error fetching enrolled courses:", error);
             } finally {
@@ -33,7 +35,7 @@ export const UserCourses = ({user}) => {
         <div>
             <h2 className="text-2xl font-bold mb-6">My Courses</h2>
             <div className="space-y-4">
-                {enrolledCourses.map((course) => (
+                {courses.map((course) => (
                     <div key={course._id} className="card card-side bg-base-100 shadow-xl">
                         <figure className="w-48">
                             <img src={course.thumbnail} alt={course.title}/></figure>

@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import {getCourseById} from '../services/course.service'
-import { CourseHeader } from '../components/General/CourseHeader';
-import { CourseTabs } from '../components/General/CourseTabs';
-import { OverviewTab } from '../components/General/OverviewTab';
-import { CurriculumTab } from '../components/General/CurriculumTab';
-import { InstructorTab } from '../components/General/InstructorTab';
-import { ReviewsTab } from '../components/General/ReviewsTab';
-import { PrerequisitesSection } from '../components/General/PrerequisitesSection';
+import {getCourseById} from '../../services/course.service'
+import { CourseHeader } from '../../components/General/CourseHeader';
+import { CourseTabs } from '../../components/General/CourseTabs';
+import { OverviewTab } from '../../components/General/OverviewTab';
+import { CurriculumTab } from '../../components/General/CurriculumTab';
+import { InstructorTab } from '../../components/General/InstructorTab';
+import { ReviewsTab } from '../../components/General/ReviewsTab';
+import { PrerequisitesSection } from '../../components/General/PrerequisitesSection';
 import { useAuth } from '@/context/AuthContext';
 
 // Expanded Course Object with More Details

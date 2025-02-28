@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Device } from 'mediasoup-client';
 import io from 'socket.io-client';
-import { getRoomToken } from '../services/lecture.service';
+import { getRoomToken } from '../../services/lecture.service';
 import { useAuth } from '@/context/AuthContext';
 import { useParams } from "react-router-dom";
 import { Loader2 } from 'lucide-react';
-import LectureChat from '../components/LiveLecture/LectureChat.jsx';
+import LectureChat from '../../components/LiveLecture/LectureChat.jsx';
 const LiveLecture = () => {
   // State management
   const [remoteStream, setRemoteStream] = useState(null);
