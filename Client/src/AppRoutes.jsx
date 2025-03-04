@@ -20,6 +20,7 @@ import InstructorProfilePage from './pages/Profile/InstructorProfile.page.jsx';
 import CourseAnalyticsPage from './pages/Course/Course.page.jsx';
 import SalesAnalyticsPage from './pages/SalesAnalytics.page.jsx';
 import TransactionHistory from './pages/Transaction.page.jsx';
+import HomePage1 from './pages/dummy.jsx';
 
 const AppRoutes = () => (
   <Routes>
@@ -70,6 +71,7 @@ const AppRoutes = () => (
  				<Route path="/instructor/profile" element={<InstructorProfilePage/>}/>
          <Route path="/transactions" element={<TransactionHistory/>}/>
         <Route path="/sales" element={<SalesAnalyticsPage/>}/>
+        <Route path="/dummy" element={<HomePage1/>}/>
 
       </Route>
     </Route>
