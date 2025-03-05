@@ -6,7 +6,7 @@ export const createUser = async (req, res) => {
     const {name,email,password} = req.body;
     const isInstructor = req.body.role == "instructor"
     const userData= {name,email,password,isInstructor,isVerified: false}
-    console.log(userData)
+    // console.log(userData)
     const user = await User.create(userData);
     res.status(201).json(user);
   } catch (error) {
@@ -48,7 +48,7 @@ export const updateUser = async (req, res) => {
     });
 
     if (!user) return res.status(404).json({ message: "User not found" });
-    console.log("Updated User:", user);
+    // console.log("Updated User:", user);
     res.status(200).json({ message: "User updated", data: user });
   } catch (error) {
     console.error(error);

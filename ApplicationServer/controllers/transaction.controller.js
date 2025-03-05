@@ -80,24 +80,25 @@ export const createTransaction = async (req, res) => {
   }
 };
 
-export const getCourseTransactions = async (courseId, startDate, endDate) => {
+export const getCourseTransactions = async (courseId, year) => {
   try {
-    
     // Build query object
-    const query = { courseId, status: 'success' };
+    const query = { 
+      courseId, 
+      status: 'success' 
+    };
     
-    // Add date filtering if provided
-    if (startDate || endDate) {
-      query.createdAt = {};
-      if (startDate) {
-        query.createdAt.$gte = new Date(startDate);
-      }
-      if (endDate) {
-        // Set time to end of day for the end date
-        const endDateTime = new Date(endDate);
-        endDateTime.setHours(23, 59, 59, 999);
-        query.createdAt.$lte = endDateTime;
-      }
+    // Add year filtering if provided
+    if (year) {
+      // Set start of the year
+      const startOfYear = new Date(year, 0, 1);
+      // Set end of the year
+      const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
+      
+      query.createdAt = {
+        $gte: startOfYear,
+        $lte: endOfYear
+      };
     }
 
     // Fetch all successful transactions for this course
@@ -116,17 +117,15 @@ export const getCourseTransactions = async (courseId, startDate, endDate) => {
       const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       const date = new Date(transaction.createdAt);
       const month = monthNames[date.getMonth()];
-      const year = date.getFullYear();
-      const monthYear = `${month}`;
       
       // If month already exists in accumulator, add to it
-      if (acc[monthYear]) {
-        acc[monthYear].sales += transaction.paymentAmount;
-        acc[monthYear].enrollments += 1;
+      if (acc[month]) {
+        acc[month].sales += transaction.paymentAmount;
+        acc[month].enrollments += 1;
       } else {
         // Otherwise create new entry
-        acc[monthYear] = {
-          month: monthYear,
+        acc[month] = {
+          month: month,
           sales: transaction.paymentAmount,
           enrollments: 1
         };
@@ -160,7 +159,7 @@ export const getCourseTransactions = async (courseId, startDate, endDate) => {
 export const getSalesData = async (req, res) => {
   try {
     const { id: instructor } = req.params;
-    const { startDate, endDate } = req.query;
+    const { year } = req.query;
     
     // Fetch all courses created by the instructor
     const courses = await Course.find({instructor}).select('_id title isActive');
@@ -175,7 +174,7 @@ export const getSalesData = async (req, res) => {
 
     // Iterate through each course and fetch transactions
     for (const course of courses) {
-      const courseTransactions = await getCourseTransactions(course._id, startDate, endDate);
+      const courseTransactions = await getCourseTransactions(course._id, year);
 
       if (courseTransactions.success) {
         totalRevenue += courseTransactions.data.totalRevenue;
@@ -225,13 +224,12 @@ export const getSalesData = async (req, res) => {
   }
 };
 
-
 export const getTransactionsByCourse = async (req, res) => {
   try {
     const { id: courseId } = req.params;
-    const { startDate, endDate } = req.query;
+    const { year } = req.query;
     
-    const result = await getCourseTransactions(courseId, startDate, endDate);
+    const result = await getCourseTransactions(courseId, year);
     if (result.success) {
       return res.status(200).json(result);
     } else {
