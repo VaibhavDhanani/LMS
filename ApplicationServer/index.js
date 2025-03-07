@@ -30,31 +30,39 @@ app.use(
   }),
 );
 
-
-app.use('/api/stripe', webhookRoutes);
-app.use('/api/payment',authenticateToken, paymentRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api',publicCourseRoutes);
-app.use('/api',authenticateToken
-  , userRoutes, courseRoutes,courseDraft, enrollmentRoutes, reviewRoutes,transactionRoutes,lectureRoutes,notificationRoutes);
-  app.use(
-    '/api1',
-    userRoutes,
-    courseDraft,
-    courseRoutes,
-    enrollmentRoutes,
-    reviewRoutes,
-    transactionRoutes,
-  );
-
-  // // Initialize Gemini AI
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-  
-  // chatbot apis
-// Store chat history (in a real app, you'd use a database)
-let chatHistory = [];
-
+// Initialize with dummy data
+let chatHistory = [
+  {
+    id: 1,
+    type: 'bot',
+    content: 'Hello! How can I help you today?',
+    timestamp: new Date().toLocaleTimeString()
+  },
+  {
+    id: 2,
+    type: 'user',
+    content: 'I need help with my project',
+    timestamp: new Date().toLocaleTimeString()
+  },
+  {
+    id: 3,
+    type: 'bot',
+    content: 'I\'d be happy to help with your project! Could you tell me more about what you\'re working on?',
+    timestamp: new Date().toLocaleTimeString()
+  },
+  {
+    id: 4,
+    type: 'user',
+    content: 'I\'m building a chatbot interface',
+    timestamp: new Date().toLocaleTimeString()
+  },
+  {
+    id: 5,
+    type: 'bot',
+    content: 'That sounds interesting! Are you using any specific libraries or frameworks for your chatbot? Also, what features are you planning to implement?',
+    timestamp: new Date().toLocaleTimeString()
+  }
+];
 // Routes
 app.get('/api/messages', (req, res) => {
   res.json(chatHistory);
@@ -110,6 +118,31 @@ app.post('/api/messages', async (req, res) => {
     });
   }
 });
+
+app.use('/api/stripe', webhookRoutes);
+app.use('/api/payment',authenticateToken, paymentRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api',publicCourseRoutes);
+app.use('/api',authenticateToken
+  , userRoutes, courseRoutes,courseDraft, enrollmentRoutes, reviewRoutes,transactionRoutes,lectureRoutes,notificationRoutes);
+  app.use(
+    '/api1',
+    userRoutes,
+    courseDraft,
+    courseRoutes,
+    enrollmentRoutes,
+    reviewRoutes,
+    transactionRoutes,
+  );
+
+  // // Initialize Gemini AI
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  
+  // chatbot apis
+
+
+
 
 const port = process.env.PORT || 5000;
 
