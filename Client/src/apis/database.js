@@ -1,8 +1,8 @@
 import axios from 'axios';
-const url = import.meta.env.VITE_SERVER_URL;
+const baseURL = import.meta.env.VITE_SERVER_URL;
 
 const db = axios.create({
-  baseURL: `${url}`,
+  baseURL: `${baseURL}`,
   headers: {
     'Content-Type': 'application/json',
   },

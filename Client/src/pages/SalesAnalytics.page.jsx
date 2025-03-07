@@ -32,28 +32,30 @@ const SalesAnalyticsPage = () => {
     totalEnrollments: 0,
     courseBreakdown: []
   });
-  const [dateRange, setDateRange] = useState({
-    startDate: '',
-    endDate: ''
-  });
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [view, setView] = useState('revenue'); // 'revenue' or 'enrollments'
   const { user, token } = useAuth();
   const navigate = useNavigate();
+
+  // Generate years for dropdown (last 5 years to current year)
+  const yearOptions = Array.from(
+    { length: 6 },
+    (_, i) => new Date().getFullYear() - i
+  );
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
         // Fetch all courses
-        const coursesRes = await getInstructorCourse(user.id, token,{ isActive: true });
+        const coursesRes = await getInstructorCourse(user.id, token, { isActive: true });
         if (coursesRes.success) {
           setCourses(coursesRes.data || []);
         }
 
-        // Fetch overall sales data
+        // Fetch overall sales data for selected year
         const salesRes = await getOverallSalesData(user.id, token, {
-          startDate: dateRange.startDate || undefined,
-          endDate: dateRange.endDate || undefined
+          year: selectedYear
         });
 
         if (salesRes.success) {
@@ -72,18 +74,10 @@ const SalesAnalyticsPage = () => {
     };
 
     fetchData();
-  }, [token, dateRange]);
+  }, [token, selectedYear]);
 
-  const handleDateChange = (e) => {
-    setDateRange({
-      ...dateRange,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const applyDateFilter = (e) => {
-    e.preventDefault();
-    // The useEffect will automatically refetch data when dateRange changes
+  const handleYearChange = (e) => {
+    setSelectedYear(Number(e.target.value));
   };
 
   const exportData = () => {
@@ -99,7 +93,7 @@ const SalesAnalyticsPage = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `sales_data_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute("download", `sales_data_${selectedYear}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -136,47 +130,26 @@ const SalesAnalyticsPage = () => {
         </div>
       </header>
 
-      {/* Date Filter */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-          <Filter size={18} />
-          Filter Analytics
+      <div className="flex flex-wrap items-center gap-4 mb-6">
+        <h2 className="text-xl font-semibold flex items-center gap-2">
+          <Filter size={20} /> Filter Analytics
         </h2>
-        <form onSubmit={applyDateFilter} className="flex flex-wrap items-end gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <div className="relative">
-              <input
-                type="date"
-                name="startDate"
-                value={dateRange.startDate}
-                onChange={handleDateChange}
-                className="border rounded-md p-2 pr-10"
-              />
-              <Calendar className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-            <div className="relative">
-              <input
-                type="date"
-                name="endDate"
-                value={dateRange.endDate}
-                onChange={handleDateChange}
-                className="border rounded-md p-2 pr-10"
-              />
-              <Calendar className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
-            </div>
-          </div>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md"
+
+        <div className="relative flex items-center gap-2 bg-gray-100 p-2 rounded-md">
+          <label className="text-sm font-medium text-gray-600">Select Year:</label>
+          <select
+            value={selectedYear}
+            onChange={handleYearChange}
+            className="border rounded-md px-2 py-1 bg-white text-sm focus:ring-2 focus:ring-blue-400"
           >
-            Apply Filter
-          </button>
-        </form>
+            {yearOptions.map(year => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+          <Calendar className="text-gray-500 w-5 h-5" />
+        </div>
       </div>
+
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">

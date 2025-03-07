@@ -1,13 +1,19 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const { createWorker } = require('mediasoup');
+import express from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import { createWorker } from 'mediasoup';
+import { configDotenv } from 'dotenv';
+configDotenv();
 
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
+const publicIp = process.env.PUBLIC_IP;
+console.log(publicIp);
 const app = express();
-const server = http.createServer(app);
+
+const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*', // Replace with your frontend's URL for production
+    origin: allowedOrigins, // Replace with your frontend's URL for production
     methods: ['GET', 'POST'],
   },
 });
@@ -123,7 +129,7 @@ io.on('connection', (socket) => {
     try {
       console.log(`Creating ${direction} transport for client: ${socket.id}`);
       const transport = await router.createWebRtcTransport({
-        listenIps: [{ ip: '0.0.0.0', announcedIp: '192.168.31.172' }],
+        listenIps: [{ ip: '0.0.0.0', announcedIp: publicIp }], 
         enableUdp: true,
         enableTcp: true,
         preferUdp: true,
@@ -299,5 +305,5 @@ io.on('connection', (socket) => {
   
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT||3000;
 server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

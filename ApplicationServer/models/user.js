@@ -49,8 +49,6 @@ const userSchema = new mongoose.Schema({
       ref: 'Course',
     },
   ],
-  //   likedReviews: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }],
-  //   unlikedReviews: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }],
   isVerified: {
     type: mongoose.Schema.Types.Boolean,
     default: false,
