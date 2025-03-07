@@ -10,7 +10,7 @@ import MyCourses from './pages/MyCourses.page.jsx';
 import UserProfilePage from './pages/Profile/UserProfile.page.jsx';
 import LectureRoom from './components/Extra/lectureRoom.jsx';
 import LectureRoom1 from './components/Extra/demo.jsx';
-import ChatbotInterface from "@/components/chatbot.jsx";
+import ChatbotInterface from "@/components/Extra/chatbot.jsx";
 import ViewLecturePage from './pages/Course/ViewLecture.page.jsx';
 import MyLearningPage from "@/pages/MyLearnings.page.jsx";
 import ManageLiveLectures from './pages/LiveLecture/liveLectureSection.jsx';

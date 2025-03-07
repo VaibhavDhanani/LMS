@@ -36,34 +36,16 @@ app.use(
 let chatHistory = [
   {
     id: 1,
-    type: 'bot',
-    content: 'Hello! How can I help you today?',
+    type: 'user',
+    content: 'I need help.',
     timestamp: new Date().toLocaleTimeString()
   },
   {
     id: 2,
-    type: 'user',
-    content: 'I need help with my project',
-    timestamp: new Date().toLocaleTimeString()
-  },
-  {
-    id: 3,
     type: 'bot',
-    content: 'I\'d be happy to help with your project! Could you tell me more about what you\'re working on?',
+    content: 'Hello! How can I help you today?',
     timestamp: new Date().toLocaleTimeString()
   },
-  {
-    id: 4,
-    type: 'user',
-    content: 'I\'m building a chatbot interface',
-    timestamp: new Date().toLocaleTimeString()
-  },
-  {
-    id: 5,
-    type: 'bot',
-    content: 'That sounds interesting! Are you using any specific libraries or frameworks for your chatbot? Also, what features are you planning to implement?',
-    timestamp: new Date().toLocaleTimeString()
-  }
 ];
 // Routes
 app.get('/api/messages', (req, res) => {
@@ -85,7 +67,8 @@ app.post('/api/messages', async (req, res) => {
 
     try {
       // Generate response using Gemini
-      const result = await model.generateContent(message);
+      const messageToSend = message + " Give me answer in brief."
+      const result = await model.generateContent(messageToSend);
       const response = result.response;
       const botResponse = response.text();
       
