@@ -12,7 +12,7 @@ export const UserLearning = ({user}) => {
         const fetchEnrolledCourses = async () => {
             try {
                 setLoading(true);
-                const res = await getStudentEnrolledCourses(user._id,authToken);
+                const res = await getStudentEnrolledCourses(authToken);
                 if(res.success){
                     setCourses(res.data);
                 }
