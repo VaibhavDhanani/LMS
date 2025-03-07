@@ -10,7 +10,6 @@ const courseSchema = new mongoose.Schema({
     required: false
   },
   details: {
-    totalMinutes: { type: Number, required: false, min: 0 },
     level: { type: String, required: true },
     language: { type: String, required: true }
   },
@@ -28,7 +27,7 @@ const courseSchema = new mongoose.Schema({
           title: { type: String, required: true, trim: true },
           description: { type: String, trim: true },
           video: { type: String },
-          duration: { type: String, required: true },
+          duration: { type: Number, required: true },
           preview: { type: Boolean, default: false },
         },
       ],

@@ -7,6 +7,8 @@ import { useAuth } from "@/context/AuthContext";
 import { Video, VideoOff, Mic, MicOff, Play,PhoneOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LectureChat from "@/components/LiveLecture/LectureChat";
+const SocketURL = import.meta.env.VITE_SOCKET_URL;
+
 const LectureStreaming = () => {
   const [device, setDevice] = useState(null);
   const [localStream, setLocalStream] = useState(null);
@@ -33,7 +35,7 @@ const LectureStreaming = () => {
         setRoomId(roomToken);
         roomTokenRef.current = roomToken;
   
-        const newSocket = io("http://localhost:3000");
+        const newSocket = io(SocketURL);
         setSocket(newSocket);
         socketRef.current = newSocket;
   

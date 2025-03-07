@@ -6,18 +6,21 @@ import CourseForm from './forms/Course/courseForm.jsx';
 import DraftForm from './forms/Course/DraftForm.jsx';
 import CoursePreviewPage from './pages/Course/CoursePreview.page.jsx';
 import HomePage from './pages/Home.page.jsx';
-import MyCourses from './pages/MyCourses.jsx';
+import MyCourses from './pages/MyCourses.page.jsx';
 import UserProfilePage from './pages/Profile/UserProfile.page.jsx';
 import LectureRoom from './components/Extra/lectureRoom.jsx';
 import LectureRoom1 from './components/Extra/demo.jsx';
 import ChatbotInterface from "@/components/chatbot.jsx";
 import ViewLecturePage from './pages/Course/ViewLecture.page.jsx';
-import MyLearningPage from "@/pages/MyLearnings.jsx";
+import MyLearningPage from "@/pages/MyLearnings.page.jsx";
 import ManageLiveLectures from './pages/LiveLecture/liveLectureSection.jsx';
 import LectureStreaming from './pages/LiveLecture/lectureStreaming.page.jsx';
 import LiveLecture from './pages/LiveLecture/livelecture.jsx';
 import InstructorProfilePage from './pages/Profile/InstructorProfile.page.jsx';
 import CourseAnalyticsPage from './pages/Course/Course.page.jsx';
+import SalesAnalyticsPage from './pages/SalesAnalytics.page.jsx';
+import TransactionHistory from './pages/Transaction.page.jsx';
+import HomePage1 from './pages/dummy.jsx';
 
 const AppRoutes = () => (
   <Routes>
@@ -66,6 +69,9 @@ const AppRoutes = () => (
         <Route path="/livelecture/view/:id" element={<LiveLecture/>} />
         <Route path="/aihelp" element={<ChatbotInterface />}/>
  				<Route path="/instructor/profile" element={<InstructorProfilePage/>}/>
+         <Route path="/transactions" element={<TransactionHistory/>}/>
+        <Route path="/sales" element={<SalesAnalyticsPage/>}/>
+        <Route path="/dummy" element={<HomePage1/>}/>
 
       </Route>
     </Route>

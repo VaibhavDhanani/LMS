@@ -1,7 +1,6 @@
 import db from "@/apis/database";
 
 export const getCourse = async (courseId, token) => {
-  console.log("i am running in client");
   try {
     const response = await db.get(`/courses/${courseId}`, {
       headers: { authorization: `Bearer ${token}` },
@@ -21,11 +20,10 @@ export const getCourse = async (courseId, token) => {
   }
 };
 
-export const getAllCourse = async (token) => {
+export const getAllCourse = async () => {
   try {
-    const response = await db.get(`/courses`, {
-      headers: { authorization: `Bearer ${token}` },
-    });
+    const response = await db.get(`/courses`
+  );
     return {
       success: true,
       message: response.data.message || "Courses fetched successfully",
@@ -41,10 +39,11 @@ export const getAllCourse = async (token) => {
   }
 };
 
-export const getInstructorCourse = async (instructorId, token) => {
+export const getInstructorCourse = async (instructorId, token,params={}) => {
   try {
     const response = await db.get(`/courses/users/${instructorId}`, {
       headers: { authorization: `Bearer ${token}` },
+      params
     });
     return {
       success: true,
