@@ -48,13 +48,13 @@ const SalesAnalyticsPage = () => {
       setLoading(true);
       try {
         // Fetch all courses
-        const coursesRes = await getInstructorCourse(user.id, token, { isActive: true });
+        const coursesRes = await getInstructorCourse( token, { isActive: true });
         if (coursesRes.success) {
           setCourses(coursesRes.data || []);
         }
 
         // Fetch overall sales data for selected year
-        const salesRes = await getOverallSalesData(user.id, token, {
+        const salesRes = await getOverallSalesData( token, {
           year: selectedYear
         });
 
@@ -155,7 +155,7 @@ const SalesAnalyticsPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-gray-500 mb-1">Total Revenue</h3>
-          <p className="text-3xl font-bold">${salesData.totalRevenue.toLocaleString()}</p>
+          <p className="text-3xl font-bold">₹{salesData.totalRevenue.toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-gray-500 mb-1">Total Enrollments</h3>
@@ -164,7 +164,7 @@ const SalesAnalyticsPage = () => {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-gray-500 mb-1">Average Course Price</h3>
           <p className="text-3xl font-bold">
-            ${salesData.totalEnrollments > 0
+          ₹{salesData.totalEnrollments > 0
               ? (salesData.totalRevenue / salesData.totalEnrollments).toFixed(2)
               : '0.00'
             }
@@ -210,7 +210,7 @@ const SalesAnalyticsPage = () => {
                     type="monotone"
                     dataKey="sales"
                     stroke="#8884d8"
-                    name="Revenue ($)"
+                    name="Revenue (₹)"
                     activeDot={{ r: 8 }}
                   />
                 ) : (
@@ -254,7 +254,7 @@ const SalesAnalyticsPage = () => {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
+                  <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -276,9 +276,9 @@ const SalesAnalyticsPage = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis />
-                  <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
+                  <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
                   <Legend />
-                  <Bar dataKey="sales" name="Revenue ($)" fill="#8884d8" />
+                  <Bar dataKey="sales" name="Revenue (₹)" fill="#8884d8" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -311,10 +311,10 @@ const SalesAnalyticsPage = () => {
 
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="py-3 px-4 text-left">{course.title}</td>
-                  <td className="py-3 px-4 text-right">${course.revenue.toLocaleString()}</td>
+                  <td className="py-3 px-4 text-right">₹{course.revenue.toLocaleString()}</td>
                   <td className="py-3 px-4 text-right">{course.enrollments}</td>
                   <td className="py-3 px-4 text-right">
-                    ${course.enrollments > 0
+                  ₹{course.enrollments > 0
                       ? (course.revenue / course.enrollments).toFixed(2)
                       : '0.00'
                     }

@@ -15,7 +15,7 @@ export const NotificationProvider = ({ children }) => {
   // Function to fetch unread notifications
   const fetchNotifications = async () => {
     try {
-      const response = await getNotifications(user.id, token);
+      const response = await getNotifications(user._id, token);
       if(response.success){
         setNotifications(response.data);
         setUnreadCount(response.data.length);
@@ -73,7 +73,7 @@ export const NotificationProvider = ({ children }) => {
       // Set up SSE connection
       const sse = new EventSource(`http://localhost:5000/api/notifications/stream?token=${token}`, { withCredentials: true });
 
-      console.log('SSE connection established');
+      // console.log('SSE connection established');
       sse.onopen = () => {
         console.log('Notification stream connected');
       };

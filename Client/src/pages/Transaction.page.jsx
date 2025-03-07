@@ -32,7 +32,7 @@ const TransactionHistory = () => {
         const fetchTransactions = async () => {
             setIsLoading(true);
             try {
-                const result = await getUserTransactions(user.id, token);
+                const result = await getUserTransactions(token);
                 if (result.success) {
                     setTransactions(result.data);
                     setPagination({
@@ -86,7 +86,7 @@ const TransactionHistory = () => {
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {paginatedTransactions.map((transaction) => (
-                                        <tr key={transaction.id}>
+                                        <tr key={transaction._id}>
                                             <td className="px-6 py-4">{transaction.courseId.title}</td>
                                             <td className="px-6 py-4">
                                                 <span
@@ -99,7 +99,7 @@ const TransactionHistory = () => {
                                             </td>
 
                                             <td className="px-6 py-4">{formatDate(transaction.createdAt)}</td>
-                                            <td className="px-6 py-4">${transaction.paymentAmount}</td>
+                                            <td className="px-6 py-4">₹{transaction.paymentAmount}</td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-3 py-1 rounded-full text-sm font-medium 
                           ${transaction.status === 'success' ? 'bg-green-100 text-green-700' :

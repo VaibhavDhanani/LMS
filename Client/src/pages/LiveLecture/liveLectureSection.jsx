@@ -5,7 +5,6 @@ import * as MyCourseComponents from '../../components/MyCoursePage/components.js
 import { Calendar, Clock, Users, Video, Edit, Trash2, ExternalLink } from 'lucide-react';
 import {
     fetchLectures as fetchLiveLectures,
-    updateLecture,
     deleteLecture,
     startLecture,
     joinLecture,
@@ -36,8 +35,8 @@ const ManageLiveLectures = () => {
     const fetchLectureData = async () => {
         try {
             const res = user.isInstructor
-                ? await fetchLiveLectures(user.id, token)
-                : await fetchStudentLectures(user.id, token);
+                ? await fetchLiveLectures(token)
+                : await fetchStudentLectures(token);
 
             if (res.success) {
                 setLectures(res.data);
@@ -50,7 +49,7 @@ const ManageLiveLectures = () => {
 
     const handleStartLecture = async (lectureId) => {
         try {
-            const response = await startLecture(lectureId, user.id, token);
+            const response = await startLecture(lectureId, token);
             if (response.success) {
                 navigate(`/livelecture/${lectureId}`);
             }
@@ -62,7 +61,7 @@ const ManageLiveLectures = () => {
 
     const handleJoinLecture = async (lectureId) => {
         try {
-            const response = await joinLecture(lectureId, user.id, token);
+            const response = await joinLecture(lectureId, token);
             if (response.success) {
                 if (response.data) {
                     navigate(`/livelecture/view/${lectureId}`);
@@ -225,7 +224,7 @@ const ManageLiveLectures = () => {
                             isOpen={isEditModalOpen}
                             onClose={() => setIsEditModalOpen(false)}
                             courseId={selectedLecture?.courseId}
-                            instructorId={user.id}
+                            instructorId={user._id}
                             token={token}
                             existingLecture={selectedLecture}
                             onScheduleSuccess={() => {

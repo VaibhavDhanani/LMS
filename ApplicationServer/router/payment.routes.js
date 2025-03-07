@@ -8,7 +8,8 @@ import User from '../models/user.js';
 import Course from '../models/course.js';
 router.post('/verify/:id', async (req, res) => {
     const sessionId = req.params.id;
-    const { userId, courseId } = req.body;
+    const userId = req.user.id;
+    const { courseId } = req.body;
 
     try {
         // Fetch the session object from Stripe
@@ -90,7 +91,8 @@ router.post('/verify/:id', async (req, res) => {
 
 
 router.post('/', async (req, res) => {
-  const {course,user} = req.body;
+  const user = req.user; 
+  const {course} = req.body;
   const { price, discountEnabled,discount } = course.pricing;
   const discountedPrice = price * (discountEnabled ? 1- (discount/100)  : 1);
   const lineItems = [

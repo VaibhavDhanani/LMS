@@ -12,9 +12,9 @@ import {
 const router = express.Router();
 
 router.post("/drafts", createCourseDraft);
-router.get("/drafts",getAllCourseDrafts);
-router.get("/drafts/users/:id", getUserCourseDrafts);
+router.get("/drafts/users", getUserCourseDrafts);
 router.get("/drafts/:id", getCourseDraftById);
+router.get("/drafts",getAllCourseDrafts);
 router.put("/drafts/:id", updateCourseDraft);
 router.delete("/drafts/:id", deleteCourseDraft);
 router.post("/publishdrafts/:id", publishCourseDraft);
