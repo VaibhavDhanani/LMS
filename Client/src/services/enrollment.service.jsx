@@ -2,7 +2,6 @@ import db from "@/apis/database";
 
 export const createTransaction = async (sessionId, token) => {
     try {
-        console.log(sessionId);
         let obj ={
             sessionId: sessionId,
         }

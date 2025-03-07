@@ -11,14 +11,13 @@ import { UserCourses } from "@/components/User/UserCourses";
 
 const InstructorProfilePage = () => {
   const [activeTab, setActiveTab] = useState("profile");
-  const { user, logout } = useAuth();
-  const authToken = localStorage.getItem("authToken");
+  const { user, token,logout } = useAuth();
   const [loggedUser, setLoggedUser] = useState(null);
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const userData = await getUser(user.id, authToken);
+        const userData = await getUser(user._id, token);
 
         setLoggedUser(userData);
       } catch (error) {

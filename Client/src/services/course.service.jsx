@@ -39,9 +39,9 @@ export const getAllCourse = async () => {
   }
 };
 
-export const getInstructorCourse = async (instructorId, token,params={}) => {
+export const getInstructorCourse = async ( token,params={}) => {
   try {
-    const response = await db.get(`/courses/users/${instructorId}`, {
+    const response = await db.get(`/courses/users`, {
       headers: { authorization: `Bearer ${token}` },
       params
     });

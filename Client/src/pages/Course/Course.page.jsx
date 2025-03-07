@@ -219,10 +219,10 @@ const CourseAnalyticsPage = () => {
                 <div><span className="font-medium">Technologies:</span> {course.technologies?.join(", ")}</div>
               </div>
               <div className="mb-4">
-                <span className="text-2xl font-bold text-gray-900">${currentPrice?.toFixed(2) || 0}</span>
+                <span className="text-2xl font-bold text-gray-900">₹{currentPrice?.toFixed(2) || 0}</span>
                 {course.pricing?.discountEnabled && (
                   <>
-                    <span className="text-lg text-gray-500 line-through ml-2">${course.pricing.price?.toFixed(2) || 0}</span>
+                    <span className="text-lg text-gray-500 line-through ml-2">₹{course.pricing.price?.toFixed(2) || 0}</span>
                     <span className="ml-2 bg-green-100 text-green-800 px-2 py-1 rounded-md text-sm">
                       {course.pricing.discount}% OFF
                     </span>
@@ -247,7 +247,7 @@ const CourseAnalyticsPage = () => {
           <div className="grid grid-cols-2 gap-4">
             <div className="border rounded-lg p-4">
               <h3 className="text-gray-500 mb-1">Total Revenue</h3>
-              <p className="text-2xl font-bold">${totalSales.toLocaleString()}</p>
+              <p className="text-2xl font-bold">₹{totalSales.toLocaleString()}</p>
             </div>
             <div className="border rounded-lg p-4">
               <h3 className="text-gray-500 mb-1">Total Enrollments</h3>
@@ -260,7 +260,7 @@ const CourseAnalyticsPage = () => {
             <div className="border rounded-lg p-4">
               <h3 className="text-gray-500 mb-1">Avg. Sale Value</h3>
               <p className="text-2xl font-bold">
-                ${totalEnrollments > 0 ? (totalSales / totalEnrollments).toFixed(2) : '0.00'}
+              ₹{totalEnrollments > 0 ? (totalSales / totalEnrollments).toFixed(2) : '0.00'}
               </p>
             </div>
           </div>
@@ -285,7 +285,7 @@ const CourseAnalyticsPage = () => {
                     dataKey="sales"
                     stroke="#8884d8"
                     activeDot={{ r: 8 }}
-                    name="Revenue ($)"
+                    name="Revenue (₹)"
                   />
                   <Line yAxisId="right" type="monotone" dataKey="enrollments" stroke="#82ca9d" name="Enrollments" />
                 </LineChart>
@@ -310,7 +310,7 @@ const CourseAnalyticsPage = () => {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="sales" name="Revenue ($)" fill="#8884d8" />
+                  <Bar dataKey="sales" name="Revenue (₹)" fill="#8884d8" />
                 </BarChart>
               </ResponsiveContainer>
             </div>

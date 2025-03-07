@@ -20,17 +20,9 @@ export const createDraft = async (draft, token) => {
   }
 };
 
-export const getDrafts = async (userId, token) => {
+export const getDrafts = async ( token) => {
   try {
-    if (!token) {
-      console.log('Token is null or undefined');
-      return {
-        success: false,
-        message: "Token is required to fetch drafts",
-        data: [],
-      };
-    }
-    const response = await db.get(`/drafts/users/${userId}`, {
+    const response = await db.get(`/drafts/users`, {
       headers: { authorization: `Bearer ${token}` },
     });
     return {

@@ -86,7 +86,7 @@ export const getCourseById = async (req, res) => {
 
 
 export const getInstructorCourse =async(req, res) => {
-    const { id } = req.params; // Destructure the instructor directly
+    const id  = req.user.id; // Destructure the instructor directly
     const { isActive } = req.query; // Capture query params
     try {
       let query = {
