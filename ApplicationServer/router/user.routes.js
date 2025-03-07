@@ -5,13 +5,17 @@ import {
   getUserById,
   updateUser,
   deleteUser,
-  validateUser
+  validateUser,
+  getUserInfo,
+  updateWishlist
 } from "../controllers/user.controller.js";
 
 const router = express.Router();
 
 router.post("/users", createUser);
+router.put("/users/wishlists/:courseId", updateWishlist );
 router.post("/users/validate",validateUser);
+router.get("/users/info", getUserInfo);
 router.get("/users", getAllUsers);
 router.get("/users/:id", getUserById);
 router.put("/users/:id", updateUser);

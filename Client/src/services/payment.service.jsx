@@ -3,11 +3,11 @@ import { loadStripe } from '@stripe/stripe-js';
 
 const stripePublishKey = import.meta.env.VITE_STRIPE_PUBLISHKEY
 
-export const paymentService = async (course, user,token) => {
+export const paymentService = async (course, token) => {
   try {
     const stripe = await loadStripe(stripePublishKey);
 
-    const response = await db.post(`/payment`, { course: course, user: user }, {
+    const response = await db.post(`/payment`, { course: course }, {
       headers: { authorization: `Bearer ${token}` },
     });
     const result = await stripe.redirectToCheckout({
@@ -20,10 +20,9 @@ export const paymentService = async (course, user,token) => {
   }
 };
 
-export const verifyPayment = async (sessionId, userId,courseId, token) => {
+export const verifyPayment = async (sessionId,courseId, token) => {
   try {
     let obj ={
-      userId: userId,
       courseId: courseId,
       sessionId: sessionId,
     }

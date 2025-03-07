@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Star } from 'lucide-react';
+import { Star, Heart } from 'lucide-react';
 import VideoPlay from './VideoPlay';
 import { paymentService, verifyPayment } from '@/services/payment.service';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'react-toastify';  // Importing toast
 import 'react-toastify/dist/ReactToastify.css'; // Importing styles
-
+import { updateWishlist } from '@/services/user.service';
 export const CourseHeader = ({ course }) => {
   const { user, token } = useAuth();
   const location = useLocation();
@@ -15,17 +15,63 @@ export const CourseHeader = ({ course }) => {
   const sessionId = queryParams.get('session_id');
   const status = queryParams.get('status');
   const [isEnrolled, setIsEnrolled] = useState(() =>
-    course.enrolledStudents?.includes(user?.id)
+    course.enrolledStudents?.includes(user?._id)
   );
   const [loading, setLoading] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
   const [paymentMessage, setPaymentMessage] = useState(null);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  
+
+  useEffect(() => {
+    if (user && user.wishlist && course?._id) {
+      setIsWishlisted(user.wishlist.includes(course._id));
+    } else {
+      setIsWishlisted(false);
+    }
+  }, [user, course]);
+
+  const handleWishlistToggle = async () => {
+    if (!token) {
+      toast.warn('Please log in to manage your wishlist');
+      return;
+    }
+    
+    if (isUpdating) return; // Prevent multiple clicks
+    
+    try {
+      setIsUpdating(true);
+      const isAdding = !isWishlisted;
+      
+      // Optimistic UI update
+      setIsWishlisted(isAdding);
+      
+      // Call API to update wishlist
+      const response = await updateWishlist(course._id, isAdding, token);
+      
+      if (response.success) {
+        toast.success(isAdding ? 'Added to wishlist' : 'Removed from wishlist');
+      } else {
+        // Revert UI state if API call failed
+        setIsWishlisted(!isAdding);
+        toast.error(response.message || 'Failed to update wishlist');
+      }
+    } catch (error) {
+      // Revert UI state on error
+      setIsWishlisted(!isWishlisted);
+      console.error('Error updating wishlist:', error);
+      toast.error('Failed to update wishlist');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   useEffect(() => {
     if (sessionId) {
       (async () => {
         try {
-          const response = await verifyPayment(sessionId, user.id, course._id, token);
+          const response = await verifyPayment(sessionId, course._id, token);
           if (response.data.status === 'success' && response.data.courseId === course._id && response.data.userId === user.id) {
             setIsEnrolled(true);
             setPaymentMessage('Payment successful.')
@@ -44,7 +90,7 @@ export const CourseHeader = ({ course }) => {
         }
       })();
     }
-  }, [sessionId, token]);
+  }, [sessionId, token, user, course._id]);
 
   const handleBuyCourse = async () => {
     if (!user) {
@@ -61,7 +107,7 @@ export const CourseHeader = ({ course }) => {
     setPaymentError(null);
 
     try {
-      const response = await paymentService(course, user, token);
+      const response = await paymentService(course, token);
       if (response.error) {
         setPaymentError(response.error);
       }
@@ -94,7 +140,25 @@ export const CourseHeader = ({ course }) => {
 
         {/* Course Information */}
         <div className="flex flex-col space-y-4">
-          <h1 className="text-2xl md:text-3xl font-bold">{course.title}</h1>
+          <div className="flex justify-between items-start">
+            <h1 className="text-2xl md:text-3xl font-bold">{course.title}</h1>
+            
+              {/* Wishlist button - only show if user is logged in */}
+            {user && (
+              <button 
+                onClick={handleWishlistToggle}
+                className={`p-2 rounded-full hover:bg-gray-100 transition-all ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={isUpdating}
+              >
+                <Heart 
+                  size={28} 
+                  className={`${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} 
+                />
+              </button>
+            )}
+          </div>
+          
+          
           <p className="text-lg md:text-xl text-gray-600">{course.subtitle}</p>
 
           {/* Instructor Info */}
@@ -147,15 +211,15 @@ export const CourseHeader = ({ course }) => {
               )}
             </div>
 
-            {/* Action Button */}
-            <div className="w-full sm:w-auto">
-              {isEnrolled || user && course.instructor._id === user.id ? (
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-4">
+              {isEnrolled || (user && course.instructor._id === user.id) ? (
                 <button
-                className="w-full sm:w-auto btn btn-success px-8 hover:bg-success-dark transition duration-200"
-                onClick={() => navigate(`/my-courses/${course._id}`)}
-              >
-                Go to Course
-              </button>
+                  className="w-full sm:w-auto btn btn-success px-8 hover:bg-success-dark transition duration-200"
+                  onClick={() => navigate(`/my-courses/${course._id}`)}
+                >
+                  Go to Course
+                </button>
               ) : (
                 <button
                   className={`w-full sm:w-auto btn btn-primary px-8 ${loading && 'opacity-50'}`}
