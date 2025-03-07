@@ -52,7 +52,7 @@ const MyCourses = () => {
 
   const fetchCourses = async () => {
     try {
-      const draftResponse = await getDrafts(user.id, token);
+      const draftResponse = await getDrafts( token);
       const drafts = draftResponse.success
         ? draftResponse.data.map(course => ({
           ...course,
@@ -60,7 +60,7 @@ const MyCourses = () => {
         }))
         : [];
 
-      const publishedResponse = await getInstructorCourse(user.id, token);
+      const publishedResponse = await getInstructorCourse( token);
       const published = publishedResponse.success
         ? publishedResponse.data.map(course => ({
           ...course,
@@ -77,7 +77,7 @@ const MyCourses = () => {
   };
 
   useEffect(() => {
-    if (user?.id && token) {
+    if (user?._id && token) {
       fetchCourses();
     }
   }, [user, token]);
@@ -85,7 +85,7 @@ const MyCourses = () => {
   const handleAddCourse = async () => {
     if (newCourseTitle.trim()) {
       try {
-        await createDraft({ title: newCourseTitle, instructor: user.id }, token);
+        await createDraft({ title: newCourseTitle }, token);
         setNewCourseTitle('');
         setIsModalOpen(false);
         fetchCourses();
@@ -334,7 +334,7 @@ const MyCourses = () => {
         isOpen={isScheduleModalOpen}
         onClose={() => setIsScheduleModalOpen(false)}
         courseId={selectedCourseId}
-        instructorId={user.id}
+        instructorId={user._id}
         token={token}
         onScheduleSuccess={() => {
           setSelectedCourseId(null);

@@ -175,7 +175,7 @@ export const getLectureById = async (req, res) => {
 // ✅ Get Lectures by Instructor ID
 export const getInstructorLecture = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id  = req.user.id;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid Instructor ID" });
     }
@@ -190,7 +190,7 @@ export const getInstructorLecture = async (req, res) => {
 
 export const getStudentLecture = async (req, res) => {
   try {
-    const { id } = req.params; // Student ID
+    const  id  = req.user.id ; // Student ID
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid Student ID" });
@@ -302,7 +302,8 @@ export const startLecture = async (req, res) => {
 // ✅ Student Joins Lecture (Fetches room token)
 export const joinLecture = async (req, res) => {
   try {
-    const { id } = req.params;
+    const {id}  = req.params;
+    console.log(id);
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid Lecture ID" });
     }

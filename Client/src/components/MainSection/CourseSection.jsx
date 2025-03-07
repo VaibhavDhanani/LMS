@@ -32,11 +32,12 @@ const CourseSection = () => {
     fetchData();
   }, [token]); // Re-run when the token changes
 
+
   return (
     <>
       {user && (
         <h1 className="font-semibold text-2xl m-5 p-5">
-          Welcome Back! {user.username}
+          Welcome Back! {user.name}
         </h1>
       )}
       <div className="p-4 space-y-8">
@@ -50,7 +51,10 @@ const CourseSection = () => {
           ) : courses.length > 0 ? (
             <div className="flex gap-4 overflow-x-auto pb-4">
               {courses.map((course, idx) => (
-                <CourseCard key={idx} course={course} />
+                <CourseCard 
+                  key={idx} 
+                  course={course}
+                />
               ))}
             </div>
           ) : (
