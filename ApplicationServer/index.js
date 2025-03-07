@@ -31,6 +31,84 @@ app.use(
   }),
 );
 
+// // Initialize Gemini AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+// Initialize with dummy data
+let chatHistory = [
+{
+  id: 1,
+  type: 'user',
+  content: 'I need help.',
+  timestamp: new Date().toLocaleTimeString()
+},
+{
+  id: 2,
+  type: 'bot',
+  content: 'Hello! How can I help you today?',
+  timestamp: new Date().toLocaleTimeString()
+},
+];
+
+// Routes
+app.get('/api/messages', (req, res) => {
+res.json(chatHistory);
+});
+app.post('/api/messages', async (req, res) => {
+  try {
+    // Extract message from request body
+    const { message } = req.body;
+    if (!message) {
+      return res.status(400).json({ error: "Message is required." });
+    }
+
+    const userMessage = {
+      id: chatHistory.length + 1,
+      type: 'user',
+      content: message,
+      timestamp: new Date().toLocaleTimeString(),
+    };
+  
+    chatHistory.push(userMessage);
+    // Generate response using Gemini
+    const messageToSend = message + " Give me answer in brief.";
+    const result = await model.generateContent(messageToSend);
+    const response = result.response;
+  
+    if (!response || !response.text) {
+      throw new Error("Invalid response from AI model.");
+    }
+
+    const botResponse = response.text();
+
+    // Create bot message
+    const botMessage = {
+      id: chatHistory.length + 1,
+      type: 'bot',
+      content: botResponse,
+      timestamp: new Date().toLocaleTimeString(),
+    };
+  
+    chatHistory.push(botMessage);
+    res.json(botMessage);
+  } catch (aiError) {
+    console.error('AI Error:', aiError);
+  
+    // Send a fallback message if AI fails
+    const fallbackMessage = {
+      id: chatHistory.length + 1,
+      type: 'bot',
+      content: "I apologize, but I'm having trouble processing your request at the moment. Could you please try again?",
+      timestamp: new Date().toLocaleTimeString(),
+    };
+  
+    chatHistory.push(fallbackMessage);
+    res.json(fallbackMessage);
+  }
+});
+
+
 
 app.use('/api/stripe', webhookRoutes);
 app.use('/api/payment',authenticateToken, paymentRoutes);
@@ -48,70 +126,6 @@ app.use('/api',authenticateToken
     transactionRoutes,
   );
 
-  // // Initialize Gemini AI
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-  
-  // chatbot apis
-// Store chat history (in a real app, you'd use a database)
-let chatHistory = [];
-
-// Routes
-app.get('/api/messages', (req, res) => {
-  res.json(chatHistory);
-});
-
-app.post('/api/messages', async (req, res) => {
-  try {
-    const { message } = req.body;
-
-    // Save user message
-    const userMessage = {
-      id: chatHistory.length + 1,
-      type: 'user',
-      content: message,
-      timestamp: new Date().toLocaleTimeString(),
-    };
-    chatHistory.push(userMessage);
-
-    try {
-      // Generate response using Gemini
-      const messageToSend = message + " Give me answer in brief."
-      const result = await model.generateContent(messageToSend);
-      const response = result.response;
-      const botResponse = response.text();
-      
-      // Create bot message
-      const botMessage = {
-        id: chatHistory.length + 1,
-        type: 'bot',
-        content: botResponse,
-        timestamp: new Date().toLocaleTimeString(),
-      };
-      chatHistory.push(botMessage);
-
-      res.json(botMessage);
-    } catch (aiError) {
-      console.error('AI Error:', aiError);
-      // Send a fallback message if AI fails
-      const fallbackMessage = {
-        id: chatHistory.length + 1,
-        type: 'bot',
-        content:
-            "I apologize, but I'm having trouble processing your request at the moment. Could you please try again?",
-        timestamp: new Date().toLocaleTimeString(),
-      };
-      chatHistory.push(fallbackMessage);
-      res.json(fallbackMessage);
-    }
-  } catch (error) {
-    console.error('Server Error:', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: error.message,
-    });
-  }
-});
 
 const port = process.env.PORT || 5000;
 

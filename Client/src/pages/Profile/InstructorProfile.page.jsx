@@ -26,7 +26,7 @@ const InstructorProfilePage = () => {
     };
 
     fetchUser();
-  }, [authToken, user.id, activeTab]);
+  }, [token, user._id, activeTab]);
 
   const renderContent = () => {
     switch (activeTab) {

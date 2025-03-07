@@ -11,15 +11,14 @@ import { useEffect, useState } from 'react';
 
 const UserProfilePage = () => {
   const [activeTab, setActiveTab] = useState('profile');
-  const { user,logout } = useAuth();
-  const authToken = localStorage.getItem('authToken');
+  const { token,user,logout } = useAuth();
   const [loggedUser, setLoggedUser] = useState(null);
 
   useEffect(() => {
 
     const fetchUser = async () => {
       try {
-        const userData = await getUser(user.id, authToken);
+        const userData = await getUser(user._id, token);
         
         setLoggedUser(userData);
         
@@ -30,7 +29,7 @@ const UserProfilePage = () => {
 
     fetchUser();
 
-  }, [authToken, user.id,activeTab]);
+  }, [token, user._id,activeTab]);
 
   const renderContent = () => {
     switch (activeTab) {
