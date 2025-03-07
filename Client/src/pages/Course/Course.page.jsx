@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import {
   LineChart,
@@ -15,7 +15,7 @@ import {
 import { getCourseById } from "@/services/course.service"
 import { getCourseTransactions } from "@/services/transaction.service"
 import { useAuth } from "@/context/AuthContext"
-import { Calendar } from "lucide-react"
+import { Calendar, Filter, Download } from "lucide-react"
 
 const CourseAnalyticsPage = () => {
   const [course, setCourse] = useState(null)
@@ -23,13 +23,50 @@ const CourseAnalyticsPage = () => {
   const [transactions, setTransactions] = useState([])
   const [totalSales, setTotalSales] = useState(0)
   const [totalEnrollments, setTotalEnrollments] = useState(0)
-  const [dateRange, setDateRange] = useState({
-    startDate: '',
-    endDate: ''
-  })
   const { id: courseId } = useParams()
   const { token } = useAuth()
   const navigate = useNavigate()
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  const currentYear = new Date().getFullYear();
+  const startYear = course?.createdAt ? new Date(course.createdAt).getFullYear() : currentYear;
+
+  const yearOptions = Array.from(
+    { length: currentYear - startYear + 1 },
+    (_, i) => startYear + i
+  );
+
+  const { totalDuration, totalLectures } = useMemo(() => {
+    if (!course || !course.curriculum || course.curriculum.length === 0) {
+      return { totalDuration: "0 minutes", totalLectures: 0 };
+    }
+
+    // Extract and flatten all lectures from sections
+    const lectures = course.curriculum.flatMap(section => section.lectures || []);
+
+    // Convert all durations to total seconds
+    const totalSeconds = lectures.reduce((sum, lecture) => {
+      const totalSecs = Math.round((lecture.duration || 0) * 60);
+      return sum + totalSecs;
+    }, 0);
+
+    // Convert total seconds to hours, minutes, seconds
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    // Format the output
+    let formattedDuration = `${minutes}m ${seconds}s`;
+    if (hours > 0) {
+      formattedDuration = `${hours}h ${minutes}m`;
+    }
+
+    return {
+      totalDuration: formattedDuration,
+      totalLectures: lectures.length, // Count total lectures
+    };
+  }, [course]);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,11 +77,10 @@ const CourseAnalyticsPage = () => {
         if (courseRes.success) {
           setCourse(courseRes.data)
         }
-        
+
         // Fetch transaction data
         const transactionRes = await getCourseTransactions(courseId, token, {
-          startDate: dateRange.startDate || undefined,
-          endDate: dateRange.endDate || undefined
+          year: selectedYear
         })
         if (transactionRes.success) {
           setTransactions(transactionRes.data.monthlySales || [])
@@ -57,21 +93,32 @@ const CourseAnalyticsPage = () => {
         setLoading(false)
       }
     }
-    
+
     fetchData()
-  }, [courseId, token, dateRange])
+  }, [courseId, token, selectedYear])
 
-  const handleDateChange = (e) => {
-    setDateRange({
-      ...dateRange,
-      [e.target.name]: e.target.value
-    })
-  }
+  const handleYearChange = (e) => {
+    setSelectedYear(Number(e.target.value));
+  };
+  const exportData = () => {
+    // Create CSV data
+    const header = "Month,Revenue,Enrollments\n";
+    console.log(transactions);
+    const rows = transactions.map(item =>
+      `${item.month},${item.sales},${item.enrollments}`
+    ).join("\n");
 
-  const applyDateFilter = (e) => {
-    e.preventDefault()
-    // The useEffect will automatically refetch data when dateRange changes
-  }
+    const csvContent = `data:text/csv;charset=utf-8,${header}${rows}`;
+
+    // Create download link and click it
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `${course.title}_sales_data_${selectedYear}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Calculate current price with discount
   const currentPrice = course?.pricing?.discountEnabled
@@ -96,52 +143,54 @@ const CourseAnalyticsPage = () => {
 
   return (
     <div className="p-6 bg-gray-50">
-      <header className="mb-8 flex justify-between items-center">
+      <header className="mb-8 flex flex-wrap justify-between items-center gap-4">
         <h1 className="text-3xl font-bold text-gray-800">{course.title}</h1>
-        <div className="space-x-4">
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-md" onClick={() => navigate(`/courseform/${courseId}`)}>Edit Course</button>
-          <button className="px-4 py-2 border border-gray-300 rounded-md" onClick={() => navigate(`/courses/${courseId}`)}>View Public Page</button>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+            onClick={() => navigate(`/courseform/${courseId}`)}
+          >
+            Edit Course
+          </button>
+
+          <button
+            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition"
+            onClick={() => navigate(`/courses/${courseId}`)}
+          >
+            View Public Page
+          </button>
+
+          <button
+            className="px-4 py-2 border border-gray-300 rounded-md flex items-center gap-2 hover:bg-gray-100 transition"
+            onClick={exportData}
+          >
+            <Download size={18} /> Export Data
+          </button>
         </div>
       </header>
 
-      {/* Date Filter */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <h2 className="text-lg font-semibold mb-3">Filter Analytics</h2>
-        <form onSubmit={applyDateFilter} className="flex flex-wrap items-end gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <div className="relative">
-              <input
-                type="date"
-                name="startDate"
-                value={dateRange.startDate}
-                onChange={handleDateChange}
-                className="border rounded-md p-2 pr-10"
-              />
-              <Calendar className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-            <div className="relative">
-              <input
-                type="date"
-                name="endDate"
-                value={dateRange.endDate}
-                onChange={handleDateChange}
-                className="border rounded-md p-2 pr-10"
-              />
-              <Calendar className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
-            </div>
-          </div>
-          <button 
-            type="submit" 
-            className="px-4 py-2 bg-blue-600 text-white rounded-md"
+
+      <div className="flex flex-wrap items-center gap-4 mb-6">
+        <h2 className="text-xl font-semibold flex items-center gap-2">
+          <Filter size={20} /> Filter Analytics
+        </h2>
+
+        <div className="relative flex items-center gap-2 bg-gray-100 p-2 rounded-md">
+          <label className="text-sm font-medium text-gray-600">Select Year:</label>
+          <select
+            value={selectedYear}
+            onChange={handleYearChange}
+            className="border rounded-md px-2 py-1 bg-white text-sm focus:ring-2 focus:ring-blue-400"
           >
-            Apply Filter
-          </button>
-        </form>
+            {yearOptions.map(year => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+          <Calendar className="text-gray-500 w-5 h-5" />
+        </div>
       </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Course Overview Card */}
@@ -149,9 +198,9 @@ const CourseAnalyticsPage = () => {
           <h2 className="text-xl font-semibold mb-4">Course Overview</h2>
           <div className="flex flex-col md:flex-row gap-6">
             <div className="flex-shrink-0">
-              <img 
-                src={course.thumbnail || "/api/placeholder/200/150"} 
-                alt={course.title} 
+              <img
+                src={course.thumbnail || "/api/placeholder/200/150"}
+                alt={course.title}
                 className="rounded-md w-48 h-32 object-cover"
                 onError={(e) => {
                   e.target.src = "/api/placeholder/200/150";
@@ -163,8 +212,8 @@ const CourseAnalyticsPage = () => {
               <div className="grid grid-cols-2 gap-2 mb-4 text-sm">
                 <div><span className="font-medium">Level:</span> {course.details?.level}</div>
                 <div>
-                  <span className="font-medium">Duration:</span> {Math.floor((course.details?.totalMinutes || 0) / 60)}h{" "}
-                  {(course.details?.totalMinutes || 0) % 60}m
+                  <span className="font-medium">Duration:</span>
+                  {totalDuration}
                 </div>
                 <div><span className="font-medium">Language:</span> {course.details?.language}</div>
                 <div><span className="font-medium">Technologies:</span> {course.technologies?.join(", ")}</div>
@@ -283,42 +332,32 @@ const CourseAnalyticsPage = () => {
             <div className="border rounded-lg p-4 text-center">
               <h3 className="text-gray-500 mb-1">Total Lectures</h3>
               <p className="text-2xl font-bold">
-                {course.curriculum?.reduce((total, section) => total + (section.lectures?.length || 0), 0) || 0}
+                {totalLectures}
               </p>
             </div>
             <div className="border rounded-lg p-4 text-center">
               <h3 className="text-gray-500 mb-1">Total Duration</h3>
               <p className="text-2xl font-bold">
-                {Math.floor((course.details?.totalMinutes || 0) / 60)}h {(course.details?.totalMinutes || 0) % 60}m
+                {totalDuration}
               </p>
             </div>
             <div className="border rounded-lg p-4 text-center">
-              <h3 className="text-gray-500 mb-1">Completion Rate</h3>
+              <h3 className="text-gray-500 mb-1">Published at</h3>
               <p className="text-2xl font-bold">
-                {course.completionStats?.averagePercentage?.toFixed(0) || 0}%
+                {course?.createdAt
+                  ? new Date(course.createdAt).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })
+                  : "N/A"}
               </p>
             </div>
+
           </div>
-          
-          {/* This would ideally come from actual data about lecture views
-          <h3 className="text-lg font-medium mb-3">Most Watched Lectures</h3>
-          <div className="border rounded-lg divide-y">
-            {course.topLectures ? (
-              course.topLectures.map((lecture, index) => (
-                <div key={index} className="p-4 flex justify-between items-center">
-                  <span className="font-medium">{lecture.title}</span>
-                  <span className="text-gray-500">{lecture.views} views</span>
-                </div>
-              ))
-            ) : (
-              <>
-                <div className="p-4 flex justify-between items-center">
-                  <span className="font-medium">Lecture view data not available yet</span>
-                  <span className="text-gray-500">-</span>
-                </div>
-              </>
-            )}
-          </div> */}
+
+
+
         </div>
       </div>
     </div>

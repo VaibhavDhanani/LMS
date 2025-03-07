@@ -16,7 +16,7 @@ const Navigationbar = () => {
   const fetchAllCourses = async () => {
     try {
       const authToken = localStorage.getItem("authToken");
-      const {data} = await getAllCourse(authToken);
+      const { data } = await getAllCourse(authToken);
       // console.log(courses)
       return data;
     } catch (error) {
@@ -124,21 +124,31 @@ const Navigationbar = () => {
             <a
               className="btn btn-ghost text-xl"
               onClick={() => navigate('/sales')}
-              >
-            Sales
+            >
+              Sales
             </a>
           </div>
-              </>
+        </>
       )}
       {user && !user.isInstructor && (
-        <div className="flex-1">
-          <a
-            className="btn btn-ghost text-xl"
-            onClick={() => navigate('/mylearnings')}
-          >
-            My Learnings
-          </a>
-        </div>
+        <>
+          <div className="flex-1">
+            <a
+              className="btn btn-ghost text-xl"
+              onClick={() => navigate('/mylearnings')}
+            >
+              My Learnings
+            </a>
+          </div>
+          <div className="flex-1">
+            <a
+              className="btn btn-ghost text-xl"
+              onClick={() => navigate('/transactions')}
+            >
+              Transactions
+            </a>
+          </div>
+        </>
       )}
       {user && (
         <div className="flex-1">
@@ -296,12 +306,24 @@ const Navigationbar = () => {
             role="button"
             className="btn btn-ghost btn-circle avatar"
           >
-            <div className="w-10 rounded-full">
-              <img
-                alt="User Avatar"
-                src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-              />
+            <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-gray-200">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-6 h-6 text-gray-600"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+                />
+              </svg>
             </div>
+
+
           </div>
           <ul
             tabIndex={0}
@@ -310,7 +332,7 @@ const Navigationbar = () => {
             {user ? (
               <>
                 <li>
-                  <a href= {user.isInstructor?"/instructor/profile":"/user/profile"} className="justify-between">
+                  <a href={user.isInstructor ? "/instructor/profile" : "/user/profile"} className="justify-between">
                     Profile
                   </a>
                 </li>
@@ -324,10 +346,7 @@ const Navigationbar = () => {
             ) : (
               <>
                 <li>
-                  <a href="/auth">Login</a>
-                </li>
-                <li>
-                  <a href="/auth">Sign Up</a>
+                  <a href="/auth">Login/Sign Up</a>
                 </li>
               </>
             )}

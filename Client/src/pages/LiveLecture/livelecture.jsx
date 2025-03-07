@@ -6,6 +6,9 @@ import { useAuth } from '@/context/AuthContext';
 import { useParams } from "react-router-dom";
 import { Loader2 } from 'lucide-react';
 import LectureChat from '../../components/LiveLecture/LectureChat.jsx';
+// Server URL from environment or fallback
+const SocketURL = import.meta.env.VITE_SOCKET_URL;
+
 const LiveLecture = () => {
   // State management
   const [remoteStream, setRemoteStream] = useState(null);
@@ -28,8 +31,7 @@ const LiveLecture = () => {
   const { user, token } = useAuth();
   const { id } = useParams();
 
-  // Server URL from environment or fallback
-  const SERVER_URL = import.meta.env.VITE_SOCKET_SERVER_URL || 'http://localhost:3000';
+
 
   useEffect(() => {
     const initLecture = async () => {
@@ -60,41 +62,11 @@ const LiveLecture = () => {
     };
   }, [id, token]);
 
-  // Update video element when stream changes
-  useEffect(() => {
-    if (videoRef.current && remoteStream) {
-      videoRef.current.srcObject = remoteStream;
-
-      const playVideo = async () => {
-        try {
-          // Try to play with muted first (browsers are more permissive with muted autoplay)
-          // videoRef.current.muted = true;
-          await videoRef.current.play();
-          // console.log("Video is playing (muted)");
-
-          // After successful muted play, try unmuting if needed
-          if (remoteStream.getAudioTracks().length > 0) {
-            // Show UI that tells user to click to unmute
-            // setError("Media is playing muted. Click the video to enable audio.");
-          }
-        } catch (err) {
-          console.error("Video playback error:", err);
-
-          if (err.name === "NotAllowedError") {
-            // Make the error message more prominent
-            setError("Autoplay blocked. Please click the video to start playback.");
-          }
-        }
-      };
-
-      playVideo();
-    }
-  }, [remoteStream]);
 
   const connectToServer = async (roomToken) => {
     try {
       // Setup socket connection
-      const newSocket = io(SERVER_URL, {
+      const newSocket = io(SocketURL, {
         reconnectionDelayMax: 10000,
         transports: ['websocket']
       });
@@ -203,43 +175,6 @@ const LiveLecture = () => {
     });
   };
 
-  const handleProducerClosed = (producerId) => {
-    // Find consumers that are associated with this producer
-    const consumersToRemove = [];
-    let tracksToRemove = [];
-
-    consumersRef.current.forEach((consumer, consumerId) => {
-      if (consumer.producerId === producerId) {
-        // Mark for removal
-        consumersToRemove.push(consumerId);
-        tracksToRemove.push(consumer.track.id);
-
-        // Close the consumer
-        consumer.close();
-      }
-    });
-
-    // Remove consumers from map
-    consumersToRemove.forEach(id => consumersRef.current.delete(id));
-
-    // Remove tracks from stream (if we have a stream)
-    if (remoteStream && tracksToRemove.length > 0) {
-      setRemoteStream(prev => {
-        if (!prev) return null;
-
-        // Create a new stream with only the tracks we want to keep
-        const newStream = new MediaStream();
-
-        prev.getTracks().forEach(track => {
-          if (!tracksToRemove.includes(track.id)) {
-            newStream.addTrack(track);
-          }
-        });
-
-        return newStream.getTracks().length > 0 ? newStream : null;
-      });
-    }
-  };
 
   const setupDevice = async (socket) => {
     try {
@@ -368,83 +303,145 @@ const LiveLecture = () => {
     }
   };
 
-  const consumeProducer = async (socket, producerInfo, deviceInstance) => {
-    try {
-      if (!recvTransportRef.current) {
-        throw new Error('Transport not ready');
-      }
-
-      if (!deviceInstance) {
-        throw new Error('Device not initialized');
-      }
-
-      // Get consumer parameters from server
-      const consumerParams = await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('Consumer creation timed out')), 10000);
-
-        socket.emit(
-          'consumeProducer',
-          {
-            transportId: recvTransportRef.current.id,
-            producerId: producerInfo.id,
-            rtpCapabilities: deviceInstance.rtpCapabilities,
-          },
-          (response) => {
-            clearTimeout(timeout);
-            if (response.error) reject(new Error(response.error));
-            else resolve(response);
-          }
-        );
-      });
-
-      // Create consumer
-      const consumer = await recvTransportRef.current.consume({
-        id: consumerParams.id,
-        producerId: producerInfo.id,
-        kind: consumerParams.kind,
-        rtpParameters: consumerParams.rtpParameters,
-        appData: producerInfo.appData || {},
-      });
-
-      // Add event listeners to consumer
-      consumer.on("transportclose", () => {
-        console.log(`Consumer ${consumer.id} transport closed`);
-        handleConsumerClosed(consumer.id);
-      });
-
-      consumer.on("trackended", () => {
-        console.log(`Consumer ${consumer.id} track ended`);
-        handleConsumerClosed(consumer.id);
-      });
-
-      // Store consumer reference
-      consumersRef.current.set(consumer.id, consumer);
-
-      // Resume consumer
-      await consumer.resume();
-
-      // Update stream with new track
-      setRemoteStream((prevStream) => {
-        const stream = prevStream || new MediaStream();
-
-        // Check if track already exists to prevent duplicates
-        const trackExists = stream.getTracks().some(track => track.id === consumer.track.id);
-
-        if (!trackExists) {
-          stream.addTrack(consumer.track);
-          console.log(`Added ${consumer.track.kind} track to stream`);
-        }
-
-        return stream;
-      });
-      setConnectionStatus("connected");
-
-      return consumer;
-    } catch (error) {
-      console.error('Failed to consume producer:', error);
-      throw error;
+// Modify your consumeProducer function to ensure proper stream updates
+const consumeProducer = async (socket, producerInfo, deviceInstance) => {
+  try {
+    if (!recvTransportRef.current) {
+      throw new Error('Transport not ready');
     }
-  };
+
+    if (!deviceInstance) {
+      throw new Error('Device not initialized');
+    }
+
+    // Get consumer parameters from server
+    const consumerParams = await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('Consumer creation timed out')), 10000);
+
+      socket.emit(
+        'consumeProducer',
+        {
+          transportId: recvTransportRef.current.id,
+          producerId: producerInfo.id,
+          rtpCapabilities: deviceInstance.rtpCapabilities,
+        },
+        (response) => {
+          clearTimeout(timeout);
+          if (response.error) reject(new Error(response.error));
+          else resolve(response);
+        }
+      );
+    });
+
+    // Create consumer
+    const consumer = await recvTransportRef.current.consume({
+      id: consumerParams.id,
+      producerId: producerInfo.id,
+      kind: consumerParams.kind,
+      rtpParameters: consumerParams.rtpParameters,
+      appData: producerInfo.appData || {},
+    });
+
+    // Add event listeners to consumer
+    consumer.on("transportclose", () => {
+      console.log(`Consumer ${consumer.id} transport closed`);
+      handleConsumerClosed(consumer.id);
+    });
+
+    consumer.on("trackended", () => {
+      console.log(`Consumer ${consumer.id} track ended`);
+      handleConsumerClosed(consumer.id);
+    });
+
+    // Store consumer reference
+    consumersRef.current.set(consumer.id, consumer);
+
+    // Resume consumer
+    await consumer.resume();
+
+    // FIX: Create a completely new MediaStream object
+    // This ensures React recognizes it as a new state value
+    setRemoteStream((prevStream) => {
+      const newStream = new MediaStream();
+      
+      // Add all existing tracks from previous stream
+      if (prevStream) {
+        prevStream.getTracks().forEach(track => {
+          newStream.addTrack(track);
+        });
+      }
+      
+      // Check if track already exists to prevent duplicates
+      const trackExists = newStream.getTracks().some(track => track.id === consumer.track.id);
+      
+      if (!trackExists) {
+        newStream.addTrack(consumer.track);
+        console.log(`Added ${consumer.track.kind} track to stream: ${consumer.track.id}`);
+      }
+      
+      return newStream; // Return the new stream to trigger a re-render
+    });
+    
+    setConnectionStatus("connected");
+    
+    return consumer;
+  } catch (error) {
+    console.error('Failed to consume producer:', error);
+    throw error;
+  }
+};
+
+// Modify the useEffect for video handling to ensure proper reattachment
+useEffect(() => {
+  if (videoRef.current && remoteStream) {
+    // FIX: Always reassign srcObject to force a refresh of the connection
+    if (videoRef.current.srcObject !== remoteStream) {
+      console.log("Setting new srcObject on video element");
+      videoRef.current.srcObject = remoteStream;
+    }
+
+    const playVideo = async () => {
+      try {
+        if (videoRef.current.paused) {
+          // await videoRef.current.play();
+          console.log("Video playback started");
+        }
+      } catch (err) {
+        console.error("Video playback error:", err);
+
+        if (err.name === "NotAllowedError") {
+          setError("Autoplay blocked. Please click the video to start playback.");
+        }
+      }
+    };
+
+    playVideo();
+  }
+}, [remoteStream]);
+
+// Also modify handleProducerClosed to create a new stream
+const handleProducerClosed = (producerId) => {
+  // Find consumers that are associated with this producer
+  const consumersToRemove = [];
+  // let tracksToRemove = [];
+
+  consumersRef.current.forEach((consumer, consumerId) => {
+    if (consumer.producerId === producerId) {
+      // Mark for removal
+      consumersToRemove.push(consumerId);
+      // tracksToRemove.push(consumer.track.id);
+
+      // Close the consumer
+      consumer.close();
+    }
+  });
+
+  // Remove consumers from map
+  consumersToRemove.forEach(id => consumersRef.current.delete(id));
+  
+  setRemoteStream(null);
+};
+
 
   const handleConsumerClosed = (consumerId) => {
     const consumer = consumersRef.current.get(consumerId);
@@ -529,7 +526,7 @@ const LiveLecture = () => {
       setConnectionStatus('error');
     }
   };
-
+  
   // Render different content based on connection status
   const renderContent = () => {
     switch (connectionStatus) {
@@ -582,16 +579,7 @@ const LiveLecture = () => {
               controls
               className="w-full max-w-2xl mx-auto bg-black rounded-lg"
               style={{ minHeight: '300px' }}
-              onClick={() => {
-                if (videoRef.current) {
-                  videoRef.current.muted = false;
-                  if (videoRef.current.paused) {
-                    videoRef.current.play()
-                      .then(() => console.log("Video played via click"))
-                      .catch(err => console.error('Play failed via click:', err));
-                  }
-                }
-              }}
+            
             />
             {connectionStatus === 'reconnecting' && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
