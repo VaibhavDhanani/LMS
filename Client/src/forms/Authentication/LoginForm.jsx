@@ -29,12 +29,6 @@ export const LoginForm = ({ formData, handleChange, handleSubmit }) => (
           onChange={handleChange}
         />
       </div>
-      <div className="form-control">
-        <label className="label cursor-pointer">
-          <span className="label-text">Remember me</span>
-          <input type="checkbox" className="checkbox checkbox-primary" />
-        </label>
-      </div>
       <div className="form-control mt-6">
         <button type="submit" className="btn btn-primary">
           Login

@@ -8,7 +8,6 @@ import {
 } from "../../apis/firebase.config.js";
 import { Loader2, Plus, X, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert.jsx";
-import videoPlay from '../../components/General/VideoPlay.jsx'
 import ReactPlayer from "react-player";
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime", "video/x-m4v"];
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -167,7 +166,7 @@ const CurriculumStep = ({ formData, updateFormData }) => {
 				title: "",
 				description: "",
 				video: "",
-				duration: "",
+				duration: 0,
 				preview: false
 			};
 			

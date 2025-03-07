@@ -21,10 +21,12 @@ configDotenv();
 const app = express();
 connectDB();
 
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
+
 app.use(express.json());
 app.use(
   cors({
-    origin: 'http://localhost:5173', // Allow requests from this origin
+    origin: allowedOrigins, // Allow requests from this origin
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed HTTP methods,
     credentials: true,
   }),

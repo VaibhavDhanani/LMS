@@ -11,7 +11,6 @@ const courseDraftSchema = new mongoose.Schema(
             required: true,
         },
         details: {
-            totalMinutes: { type: Number, default: 0, min: 0 },
             level: { type: String, default: "Beginner", enum: ["Beginner", "Intermediate", "Advanced"] },
             language: { type: String, default: "English" },
         },
@@ -29,7 +28,7 @@ const courseDraftSchema = new mongoose.Schema(
                         title: { type: String, default: "", trim: true },
                         description: { type: String, default: "", trim: true },
                         video: { type: String, default: "" },
-                        duration: { type: String, default: "" },
+                        duration: { type: Number, default: 0 },
                         preview: { type: Boolean, default: false },
                     },
                 ],
@@ -47,6 +46,7 @@ const courseDraftSchema = new mongoose.Schema(
     },
     { timestamps: true } 
 );
+
 
 const CourseDraft = mongoose.model("CourseDraft", courseDraftSchema);
 export default CourseDraft;

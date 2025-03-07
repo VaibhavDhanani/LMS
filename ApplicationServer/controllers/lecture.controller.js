@@ -136,7 +136,6 @@ export const updateLecture = async (req, res) => {
 
     // Send notification only if significant details have changed
     if (isLectureUpdated) {
-      console.log(courseId);
       await notificationManager.createNotificationsForCourse(courseId, {
         type: "lecture_updated",
         lecture: updatedLecture._id,

@@ -23,8 +23,8 @@ export const createReview = async (req, res) => {
     
     // Input validation
     if (!content || !rating || !courseId || !learnerId) {
-      console.log(content, rating, courseId,learnerId);
-      console.log(req.body)
+      // console.log(content, rating, courseId,learnerId);
+      // console.log(req.body)
       return res.status(400).json({ message: "Missing required fields" });
     }
     

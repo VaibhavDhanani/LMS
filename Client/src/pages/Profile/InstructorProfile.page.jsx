@@ -11,7 +11,7 @@ import { UserCourses } from "@/components/User/UserCourses";
 
 const InstructorProfilePage = () => {
   const [activeTab, setActiveTab] = useState("profile");
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const authToken = localStorage.getItem("authToken");
   const [loggedUser, setLoggedUser] = useState(null);
 
@@ -89,7 +89,7 @@ const InstructorProfilePage = () => {
 
                 <div className="divider"></div>
 
-                <button className="btn btn-ghost btn-error w-full justify-start">
+                <button className="btn btn-ghost btn-error w-full justify-start" onClick={logout}>
                   <LogOut />
                   Logout
                 </button>
