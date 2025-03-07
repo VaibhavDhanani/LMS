@@ -9,8 +9,15 @@ const Layout = ({ children }) => {
       <Navigationbar />
       <div className="flex-1 bg-gray-100">
         {children}
+
       </div>
       <Footer />
+      <div className="absolute flex justify-end items-end">
+        <button>
+
+        Chat
+        </button>
+        </div>
     </div>
   );
 };
