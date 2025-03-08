@@ -35,6 +35,7 @@ const LectureStreaming = () => {
         setRoomId(roomToken);
         roomTokenRef.current = roomToken;
   
+        console.log(SocketURL);  
         const newSocket = io(SocketURL);
         setSocket(newSocket);
         socketRef.current = newSocket;
