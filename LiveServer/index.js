@@ -7,7 +7,6 @@ configDotenv();
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
 const publicIp = process.env.PUBLIC_IP;
-console.log(publicIp);
 const app = express();
 
 const server = createServer(app);
