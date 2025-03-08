@@ -14,7 +14,7 @@ const ChatbotInterface = () => {
 
   const fetchMessages = async () => {
     try {
-      const response = await fetch(`${API_URL/messages}`);
+      const response = await fetch(`${API_URL}\messages`);
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
