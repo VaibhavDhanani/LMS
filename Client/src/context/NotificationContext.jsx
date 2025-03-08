@@ -71,7 +71,9 @@ export const NotificationProvider = ({ children }) => {
       fetchNotifications();
       
       // Set up SSE connection
-      const sse = new EventSource(`http://localhost:5000/api/notifications/stream?token=${token}`, { withCredentials: true });
+      const backendUrl = import.meta.env.VITE_SERVER_URL;
+
+      const sse = new EventSource(`${backendUrl}/notifications/stream?token=${token}`, { withCredentials: true });
 
       // console.log('SSE connection established');
       sse.onopen = () => {
