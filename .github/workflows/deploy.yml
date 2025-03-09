@@ -10,9 +10,9 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      # ✅ Configure SSH First
+      # Configure SSH
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
@@ -20,54 +20,60 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      # ✅ Setup Server Environment (Node.js, Nginx, PM2)
+      # Setup Server Environment (Node.js, Nginx, PM2)
       - name: Setup Environment
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
             sudo apt update -y
             curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
             sudo apt install -y nodejs nginx git
             sudo npm install -g pm2
-          EOF
+          ENVSSH
 
-      # ✅ Create LMS Directory and Set Permissions
+      # Create LMS Directory and Set Permissions
       - name: Create Project Directory
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            sudo rm -rf /home/${{ secrets.EC2_USER }}/LMS
-            mkdir -p /home/${{ secrets.EC2_USER }}/LMS
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << DIRSSH
+            sudo mkdir -p /home/${{ secrets.EC2_USER }}/LMS
             sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} /home/${{ secrets.EC2_USER }}/LMS
-          EOF
+          DIRSSH
 
-      # ✅ Clone Project from GitHub
+      # Clone Project from GitHub
       - name: Clone and Setup Project
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << CLONESSH
             cd /home/${{ secrets.EC2_USER }}
 
-            # ✅ Backup .env files before pulling the latest code
-            cp LMS/ApplicationServer/.env ~/application-server.env.backup || true
-            cp LMS/LiveServer/.env ~/live-server.env.backup || true
+            # Backup .env files before pulling the latest code
+            if [ -d "LMS/ApplicationServer" ]; then
+              cp LMS/ApplicationServer/.env ~/application-server.env.backup 2>/dev/null || echo "No application server .env to backup"
+            fi
+            
+            if [ -d "LMS/LiveServer" ]; then
+              cp LMS/LiveServer/.env ~/live-server.env.backup 2>/dev/null || echo "No live server .env to backup"
+            fi
 
-            # ✅ Pull the latest code from GitHub
+            # Pull the latest code from GitHub
             sudo rm -rf LMS
             git clone ${{ secrets.REPO_URL }} LMS
 
-            # ✅ Restore the .env files after deployment
-            mv ~/application-server.env.backup LMS/ApplicationServer/.env || true
-            mv ~/live-server.env.backup LMS/LiveServer/.env || true
+            # Restore the .env files after deployment
+            if [ -f ~/application-server.env.backup ]; then
+              cp ~/application-server.env.backup LMS/ApplicationServer/.env
+            fi
+            
+            if [ -f ~/live-server.env.backup ]; then
+              cp ~/live-server.env.backup LMS/LiveServer/.env
+            fi
 
-            # ✅ Ensure correct permissions
+            # Ensure correct permissions
             sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} LMS
-          EOF
+          CLONESSH
       
-      
-      
-
-      # ✅ Install Dependencies and Build Project
+      # Install Dependencies and Build Project
       - name: Install Dependencies and Build
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << BUILDSSH
             cd /home/${{ secrets.EC2_USER }}/LMS
           
             echo "Setting up Client..."
@@ -85,40 +91,87 @@ jobs:
             cd LiveServer
             npm install
             cd ..
-          EOF
+          BUILDSSH
 
-      # ✅ Start Backend and Live Server Using PM2
+      # Configure Nginx
+      - name: Configure Nginx
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << NGINXSSH
+            sudo tee /etc/nginx/sites-available/default > /dev/null << 'EOF'
+            server {
+                listen 80 default_server;
+                listen [::]:80 default_server;
+                
+                root /home/${{ secrets.EC2_USER }}/LMS/Client/dist;
+                index index.html;
+                
+                location / {
+                    try_files \$uri \$uri/ /index.html;
+                }
+                
+                # Application Server API
+                location /api {
+                    proxy_pass http://localhost:5000;
+                    proxy_http_version 1.1;
+                    proxy_set_header Upgrade \$http_upgrade;
+                    proxy_set_header Connection 'upgrade';
+                    proxy_set_header Host \$host;
+                    proxy_cache_bypass \$http_upgrade;
+                }
+                
+                # Live Server
+                location /socket.io {
+                    proxy_pass http://localhost:3000;
+                    proxy_http_version 1.1;
+                    proxy_set_header Upgrade \$http_upgrade;
+                    proxy_set_header Connection 'upgrade';
+                    proxy_set_header Host \$host;
+                    proxy_cache_bypass \$http_upgrade;
+                }
+            }
+            EOF
+            
+            sudo nginx -t
+            sudo systemctl reload nginx
+          NGINXSSH
+
+      # Start Backend and Live Server Using PM2
       - name: Start Applications
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << STARTSSH
             cd /home/${{ secrets.EC2_USER }}/LMS
           
             echo "Starting Application Server..."
             cd ApplicationServer
-            pm2 restart application-server || pm2 start app.js --name application-server
+            pm2 describe application-server > /dev/null
+            if [ $? -eq 0 ]; then
+              pm2 restart application-server
+            else
+              pm2 start app.js --name application-server
+            fi
             cd ..
           
             echo "Starting Live Server..."
             cd LiveServer
-            pm2 restart live-server || pm2 start server.js --name live-server
-            cd ..
-          EOF
+            pm2 describe live-server > /dev/null
+            if [ $? -eq 0 ]; then
+              pm2 restart live-server
+            else
+              pm2 start server.js --name live-server
+            fi
+            
+            # Save PM2 configuration
+            pm2 save
+          STARTSSH
 
-      # ✅ Configure and Restart Nginx
-      - name: Configure and Restart Nginx
+      # Fix Permissions
+      - name: Fix Permissions
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << PERMSSH
+            sudo find /home/${{ secrets.EC2_USER }}/LMS -type d -exec chmod 755 {} \;
+            sudo find /home/${{ secrets.EC2_USER }}/LMS -type f -exec chmod 644 {} \;
+            sudo chmod -R +x /home/${{ secrets.EC2_USER }}/LMS/ApplicationServer/node_modules/.bin
+            sudo chmod -R +x /home/${{ secrets.EC2_USER }}/LMS/LiveServer/node_modules/.bin
+            sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} /home/${{ secrets.EC2_USER }}/LMS
             sudo systemctl restart nginx
-          EOF
-
-      - name: Fix Permissions After Deployment
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            sudo chmod 755 /home/ubuntu
-            sudo chmod -R 755 /home/ubuntu/LMS
-            sudo chmod -R 755 /home/ubuntu/LMS/Client
-            sudo chmod -R 755 /home/ubuntu/LMS/Client/dist
-            sudo chmod -R 644 /home/ubuntu/LMS/Client/dist/index.html
-            sudo chown -R ubuntu:www-data /home/ubuntu/LMS
-            sudo systemctl restart nginx
-          EOF
+          PERMSSH
