@@ -1,30 +1,30 @@
-import React, { useEffect, useState } from 'react';
-import { Heart } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Clock, Users, Heart } from 'lucide-react';
 import { updateWishlist } from '@/services/user.service';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'react-toastify';
 
 const CourseCard = ({ course }) => {
-  const { title, description, pricing, _id } = course;
   const { user, token } = useAuth();
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   
-  const finalPrice = pricing?.discountEnabled 
-    ? pricing.price * (1 - pricing.discount / 100) 
-    : pricing?.price;
+  const finalPrice = course.pricing?.discountEnabled 
+    ? course.pricing.price * (1 - course.pricing.discount / 100) 
+    : course.pricing?.price || course.price || 0;
 
   // Check if course is in user's wishlist whenever user changes
   useEffect(() => {
-    if (user && user.wishlist && _id) {
-      setIsWishlisted(user.wishlist.includes(_id));
+    if (user && user.wishlist && course._id) {
+      setIsWishlisted(user.wishlist.includes(course._id));
     } else {
       setIsWishlisted(false);
     }
-  }, [user, _id]);
+  }, [user, course._id]);
   
   const handleWishlistToggle = async (e) => {
     e.preventDefault(); // Prevent event bubbling
+    e.stopPropagation(); // Prevent parent click events
     
     if (!token) {
       toast.warn('Please log in to manage your wishlist');
@@ -41,11 +41,9 @@ const CourseCard = ({ course }) => {
       setIsWishlisted(isAdding);
       
       // Call API to update wishlist
-      const response = await updateWishlist(_id, isAdding, token);
+      const response = await updateWishlist(course._id, isAdding, token);
       
       if (response.success) {
-        // Notify parent component about the change if needed
-        // Optional toast notification
         toast.success(isAdding ? 'Added to wishlist' : 'Removed from wishlist');
       } else {
         // Revert UI state if API call failed
@@ -61,9 +59,10 @@ const CourseCard = ({ course }) => {
       setIsUpdating(false);
     }
   };
-  
+
   return (
-    <div className="card card-compact bg-base-100 w-60 shadow-xl flex-shrink-0 relative">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:scale-[1.02] relative">
+      {/* Wishlist Button */}
       {user && (
         <button 
           onClick={handleWishlistToggle}
@@ -72,43 +71,67 @@ const CourseCard = ({ course }) => {
           disabled={isUpdating}
         >
           <Heart 
-            size={20} 
-            className={`${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} 
+            className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} 
           />
         </button>
       )}
       
-      {/* Course Thumbnail */}
-      <figure>
+      <div className="aspect-video w-full bg-gray-200 relative overflow-hidden">
         <img
-          src={course.thumbnail || "/api/placeholder/300/200"}
-          alt={title || "Course Thumbnail"}
-          className="h-40 w-full object-cover"
+          src={course.thumbnail || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070"}
+          alt={course.title}
+          className="w-full h-full object-cover"
         />
-      </figure>
-      
-      {/* Course Details */}
-      <div className="card-body">
-        {/* Course Title */}
-        <h2 className="card-title">{title || "Untitled Course"}</h2>
-        
-        {/* Course Description */}
-        <p>{description || "No description available for this course."}</p>
-        
-        {/* Pricing Information */}
-        {pricing?.price && (
-          <p className="text-sm font-medium text-red-600">
-            <span>Price: ₹{finalPrice} </span>
-            {(pricing.discountEnabled) && 
-              <span className="line-through text-gray-500 mr-2">₹{pricing.price}</span>
-            }
-          </p>
+        {course.featured && (
+          <div className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 text-xs rounded-full">
+            Featured
+          </div>
         )}
-        
-        {/* Action Buttons */}
-        <div className="card-actions justify-end">
-          <a className="btn btn-accent" href={`/courses/${_id}`}>
-            Explore
+      </div>
+      <div className="p-4">
+        <div className="flex items-center space-x-2 mb-2">
+          <span className="text-sm text-blue-600 font-medium">{course.category || "General"}</span>
+          {course.level && (
+            <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">{course.level}</span>
+          )}
+        </div>
+        <h3 className="font-semibold text-lg mb-2 line-clamp-2">{course.title || "Untitled Course"}</h3>  
+        <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+          <div className="flex items-center space-x-2">
+            <Clock className="w-4 h-4" />
+            <span>{course.TotalMinutes || "8 hours"}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Users className="w-4 h-4" />
+            <span>{course.enrolledStudents?.length || 0} students</span>
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <img
+              src={course.instructor?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2070"}
+              alt={course.instructor?.name}
+              className="w-8 h-8 rounded-full"
+            />
+            <span className="text-sm font-medium">{course.instructor?.name || "Instructor"}</span>
+          </div>
+          <div className="text-right">
+            {course.pricing?.discountEnabled && course.pricing.price ? (
+              <div>
+                <span className="font-bold text-lg text-red-600">₹{finalPrice} </span>
+                <span className="text-sm text-gray-500 line-through">₹{course.pricing.price}</span>
+              </div>
+            ) : (
+              <span className="font-bold text-lg">₹{finalPrice}</span>
+            )}
+          </div>
+        </div>
+        <div className="mt-4">
+          <a 
+            href={`/courses/${course._id}`}
+            className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors"
+          >
+            Explore Course
           </a>
         </div>
       </div>

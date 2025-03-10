@@ -9,12 +9,12 @@ const notificationManager = {
   // Register an SSE client connection
   registerClient: (userId, res) => {
     connectedClients.set(userId, res);
-    console.log(`Client connected: ${userId}, Total clients: ${connectedClients.size}`);
+    // console.log(`Client connected: ${userId}, Total clients: ${connectedClients.size}`);
     
     // Return a function to remove the client when connection closes
     return () => {
       connectedClients.delete(userId);
-      console.log(`Client disconnected: ${userId}, Total clients: ${connectedClients.size}`);
+      // console.log(`Client disconnected: ${userId}, Total clients: ${connectedClients.size}`);
     };
   },
   
