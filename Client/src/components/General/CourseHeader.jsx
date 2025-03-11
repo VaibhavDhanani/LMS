@@ -216,7 +216,7 @@ export const CourseHeader = ({ course }) => {
               {isEnrolled || (user && course.instructor._id === user.id) ? (
                 <button
                   className="w-full sm:w-auto btn btn-success px-8 hover:bg-success-dark transition duration-200"
-                  onClick={() => navigate(`/my-courses/${course._id}`)}
+                  onClick={() => navigate(`/mylearnings/${course._id}`)}
                 >
                   Go to Course
                 </button>

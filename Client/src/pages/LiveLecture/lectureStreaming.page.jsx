@@ -194,7 +194,7 @@ const LectureStreaming = () => {
   };
 
   return (
-    <div className="p-4 max-w-2xl mx-auto">
+    <div className="p-4 max-w-2xl mx-auto pt-24">
       <h2 className="text-2xl font-bold mb-4">Lecture Room</h2>
       <div className="relative rounded-lg overflow-hidden bg-gray-100">
         <video

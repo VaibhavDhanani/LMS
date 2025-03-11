@@ -4,14 +4,16 @@ import {useParams} from "react-router-dom";
 import {useAuth} from "@/context/AuthContext.jsx";
 import {getCourseById} from "@/services/course.service.jsx";
 
-const VideoPlayer = ({ videoUrl, key }) => {
+const VideoPlayer = ({ videoUrl,key  }) => {
 	return (
 		<div className="w-full aspect-video bg-black">
 			<video
 				key={key}
 				controls
+				controlsList="nodownload"
 				className="w-full h-full"
 				src={videoUrl}
+				onContextMenu={(e) => e.preventDefault()}
 			>
 				Your browser does not support the video tag.
 			</video>
@@ -30,11 +32,11 @@ const LectureList = ({ curriculum, onSelectLecture, currentLecture }) => {
 	};
 	
 	return (
-		<div className="space-y-4">
+		<div className="space-y-4 h-[calc(100vh-120px)] overflow-y-auto pr-2">
 			{curriculum.map((section, sectionIndex) => (
 				<div key={sectionIndex} className="border border-base-300 rounded-lg overflow-hidden">
 					<div
-						className="bg-base-200 p-3 cursor-pointer flex justify-between items-center"
+						className="bg-base-200 p-3 cursor-pointer flex justify-between items-center sticky top-0 z-10"
 						onClick={() => toggleSection(sectionIndex)}
 					>
 						<h4 className="font-semibold">{section.section}</h4>
@@ -124,11 +126,11 @@ const ViewLecturePage = () => {
 				if (res.success) {
 					setCourse(res.data);
 					if (
-						course.curriculum &&
-						course.curriculum.length > 0 &&
-						course.curriculum[0].lectures.length > 0
+						res.data.curriculum &&
+						res.data.curriculum.length > 0 &&
+						res.data.curriculum[0].lectures.length > 0
 					) {
-						setCurrentLecture(course.curriculum[0].lectures[0]);
+						setCurrentLecture(res.data.curriculum[0].lectures[0]);
 					}
 				} else {
 					console.error("Course not found!");
@@ -150,7 +152,7 @@ const ViewLecturePage = () => {
 	}
 	
 	return (
-		<div className="flex min-h-screen">
+		<div className="flex min-h-screen pt-16">
 			<div className="w-8/12 p-4 bg-base-100">
 				<div className="sticky top-0">
 					<VideoPlayer
@@ -165,7 +167,7 @@ const ViewLecturePage = () => {
 				</div>
 			</div>
 			<div className="w-4/12 p-4 bg-base-200">
-				<div className="sticky top-0">
+				<div className="sticky top-16 pt-2">
 					<div className="flex items-center gap-2 mb-4">
 						<BookOpen className="text-primary" />
 						<h3 className="text-xl font-semibold">Course Curriculum</h3>

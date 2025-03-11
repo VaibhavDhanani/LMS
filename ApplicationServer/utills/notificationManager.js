@@ -104,11 +104,11 @@ const notificationManager = {
     try {
       return await Notification.find({
         user: userId,
-        isRead: false,
-        $or: [
-          { expiresAt: null },
-          { expiresAt: { $gt: new Date() } }
-        ]
+        // isRead: false,
+        // $or: [
+        //   { expiresAt: null },
+        //   { expiresAt: { $gt: new Date() } }
+        // ]
       })
       .sort({ createdAt: -1 })
       .populate('course', 'name')

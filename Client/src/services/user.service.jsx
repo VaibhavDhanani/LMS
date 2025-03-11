@@ -58,30 +58,21 @@ export const updateUser = async (user, authToken) => {
   return response.data.data;
 };
 
-export const updateUserPassword = async (user, {currentPassword,newPassword,confirmPassword},authToken) => {
-  if (!user._id) {
-    console.log(user);
-    // console.error("User ID is missing");
-    return {
-      success: false,
-      message: "User Id missing",
-      data: null,
-    };
-  }
-
+export const updateUserPassword = async ( {currentPassword,newPassword,confirmPassword},token) => {
+  
   try {
-    const response = await db.put(`/users/password/${user._id}`, {currentPassword,newPassword,confirmPassword}, {
-      headers: { Authorization: `Bearer ${authToken}` },
+    const response = await db.put(`/users/password`, {currentPassword,newPassword,confirmPassword}, {
+      headers: { Authorization: `Bearer ${token}` },
     });
     return {
       success: true,
       message: response.data.message,
-      data: response.data.message,
+      data: response.data.data,
     };
   } catch (error) {
     return {
         success: false,
-        message: error,
+        message: error.response.data.message,
         data: null,
       };
   }
