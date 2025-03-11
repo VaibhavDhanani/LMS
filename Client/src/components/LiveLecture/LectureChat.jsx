@@ -1,32 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, X, MessageSquare } from "lucide-react";
+import { Send, ChevronRight, ChevronLeft, MessageSquare } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const LectureChat = ({ socket, roomId, isHost = false }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const [isOpen, setIsOpen] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(true);
   const messagesEndRef = useRef(null);
   const { user } = useAuth();
   
-  // Handle receiving messages
   useEffect(() => {
     if (!socket) return;
 
-    // Listen for incoming chat messages
     socket.on('chatMessage', (message) => {
       setMessages(prevMessages => [...prevMessages, message]);
     });
 
-    // Clean up event listener
     return () => {
       socket.off('chatMessage');
     };
   }, [socket]);
 
-  // Scroll to bottom when new messages arrive
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -49,48 +45,44 @@ const LectureChat = ({ socket, roomId, isHost = false }) => {
       isHost: isHost
     };
 
-    // Emit the message to the server
     socket.emit('sendChatMessage', messageData, (response) => {
       if (response?.error) {
         console.error('Error sending message:', response.error);
       } else {
-        // Add the message to local state
         setMessages(prevMessages => [...prevMessages, messageData]);
-        // Clear the input field
         setNewMessage('');
       }
     });
   };
 
-  const toggleChat = () => {
-    setIsOpen(!isOpen);
-  };
-
-  // Format timestamp to a readable time
   const formatTime = (isoString) => {
     const date = new Date(isoString);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
-    <div className={`fixed right-4 bottom-4 ${isOpen ? 'w-80 sm:w-96' : 'w-auto'} transition-all duration-300 bg-white rounded-lg shadow-lg border overflow-hidden z-10`}>
+    <div 
+      className={`fixed right-0 top-16 bottom-24 bg-white border-l transition-all duration-300 flex flex-col
+        ${isExpanded ? 'w-80 lg:w-96' : 'w-12'}`}
+    >
+      {/* Toggle button */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="absolute -left-10 top-1/2 -translate-y-1/2 bg-primary text-white p-2 rounded-l-lg shadow-md hover:bg-primary/90 transition-colors"
+      >
+        {isExpanded ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+      </button>
+
       {/* Chat header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-primary text-white">
-        <h3 className="font-medium flex items-center">
-          <MessageSquare className="h-4 w-4 mr-2" />
-          Lecture Chat
-        </h3>
-        <div className="flex items-center">
-          <Button variant="ghost" size="icon" onClick={toggleChat} className="h-8 w-8 text-white hover:bg-primary-dark">
-            {isOpen ? <X className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
-          </Button>
-        </div>
+      <div className="flex items-center px-4 py-3 bg-primary text-white">
+        <MessageSquare className="h-5 w-5 mr-2" />
+        {isExpanded && <h3 className="font-medium">Lecture Chat</h3>}
       </div>
 
-      {isOpen && (
+      {isExpanded && (
         <>
-          {/* Messages area - using standard div with overflow instead of ScrollArea */}
-          <div className="h-64 p-4 flex flex-col gap-3 bg-slate-50 overflow-y-auto">
+          {/* Messages area */}
+          <div className="flex-1 p-4 flex flex-col gap-3 bg-slate-50 overflow-y-auto">
             {messages.length === 0 ? (
               <div className="text-center text-gray-500 my-10">
                 No messages yet. Start the conversation!
@@ -127,7 +119,7 @@ const LectureChat = ({ socket, roomId, isHost = false }) => {
           </div>
 
           {/* Message input */}
-          <form onSubmit={sendMessage} className="p-3 border-t flex gap-2">
+          <form onSubmit={sendMessage} className="p-3 border-t bg-white flex gap-2">
             <Input
               type="text"
               placeholder="Type a message..."
@@ -145,7 +137,6 @@ const LectureChat = ({ socket, roomId, isHost = false }) => {
           </form>
         </>
       )}
-      
     </div>
   );
 };

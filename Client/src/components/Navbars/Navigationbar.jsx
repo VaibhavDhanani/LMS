@@ -4,15 +4,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getAllCourse } from "@/services/course.service.jsx";
 import { useNotifications } from '@/context/NotificationContext';
 import { Search, Bell, ChevronDown, BookOpen, CreditCard, Video, LogOut } from 'lucide-react';
-
+import ProfileDropdown from './ProfileDropDown';
 const Navigationbar = () => {
   const [allCourses, setAllCourses] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { unreadNotifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -149,6 +148,7 @@ const Navigationbar = () => {
                   onChange={(e) => handleSearch(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && searchQuery.trim() !== '') {
+                      setIsSearching(false);
                       navigate(`/courses?q=${encodeURIComponent(searchQuery.trim())}`);
                     }
                   }}
@@ -240,12 +240,12 @@ const Navigationbar = () => {
                     </div>
 
                     <div className="max-h-96 overflow-y-auto">
-                      {notifications.length === 0 ? (
+                      {unreadNotifications.length === 0 ? (
                         <div className="p-4 text-center text-gray-500">
                           No notifications
                         </div>
                       ) : (
-                        notifications.map((notification) => (
+                        unreadNotifications.map((notification) => (
                           <button
                             key={notification._id}
                             onClick={() => handleNotificationClick(notification)}
@@ -277,7 +277,7 @@ const Navigationbar = () => {
                         }}
                         className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors"
                       >
-                        View All Notifications
+                        View Past Notifications
                       </button>
                     </div>
                   </div>
@@ -287,51 +287,8 @@ const Navigationbar = () => {
 
             {/* User Menu */}
             <div className="relative">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-6 h-6 text-gray-600"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                </div>
-
-                {user ? (
-                  <div className="hidden md:flex items-center space-x-3">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-gray-900">
-                        {user.email}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {user.isInstructor ? 'Instructor' : 'Student'}
-                      </span>
-                    </div>
-                    <button
-                      onClick={logout}
-                      className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Logout</span>
-                    </button>
-                  </div>
-                ) : (
-                  <Link
-                    to="/auth"
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <span>Login</span>
-                    <ChevronDown className="w-4 h-4" />
-                  </Link>
-                )}
-              </div>
+                <ProfileDropdown></ProfileDropdown>
+                              
             </div>
           </div>
         </div>

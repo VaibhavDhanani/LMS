@@ -7,7 +7,7 @@ const notificationController = {
     try {
   
       // Ensure the query is correctly formatted
-      const notifications = await notificationManager.getUnreadNotifications( req.params.id );
+      const notifications = await notificationManager.getUnreadNotifications( req.user.id );
     
       res.json({data: notifications});
     } catch (error) {
@@ -21,7 +21,7 @@ const notificationController = {
     try {
       const updatedNotification = await notificationManager.markAsRead(
         req.params.id,
-        req.params.userId
+        req.user.id
       );
       
       if (!updatedNotification) {
@@ -39,7 +39,7 @@ const notificationController = {
   markAllAsRead: async (req, res) => {
     try {           
       await Notification.updateMany(
-        { user: req.params.userId, isRead: false },  // Fixed req.params.userId
+        { user: req.user.id, isRead: false },  // Fixed req.params.userId
         { $set: { isRead: true } }  // Use $set for clarity
       );
       

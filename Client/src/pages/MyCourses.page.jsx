@@ -143,7 +143,7 @@ const MyCourses = () => {
   });
 
   return (
-    <div className="w-full py-8 px-4 md:px-8">
+    <div className="w-full py-8 px-4 md:px-8 pt-24">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
           <h1 className="text-3xl font-bold mb-2">My Courses</h1>

@@ -94,8 +94,6 @@ export const getUserById = async (req, res) => {
 // Update a user
 export const updateUser = async (req, res) => {
   try {
-    // console.log("Received ID:", req.params.id);
-    // console.log("Received Body:", req.body);
     if (!req.params.id)
       return res.status(400).json({ message: "User ID is required" });
 
@@ -105,7 +103,6 @@ export const updateUser = async (req, res) => {
     });
 
     if (!user) return res.status(404).json({ message: "User not found" });
-    // console.log("Updated User:", user);
     res.status(200).json({ message: "User updated", data: user });
   } catch (error) {
     console.error(error);
@@ -149,17 +146,11 @@ export const validateUser = async (req, res) => {
 export const updateUserPassword = async (req, res) => {
   try {
     const { currentPassword, newPassword, confirmPassword } = req.body;
-    const userId = req.params.id;
 
-    if (!userId) {
-      return res.status(400).json({ message: "User ID is required" });
-    }
-
-    const user = await User.findById(userId);
+    const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
     // Verify current password
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
@@ -171,9 +162,7 @@ export const updateUserPassword = async (req, res) => {
       return res.status(400).json({ message: "New passwords do not match" });
     }
 
-    // Hash the new password before saving
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     user.password = hashedPassword;
     await user.save();
