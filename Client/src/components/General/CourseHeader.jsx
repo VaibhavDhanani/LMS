@@ -26,7 +26,7 @@ export const CourseHeader = ({ course }) => {
 
   useEffect(() => {
     if (user && user.wishlist && course?._id) {
-      setIsWishlisted(user.wishlist.includes(course._id));
+      setIsWishlisted(user.wishlist.some(item => item._id === course._id));
     } else {
       setIsWishlisted(false);
     }

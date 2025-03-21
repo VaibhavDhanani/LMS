@@ -45,6 +45,7 @@ const MyCourses = () => {
 
   const handleScheduleClick = (courseId, e) => {
     e.stopPropagation();
+    
     setSelectedCourseId(courseId);
     setIsScheduleModalOpen(true);
     setActiveDropdownId(null);
@@ -182,10 +183,10 @@ const MyCourses = () => {
 
         <div className="grid grid-cols-1 gap-6">
           {filteredCourses.map((course) => (
-            <MyCourseComponents.Card
+            <div
               key={course._id}
               onClick={() => navigate(course.isPublished ? `/courses-analytics/${course._id}` : `/draft/${course._id}`)}
-              className="w-full"
+              className="bg-white rounded-lg shadow hover:shadow-md transition-shadow w-full"
             >
               <div className="flex flex-col md:flex-row">
                 <div className="w-full md:w-48 h-48">
@@ -302,7 +303,7 @@ const MyCourses = () => {
                   </div>
                 </div>
               </div>
-            </MyCourseComponents.Card>
+            </div>
           ))}
         </div>
       </div>
@@ -333,7 +334,7 @@ const MyCourses = () => {
       <ScheduleLectureModal
         isOpen={isScheduleModalOpen}
         onClose={() => setIsScheduleModalOpen(false)}
-        courseId={selectedCourseId}
+        course={selectedCourseId}
         instructorId={user._id}
         token={token}
         onScheduleSuccess={() => {

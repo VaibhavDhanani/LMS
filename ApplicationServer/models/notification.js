@@ -19,7 +19,7 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['lecture_scheduled', 'lecture_started','lecture_updated', 'lecture_canceled', 'announcement'],
+    enum: ['lecture_scheduled', 'lecture_started','lecture_updated', 'lecture_canceled','lecture_completed','student_enrolled' ,'announcement'],
     required: true
   },
   title: {

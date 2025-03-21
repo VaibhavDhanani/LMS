@@ -63,6 +63,36 @@ export const getAllCourses = async (req, res) => {
   }
 };
 
+export const getTrendingCourses = async (req, res) => {
+  try {
+    const courses = await Course.find()
+      .populate({
+        path: "instructor",
+        select: "name email profilePicture reviews",
+      })
+      .populate({
+        path: "reviews",
+        select: "rating comment user",
+      });
+
+    if (!courses.length) {
+      return res.status(404).json({ message: "No courses found" });
+    }
+
+    // Sort courses by the length of enrolledStudents array (descending order)
+    const trendingCourses = courses
+      .sort((a, b) => b.enrolledStudents.length - a.enrolledStudents.length)
+      .slice(0, 5); // Get only the top 5 courses
+
+    res.status(200).json({ 
+      message: "success", 
+      data: trendingCourses 
+    });
+  } catch (error) {
+    console.error("Error fetching trending courses:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
 
 export const getCourseById = async (req, res) => {
   try {

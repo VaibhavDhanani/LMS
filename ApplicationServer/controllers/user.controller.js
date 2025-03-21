@@ -45,8 +45,8 @@ export const updateWishlist =async(req, res, ) => {
     try {
       const user = await User.findById(req.user.id)
         .select("-password") // Exclude password
-        .populate("enrolledCourses", "title description pricing thumbnail"); // Populate enrolled courses with selected fields
-        // .populate("wishlist", "title description pricing thumbnail"); // Populate wishlist with selected fields
+        .populate("enrolledCourses", "title description pricing thumbnail") // Populate enrolled courses with selected fields
+        .populate("wishlist", "title description pricing thumbnail"); // Populate wishlist with selected fields
   
       if (!user) return res.status(404).json({ message: "User not found" });
   

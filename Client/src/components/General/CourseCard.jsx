@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Clock, Users, Heart } from 'lucide-react';
+import { Clock, Users, Heart, BookOpen, Globe } from 'lucide-react';
 import { updateWishlist } from '@/services/user.service';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'react-toastify';
@@ -11,12 +11,32 @@ const CourseCard = ({ course }) => {
   
   const finalPrice = course.pricing?.discountEnabled 
     ? course.pricing.price * (1 - course.pricing.discount / 100) 
-    : course.pricing?.price || course.price || 0;
+    : course.pricing?.price || 0;
+
+  // Calculate total duration in hours and minutes format
+  const getTotalDuration = () => {
+    if (course.curriculum && course.curriculum.length > 0) {
+      const totalMinutes = course.curriculum.reduce((total, section) => {
+        return total + section.lectures.reduce((sectionTotal, lecture) => {
+          return sectionTotal + (lecture.duration || 0);
+        }, 0);
+      }, 0);
+      
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      
+      if (hours > 0) {
+        return `${hours}h ${minutes > 0 ? `${minutes}m` : ''}`;
+      }
+      return `${minutes} min`;
+    }
+    return "Self-paced";
+  };
 
   // Check if course is in user's wishlist whenever user changes
   useEffect(() => {
     if (user && user.wishlist && course._id) {
-      setIsWishlisted(user.wishlist.includes(course._id));
+      setIsWishlisted(user.wishlist.some(item => item._id === course._id));
     } else {
       setIsWishlisted(false);
     }
@@ -60,6 +80,14 @@ const CourseCard = ({ course }) => {
     }
   };
 
+  // Count total lectures
+  const getTotalLectures = () => {
+    if (!course.curriculum) return 0;
+    return course.curriculum.reduce((total, section) => {
+      return total + (section.lectures?.length || 0);
+    }, 0);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:scale-[1.02] relative">
       {/* Wishlist Button */}
@@ -82,47 +110,70 @@ const CourseCard = ({ course }) => {
           alt={course.title}
           className="w-full h-full object-cover"
         />
-        {course.featured && (
+        {course.rating >= 4.5 && (
           <div className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 text-xs rounded-full">
-            Featured
+            Top Rated
           </div>
         )}
       </div>
       <div className="p-4">
         <div className="flex items-center space-x-2 mb-2">
-          <span className="text-sm text-blue-600 font-medium">{course.category || "General"}</span>
-          {course.level && (
-            <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">{course.level}</span>
+          {course.topics && course.topics.length > 0 ? (
+            <span className="text-sm text-blue-600 font-medium">{course.topics[0]}</span>
+          ) : (
+            <span className="text-sm text-blue-600 font-medium">General</span>
+          )}
+          {course.details?.level && (
+            <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">{course.details.level}</span>
           )}
         </div>
-        <h3 className="font-semibold text-lg mb-2 line-clamp-2">{course.title || "Untitled Course"}</h3>  
-        <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-          <div className="flex items-center space-x-2">
+        <h3 className="font-semibold text-lg mb-2 line-clamp-2">{course.title || "Untitled Course"}</h3>
+        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{course.subtitle || ""}</p>
+        <div className="flex flex-wrap gap-2 text-xs text-gray-500 mb-4">
+          <div className="flex items-center space-x-1">
             <Clock className="w-4 h-4" />
-            <span>{course.TotalMinutes || "8 hours"}</span>
+            <span>{getTotalDuration()}</span>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
+            <BookOpen className="w-4 h-4" />
+            <span>{getTotalLectures()} lectures</span>
+          </div>
+          <div className="flex items-center space-x-1">
             <Users className="w-4 h-4" />
             <span>{course.enrolledStudents?.length || 0} students</span>
           </div>
+          {course.details?.language && (
+            <div className="flex items-center space-x-1">
+              <Globe className="w-4 h-4" />
+              <span>{course.details.language}</span>
+            </div>
+          )}
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <img
-              src={course.instructor?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2070"}
-              alt={course.instructor?.name}
-              className="w-8 h-8 rounded-full"
-            />
-            <span className="text-sm font-medium">{course.instructor?.name || "Instructor"}</span>
+            {course.instructor ? (
+              <>
+                <img
+                  src={course.instructor.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2070"}
+                  alt={course.instructor.name}
+                  className="w-8 h-8 rounded-full"
+                />
+                <span className="text-sm font-medium">{course.instructor.name || "Instructor"}</span>
+              </>
+            ) : (
+              <span className="text-sm font-medium">Expert Instructor</span>
+            )}
           </div>
           <div className="text-right">
-            {course.pricing?.discountEnabled && course.pricing.price ? (
+            {course.pricing?.discountEnabled && course.pricing.price > 0 ? (
               <div>
-                <span className="font-bold text-lg text-red-600">₹{finalPrice} </span>
-                <span className="text-sm text-gray-500 line-through">₹{course.pricing.price}</span>
+                <span className="font-bold text-lg text-red-600">₹{finalPrice.toFixed(0)} </span>
+                <span className="text-sm text-gray-500 line-through">₹{course.pricing.price.toFixed(0)}</span>
               </div>
+            ) : course.pricing?.price > 0 ? (
+              <span className="font-bold text-lg">₹{course.pricing.price.toFixed(0)}</span>
             ) : (
-              <span className="font-bold text-lg">₹{finalPrice}</span>
+              <span className="font-bold text-lg text-green-600">Free</span>
             )}
           </div>
         </div>

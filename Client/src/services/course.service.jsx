@@ -20,6 +20,25 @@ export const getCourse = async (courseId, token) => {
   }
 };
 
+export const getTrendingCourse = async () => {
+  try {
+    const response = await db.get(`/courses/trending`
+  );
+    return {
+      success: true,
+      message: response.data.message || "Courses fetched successfully",
+      data: response.data.data,
+    };
+  } catch (error) {
+    console.error("Error fetching courses:", error);
+    return {
+      success: false,
+      message: "Failed to fetch courses. Please try again later.",
+      data: [],
+    };
+  }
+};
+
 export const getAllCourse = async () => {
   try {
     const response = await db.get(`/courses`
