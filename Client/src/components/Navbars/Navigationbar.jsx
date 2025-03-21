@@ -44,7 +44,9 @@ const Navigationbar = () => {
 
     const filteredCourses = allCourses.filter(course =>
       course?.title?.toLowerCase().includes(query.toLowerCase()) ||
-      course?.description?.toLowerCase().includes(query.toLowerCase())
+      course?.description?.toLowerCase().includes(query.toLowerCase())||
+      course?.instructor.name?.toLowerCase().includes(searchQuery.toLowerCase())||
+      course?.instructor.email?.toLowerCase().includes(searchQuery.toLowerCase())
     );
     setSearchResults(filteredCourses);
     setIsSearching(true);
@@ -147,7 +149,7 @@ const Navigationbar = () => {
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && searchQuery.trim() !== '') {
+                    if (e.key === 'Enter') {
                       setIsSearching(false);
                       navigate(`/courses?q=${encodeURIComponent(searchQuery.trim())}`);
                     }
@@ -191,7 +193,7 @@ const Navigationbar = () => {
                       {course.instructor && (
                         <div className="text-sm text-gray-500">
                           {typeof course.instructor === 'object'
-                            ? course.instructor.email || 'Unknown Instructor'
+                            ? `${course.instructor.name}(${course.instructor.email})`  || 'Unknown Instructor'
                             : course.instructor}
                         </div>
                       )}

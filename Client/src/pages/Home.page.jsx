@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Video, BarChart, CreditCard, Sparkles, ChevronRight, ArrowRight, MessageCircle, Bell, Calendar } from 'lucide-react';
+import { BookOpen, Video, BarChart, CreditCard, Sparkles, ChevronRight, ArrowRight, MessageCircle, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { getTrendingCourse } from '@/services/course.service';
@@ -194,24 +194,18 @@ function HomePage() {
                 <div className="p-6">
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">{course.title}</h3>
                   <p className="text-gray-600 mb-4">by {course.instructor.name}</p>
-                  <div className="flex items-center mb-4">
-                    <Calendar className="w-4 h-4 text-gray-500 mr-2" />
-                    <span className="text-sm text-gray-500">
-                      {course.liveSessions ? `${course.liveSessions} live sessions` : 'Self-paced'}
-                    </span>
-                  </div>
+                  
                   <div className="flex justify-between items-center">
-                    <span className="text-blue-600 font-semibold">${course.price ? course.price : 'Free'}</span>
-                    <button 
-                      onClick={() => { navigate(`courses/${course._id}`) }}  
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200"
-                    >
-                      Explore Course
-                    </button>
-                  </div>
-                  <div className="flex items-center mt-4">
-                    <Sparkles className="w-5 h-5 text-yellow-400 mr-1" />
-                    <span className="text-gray-600">{course.rating ? course.rating : '4.8'}</span>
+                     <button 
+                       onClick={() => { navigate(`courses/${course._id}`) }}  
+                       className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200"
+                     >
+                     Explore Course
+                   </button>
+                     <div className="flex items-center">
+                       <Sparkles className="w-5 h-5 text-yellow-400 mr-1" />
+                     <span className="text-gray-600">{course.rating ? course.rating : '0.0'}</span>
+                     </div>
                   </div>
                 </div>
               </div>

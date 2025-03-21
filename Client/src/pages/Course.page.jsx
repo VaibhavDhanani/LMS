@@ -42,9 +42,12 @@ const CoursePage = () => {
 
     // ✅ Apply search filter from URL
     if (searchQuery) {
+      // console.log(courses);
       filtered = filtered.filter(course => 
         course.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.description?.toLowerCase().includes(searchQuery.toLowerCase())
+        course.description?.toLowerCase().includes(searchQuery.toLowerCase())||
+        course.instructor.name?.toLowerCase().includes(searchQuery.toLowerCase())||
+        course.instructor.email?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -146,11 +149,16 @@ const CoursePage = () => {
               </div>
             </>
           ) : (
+            <>
+            <h2 className="text-2xl font-bold">
+              {searchQuery ? `Search Results for "${searchQuery}"` : "Available Courses"}
+            </h2>
             <div className="text-center py-12">
               <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-medium text-gray-900 mb-2">No courses found</h3>
               <p className="text-gray-600">Try adjusting your search or filters.</p>
             </div>
+            </>
           )}
         </div>
       </div>

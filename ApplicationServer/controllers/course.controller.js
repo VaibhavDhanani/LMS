@@ -50,7 +50,7 @@ export const getAllCourses = async (req, res) => {
         })
         .populate({
           path: "reviews",
-          select: "rating comment user",
+          select: "rating content learnerId",
         });
 
     if (!courses.length) {
@@ -97,14 +97,19 @@ export const getTrendingCourses = async (req, res) => {
 export const getCourseById = async (req, res) => {
   try {
     const course = await Course.findById(req.params.id)
-        .populate({
-          path: "instructor",
-          select: "name email profilePicture reviews biography",
-        })
-        .populate({
-          path: "reviews",
-          select: "rating content",
-        });
+    .populate({
+      path: "instructor",
+      select: "name email profilePicture reviews biography",
+    })
+    .populate({
+      path: "reviews",
+      select: "rating content learnerId",
+      populate: {
+        path: "learnerId", // This assumes learnerId is a reference to the Student model
+        select: "name profilePicture", // Fetch only the name of the student
+      },
+    });
+  
 
     if (!course) return res.status(404).json({ message: "Course not found" });
     // console.log(course);
