@@ -103,12 +103,7 @@ const notificationManager = {
   getUnreadNotifications: async (userId) => {
     try {
       return await Notification.find({
-        user: userId,
-        // isRead: false,
-        // $or: [
-        //   { expiresAt: null },
-        //   { expiresAt: { $gt: new Date() } }
-        // ]
+        user: userId
       })
       .sort({ createdAt: -1 })
       .populate('course', 'name')

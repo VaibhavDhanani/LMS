@@ -1,12 +1,20 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import { Device } from "mediasoup-client";
-import { getRoomToken } from '../../services/lecture.service';
+import { getRoomToken, endLecture } from '../../services/lecture.service';
 import { useAuth } from "@/context/AuthContext";
-import { Video, VideoOff, Mic, MicOff, Play,PhoneOff } from "lucide-react";
+import { Video, VideoOff, Mic, MicOff, Play, PhoneOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "react-toastify";
 import LectureChat from "@/components/LiveLecture/LectureChat";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 const SocketURL = import.meta.env.VITE_SOCKET_URL;
 
 const LectureStreaming = () => {
@@ -17,15 +25,16 @@ const LectureStreaming = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [showEndConfirmation, setShowEndConfirmation] = useState(false);
   const videoProducerRef = useRef(null);
   const audioProducerRef = useRef(null);
   const streamRef = useRef(null);
   const socketRef = useRef(null);  
   const roomTokenRef = useRef(null);
   
-
+  const navigate = useNavigate();
   const { id } = useParams();
-  const { user, token } = useAuth();
+  const {  token } = useAuth();
 
   useEffect(() => {
     const initLecture = async () => {
@@ -160,7 +169,7 @@ const LectureStreaming = () => {
     }
   }
 
-  const endLecture = () => {
+  const stopStreaming = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
     }
@@ -168,9 +177,35 @@ const LectureStreaming = () => {
   };
 
   const handleEndCall = () => {
-    if (window.confirm("Are you sure you want to end the lecture?")) {
-      endLecture();
+    setShowEndConfirmation(true);
+  };
+
+  const confirmEndLecture = async () => {
+    try {
+      stopStreaming();
+      
+      socketRef.current.emit("endLecture", { roomId: roomTokenRef.current });
+      socketRef.current.disconnect();
+      
+      const response = await endLecture(id,token);
+      setShowEndConfirmation(false);
+      if(response.success){
+        toast.success("Lecture completed successfully!");
+        navigate("/livelectures/section");
+      }else{
+        toast.error("Failed to end lecture. Please try again.");
+        setShowEndConfirmation(false);
+      }
+      
+    } catch (error) {
+      console.error("Error ending lecture:", error);
+      toast.error("Failed to end lecture. Please try again.");
+      setShowEndConfirmation(false);
     }
+  };
+
+  const cancelEndLecture = () => {
+    setShowEndConfirmation(false);
   };
 
   const toggleVideo = () => {
@@ -240,6 +275,26 @@ const LectureStreaming = () => {
           isHost={true} // Consumer is not the host
         />
       )}
+
+      {/* End Lecture Confirmation Dialog */}
+      <Dialog open={showEndConfirmation} onOpenChange={setShowEndConfirmation}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>End Lecture</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Are you sure you want to end this lecture? This action cannot be undone.</p>
+          </div>
+          <DialogFooter className="flex justify-between sm:justify-between">
+            <Button variant="outline" onClick={cancelEndLecture}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmEndLecture}>
+              End Lecture
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

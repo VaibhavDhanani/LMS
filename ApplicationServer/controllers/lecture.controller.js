@@ -10,9 +10,9 @@ import notificationManager from "../utills/notificationManager.js";
 
 export const createLecture = async (req, res) => {
   try {
-    const { title, date, startTime, duration, description, courseId, instructorId } = req.body;
+    const { title, date, startTime, duration, description, course, instructorId } = req.body;
 
-    if (!title || !date || !startTime || !duration || !courseId || !instructorId) {
+    if (!title || !date || !startTime || !duration || !course || !instructorId) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
@@ -47,14 +47,14 @@ export const createLecture = async (req, res) => {
       startTime,
       duration,
       description,
-      courseId,
+      course,
       instructorId,
       status: "scheduled", // Default status
     });
 
     await newLecture.save();
 
-    const notification = await notificationManager.createNotificationsForCourse(courseId,{
+    const notification = await notificationManager.createNotificationsForCourse(course,{
       type: 'lecture_scheduled',
       lecture : newLecture._id,
       title: newLecture.title,
@@ -70,7 +70,7 @@ export const createLecture = async (req, res) => {
 export const updateLecture = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, date, startTime, duration, description, courseId, instructorId, status, roomToken } = req.body;
+    const { title, date, startTime, duration, description, course, instructorId, status, roomToken } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid Lecture ID" });
@@ -126,7 +126,7 @@ export const updateLecture = async (req, res) => {
         startTime,
         duration,
         description,
-        courseId,
+        course,
         instructorId,
         ...(status && { status }),
         ...(roomToken && { roomToken }),
@@ -136,7 +136,7 @@ export const updateLecture = async (req, res) => {
 
     // Send notification only if significant details have changed
     if (isLectureUpdated) {
-      await notificationManager.createNotificationsForCourse(courseId, {
+      await notificationManager.createNotificationsForCourse(course, {
         type: "lecture_updated",
         lecture: updatedLecture._id,
         title: `Lecture Updated: ${updatedLecture.title}`,
@@ -180,7 +180,7 @@ export const getInstructorLecture = async (req, res) => {
       return res.status(400).json({ message: "Invalid Instructor ID" });
     }
 
-    const lectures = await Lecture.find({ instructorId: id });
+    const lectures = await Lecture.find({ instructorId: id }).populate('course');
     res.status(200).json({ data: lectures });
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
@@ -209,7 +209,7 @@ export const getStudentLecture = async (req, res) => {
     }
 
     // Fetch lectures that belong to the enrolled courses
-    const lectures = await Lecture.find({ courseId: { $in: enrolledCourses } });
+    const lectures = await Lecture.find({ course: { $in: enrolledCourses } }).populate('course');
 
     res.status(200).json({ data: lectures });
   } catch (error) {
@@ -233,7 +233,7 @@ export const deleteLecture = async (req, res) => {
     }
 
     // Send notification for lecture cancellation
-    await notificationManager.createNotificationsForCourse(deletedLecture.courseId, {
+    await notificationManager.createNotificationsForCourse(deletedLecture.course, {
       type: "lecture_canceled",
       lecture: deletedLecture._id,
       title: `Lecture Canceled: ${deletedLecture.title}`,
@@ -264,7 +264,9 @@ export const startLecture = async (req, res) => {
     if (!lecture) {
       return res.status(404).json({ message: "Lecture not found" });
     }
-
+    if (lecture.status === "completed") {
+      return res.status(400).json({ message: "Lecture is already complated"});
+    }
     // If lecture is already ongoing, return the existing token
     if (lecture.status === "ongoing") {
       return res.status(200).json({ message: "Lecture is already ongoing", roomToken: lecture.roomToken });
@@ -283,7 +285,7 @@ export const startLecture = async (req, res) => {
     await lecture.save();
 
     // Send notification to users
-    await notificationManager.createNotificationsForCourse(lecture.courseId, {
+    await notificationManager.createNotificationsForCourse(lecture.course, {
       type: "lecture_started",
       lecture: lecture._id,
       title: `Lecture Started: ${lecture.title}`,
@@ -303,7 +305,6 @@ export const startLecture = async (req, res) => {
 export const joinLecture = async (req, res) => {
   try {
     const {id}  = req.params;
-    console.log(id);
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid Lecture ID" });
     }
@@ -322,3 +323,44 @@ export const joinLecture = async (req, res) => {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
+
+export const endLecture = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate ID format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid Lecture ID" });
+    }
+
+    // Fetch the lecture
+    const lecture = await Lecture.findById(id);
+    if (!lecture) {
+      return res.status(404).json({ message: "Lecture not found" });
+    }
+
+    // If lecture is not ongoing, return an appropriate message
+    if (lecture.status !== "ongoing") {
+      return res.status(400).json({ message: "Lecture is not ongoing" });
+    }
+
+    // Update lecture status to completed
+    lecture.status = "completed";
+    lecture.roomToken = null; // Clear the token as the lecture is completed
+    await lecture.save();
+
+    // Send notification to users
+    await notificationManager.createNotificationsForCourse(lecture.course, {
+      type: "lecture_completed",
+      lecture: lecture._id,
+      title: `Lecture Completed: ${lecture.title}`,
+      message: `The lecture "${lecture.title}" has been completed.`,
+      isTimeSensitive: false,
+    });
+
+    res.status(200).json({ message: "Lecture marked as completed" });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+

@@ -156,7 +156,33 @@ export const joinLecture = async (lectureId,  token) => {
       };
     }
   };
-
+  export const endLecture = async (lectureId, token) => {
+    try {
+      const response = await db.post(
+        `/lectures/endlecture/${lectureId}`, 
+        {}, // Empty request body
+        {
+          headers: { Authorization: `Bearer ${token}` }, // Corrected header format
+        }
+      );
+  
+      return {
+        success: true,
+        message: response.data.message || "Lecture completed successfully",
+        data: response.data,
+      };
+    } catch (error) {
+      console.error("Error occurred while ending lecture:", error);
+  
+      return {
+        success: false,
+        message: error.response?.data?.message || "Failed to start lecture. Please try again later.",
+        data: null,
+      };
+    }
+  };
+  
+  
 export const getRoomToken = async (lectureId, token) => {
   try {
     const response = await db.post(

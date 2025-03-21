@@ -8,6 +8,7 @@ import {
   deleteCourse,
   getStudentCourse,
   updateCourseStatus,
+  getTrendingCourses,
 } from "../controllers/course.controller.js";
 import authenticateToken from "../middlewares/auth.middleware.js";
 const router = express.Router();
@@ -15,6 +16,7 @@ const router = express.Router();
 router.post("/courses", authenticateToken,createCourse);
 router.get("/courses/users",authenticateToken, getInstructorCourse);
 router.get("/courses/enrolled",authenticateToken, getStudentCourse);
+router.get("/courses/trending", getTrendingCourses);
 router.get("/courses/:id", getCourseById);
 router.get("/courses", getAllCourses);
 router.put("/courses/:id/status",authenticateToken, updateCourseStatus);

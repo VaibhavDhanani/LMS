@@ -6,7 +6,7 @@ import * as MyCourseComponents from '../components/MyCoursePage/components.jsx';
 export const ScheduleLectureModal = ({ 
   isOpen, 
   onClose, 
-  courseId, 
+  course, 
   instructorId, 
   token, 
   onScheduleSuccess, 
@@ -21,7 +21,7 @@ export const ScheduleLectureModal = ({
     duration: '',
     description: ''
   });
-
+  console.log(course);
   useEffect(() => {
     if (existingLecture) {
       setScheduleForm({
@@ -57,7 +57,7 @@ export const ScheduleLectureModal = ({
     setFormMessage(null);
 
     try {
-      if (!courseId || !instructorId) {
+      if (!course || !instructorId) {
         setFormMessage("Course ID or Instructor ID is missing.");
         setFormMessageType("error");
         return;
@@ -65,7 +65,7 @@ export const ScheduleLectureModal = ({
 
       const lectureData = {
         ...scheduleForm,
-        courseId,
+        course,
         instructorId
       };
 

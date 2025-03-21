@@ -6,7 +6,7 @@ const lectureSchema = new mongoose.Schema({
   startTime: { type: String, required: true },
   duration: { type: Number, required: true },
   description: { type: String },
-  courseId: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
+  course: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
   instructorId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   status: { type: String, enum: ["scheduled", "ongoing", "completed"], default: "scheduled" }, // Status tracking
   roomToken: { type: String, default: null }, // Token for room access

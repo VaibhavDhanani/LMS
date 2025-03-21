@@ -98,7 +98,7 @@ const Navigationbar = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
-              LMS
+              LearnSpace
             </span>
           </Link>
 
