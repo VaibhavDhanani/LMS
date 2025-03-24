@@ -28,6 +28,13 @@ jobs:
             curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
             sudo apt install -y nodejs nginx git
             sudo npm install -g pm2
+            
+            # Increase Node.js memory limit globally
+            echo 'export NODE_OPTIONS="--max-old-space-size=4096"' >> ~/.bashrc
+            # Also add to profile to ensure it's available in non-interactive sessions
+            echo 'export NODE_OPTIONS="--max-old-space-size=4096"' >> ~/.profile
+            # Source the updated profile for this session
+            export NODE_OPTIONS="--max-old-space-size=4096"
           ENVSSH
 
       # Create LMS Directory and Set Permissions
@@ -78,8 +85,12 @@ jobs:
           
             echo "Setting up Client..."
             cd Client
+            # Explicitly set NODE_OPTIONS in this session
+            export NODE_OPTIONS="--max-old-space-size=4096"
             npm install
-            npm run build
+            
+            # Add specific memory setting for the build process
+            NODE_OPTIONS="--max-old-space-size=4096" npm run build
             cd ..
           
             echo "Setting up Application Server..."
@@ -140,14 +151,17 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << STARTSSH
             cd /home/${{ secrets.EC2_USER }}/LMS
+            
+            # Set environment variable for node memory
+            export NODE_OPTIONS="--max-old-space-size=4096"
           
             echo "Starting Application Server..."
             cd ApplicationServer
             pm2 describe application-server > /dev/null
             if [ $? -eq 0 ]; then
-              pm2 restart application-server
+              pm2 restart application-server --node-args="--max-old-space-size=4096"
             else
-              pm2 start app.js --name application-server
+              pm2 start app.js --name application-server --node-args="--max-old-space-size=4096"
             fi
             cd ..
           
@@ -155,9 +169,9 @@ jobs:
             cd LiveServer
             pm2 describe live-server > /dev/null
             if [ $? -eq 0 ]; then
-              pm2 restart live-server
+              pm2 restart live-server --node-args="--max-old-space-size=4096"
             else
-              pm2 start server.js --name live-server
+              pm2 start server.js --name live-server --node-args="--max-old-space-size=4096"
             fi
             
             # Save PM2 configuration
