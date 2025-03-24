@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Bell, Check, Filter, ChevronDown, Calendar, Clock, AlertCircle } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 import { useNotifications } from '@/context/NotificationContext';
 
 // Helper function to get badge styles based on notification type
