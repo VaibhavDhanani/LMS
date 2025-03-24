@@ -22,7 +22,7 @@ export const CourseHeader = ({ course }) => {
   const [paymentMessage, setPaymentMessage] = useState(null);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  
+
 
   useEffect(() => {
     if (user && user.wishlist && course?._id) {
@@ -37,19 +37,19 @@ export const CourseHeader = ({ course }) => {
       toast.warn('Please log in to manage your wishlist');
       return;
     }
-    
+
     if (isUpdating) return; // Prevent multiple clicks
-    
+
     try {
       setIsUpdating(true);
       const isAdding = !isWishlisted;
-      
+
       // Optimistic UI update
       setIsWishlisted(isAdding);
-      
+
       // Call API to update wishlist
       const response = await updateWishlist(course._id, isAdding, token);
-      
+
       if (response.success) {
         toast.success(isAdding ? 'Added to wishlist' : 'Removed from wishlist');
       } else {
@@ -142,23 +142,23 @@ export const CourseHeader = ({ course }) => {
         <div className="flex flex-col space-y-4">
           <div className="flex justify-between items-start">
             <h1 className="text-2xl md:text-3xl font-bold">{course.title}</h1>
-            
-              {/* Wishlist button - only show if user is logged in */}
+
+            {/* Wishlist button - only show if user is logged in */}
             {user && (
-              <button 
+              <button
                 onClick={handleWishlistToggle}
                 className={`p-2 rounded-full hover:bg-gray-100 transition-all ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
                 disabled={isUpdating}
               >
-                <Heart 
-                  size={28} 
-                  className={`${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} 
+                <Heart
+                  size={28}
+                  className={`${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-500'}`}
                 />
               </button>
             )}
           </div>
-          
-          
+
+
           <p className="text-lg md:text-xl text-gray-600">{course.subtitle}</p>
 
           {/* Instructor Info */}
@@ -210,7 +210,6 @@ export const CourseHeader = ({ course }) => {
                 </span>
               )}
             </div>
-
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-4">
               {isEnrolled || (user && course.instructor._id === user.id) ? (
@@ -220,7 +219,7 @@ export const CourseHeader = ({ course }) => {
                 >
                   Go to Course
                 </button>
-              ) : (
+              ) : course.isActive ? ( // Check if course is active
                 <button
                   className={`w-full sm:w-auto btn btn-primary px-8 ${loading && 'opacity-50'}`}
                   onClick={handleBuyCourse}
@@ -232,8 +231,17 @@ export const CourseHeader = ({ course }) => {
                     'Enroll Now'
                   )}
                 </button>
+              ) : (
+                <button
+                  className="w-full sm:w-auto bg-gray-500 text-white px-8 py-2 rounded-md cursor-not-allowed opacity-50"
+                  disabled
+                >
+                  Course is Inactive 
+                </button>
+
               )}
             </div>
+
           </div>
 
           {/* Messages */}

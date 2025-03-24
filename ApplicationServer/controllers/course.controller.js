@@ -43,15 +43,15 @@ export const createCourse = async (req, res) => {
 export const getAllCourses = async (req, res) => {
 
   try {
-    const courses = await Course.find()
-        .populate({
-          path: "instructor",
-          select: "name email profilePicture reviews",
-        })
-        .populate({
-          path: "reviews",
-          select: "rating content learnerId",
-        });
+    const courses = await Course.find({ isActive: true })
+    .populate({
+      path: "instructor",
+      select: "name email profilePicture reviews",
+    })
+    .populate({
+      path: "reviews",
+      select: "rating content learnerId",
+    });
 
     if (!courses.length) {
       return res.status(404).json({ message: "No courses found" });
