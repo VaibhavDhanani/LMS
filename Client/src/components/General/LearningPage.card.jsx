@@ -4,6 +4,26 @@ import { useNavigate } from 'react-router-dom';
 
 const CourseCard = ({ course, variant = 'default' }) => {
   const progress = course.progress || 0;
+
+  const getTotalDuration = () => {
+    if (course.curriculum && course.curriculum.length > 0) {
+      const totalMinutes = course.curriculum.reduce((total, section) => {
+        return total + section.lectures.reduce((sectionTotal, lecture) => {
+          return sectionTotal + (lecture.duration || 0);
+        }, 0);
+      }, 0);
+
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+
+      if (hours > 0) {
+        return `${hours}h ${minutes > 0 ? `${minutes}m` : ''}`;
+      }
+      return `${minutes} min`;
+    }
+    return "Self-paced";
+  };
+
  const navigate = useNavigate();
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow ">
@@ -54,7 +74,7 @@ const CourseCard = ({ course, variant = 'default' }) => {
             <div className="flex items-center gap-4 text-sm text-gray-600">
               <div className="flex items-center gap-1">
                 <Clock className="w-4 h-4" />
-                <span>{course.duration || '8h'}</span>
+            <span>{getTotalDuration()}</span>
               </div>
               <div className="flex items-center gap-1">
                 <BookOpen className="w-4 h-4" />

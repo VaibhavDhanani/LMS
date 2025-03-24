@@ -29,18 +29,15 @@ router.post('/verify/:id', async (req, res) => {
 
         // Check for an existing transaction with the same sessionId
         const existingTransaction = await Transaction.findOne({ stripeSessionId:sessionId });
-
-        if (existingTransaction && existingTransaction.metadata.userId== userId && existingTransaction.metadata.courseId== courseId) {
+   
+        if (existingTransaction && existingTransaction.userId== userId && existingTransaction.courseId== courseId) {
             // If transaction exists, return its details
             return res.status(200).json({
                 message: 'Transaction already exists',
                 data: existingTransaction,
             });
-        }else if(existingTransaction){
-          return res.status(404).json({
-            message: 'Transaction does not exists',
-        });
         }
+        
 
         // If no transaction exists, create a new one
         const newTransaction = new Transaction({
