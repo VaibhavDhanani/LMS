@@ -1,19 +1,39 @@
 import db from "@/apis/database";
 
+const API_URL = import.meta.env.VITE_SERVER_URL;
 
-export async function fetchMessages(token){
-    const API_URL = import.meta.env.VITE_SERVER_URL;
-    try {
-        const response = await db.get(`${API_URL}/messages`,{
-            headers: { authorization: `Bearer ${token}` },
-          });
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        const data = response.data;
-        return data;
-      } catch (error) {
-        console.error('Error fetching messages:', error);
+// console.log(API_URL)
+const token = localStorage.getItem("authToken")
+
+export async function fetchMessages() {
+  try {
+    const response = await db.get(`${API_URL}/messages`,{
+      headers: { authorization: `Bearer ${token}`}
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    throw error;
+  }
+}
+
+
+export async function sendMessage(message) {
+  try {
+    const response = await db.post(`${API_URL}/messages`, 
+      { message },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          authorization: `Bearer ${token}`
+        },
       }
-
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error sending message:', error);
+    throw error;
+  }
 }

@@ -53,7 +53,7 @@ export const updateUser = async (user, authToken) => {
     return;
   }
   const response = await db.put(`/users/${user._id}`, user, {
-    headers: { Authorization: `Bearer ${authToken}` },
+    headers: { authorization: `Bearer ${authToken}` },
   });
   return response.data.data;
 };
