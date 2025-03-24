@@ -72,7 +72,7 @@ export const CourseHeader = ({ course }) => {
       (async () => {
         try {
           const response = await verifyPayment(sessionId, course._id, token);
-          if (response.data.status === 'success' && response.data.courseId === course._id && response.data.userId === user.id) {
+          if (response.data.status === 'success' && response.data.courseId === course._id && response.data.userId === user._id) {
             setIsEnrolled(true);
             setPaymentMessage('Payment successful.')
             setPaymentError(null);

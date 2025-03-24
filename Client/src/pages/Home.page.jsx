@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Video, BarChart, CreditCard, Sparkles, ChevronRight, ArrowRight, MessageCircle, Bell } from 'lucide-react';
+import { BookOpen,Play,Star, Video, Users, BarChart, CreditCard, Sparkles, ChevronRight, ArrowRight, MessageCircle, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { getTrendingCourse } from '@/services/course.service';
@@ -60,32 +60,46 @@ function HomePage() {
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <div className="relative pt-32 pb-20 sm:pt-40 sm:pb-24 bg-gradient-to-b from-blue-50 to-white">
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-5xl sm:text-7xl font-bold mb-8 bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
-            Teach, Learn, and<br />Earn Online
-          </h1>
-          <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
-            The complete learning management platform where educators can create, sell courses and host live classes while students learn from industry experts.
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-            {!user && (
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center lg:text-left flex flex-col lg:flex-row items-center">
+          {/* Text Content */}
+          <div className="lg:w-1/2">
+          <div className="overflow-visible">
+  <h1 className="text-5xl sm:text-5xl font-bold mb-8 bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text leading-relaxed pb-2">
+    Bringing Educators and Learners Together.
+  </h1>
+</div>
+            <p className="text-xl text-gray-600 mb-12 max-w-2xl">
+              The complete learning management platform where educators can create, sell courses and host live classes while students learn from industry experts.
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center lg:justify-start items-center gap-4">
+              {!user && (
+                <button 
+                  className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:opacity-90 transition-opacity flex items-center justify-center"
+                  onClick={() => { navigate("/auth"); }}
+                >
+                  Start Teaching or Learning <ArrowRight className="w-5 h-5 ml-2" />
+                </button>
+              )}
               <button 
-                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:opacity-90 transition-opacity flex items-center justify-center"
-                onClick={() => { navigate("/auth"); }}
+                className="w-full sm:w-auto border border-gray-300 text-gray-700 px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-50 transition-colors"
+                onClick={() => { navigate("/courses"); }}
               >
-                Start Teaching or Learning <ArrowRight className="w-5 h-5 ml-2" />
+                Browse Courses
               </button>
-            )}
-            <button 
-              className="w-full sm:w-auto border border-gray-300 text-gray-700 px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-50 transition-colors"
-              onClick={() => { navigate("/courses"); }}
-            >
-              Browse Courses
-            </button>
+            </div>
+          </div>
+          
+          {/* Image Section */}
+          <div className="hidden lg:block lg:w-1/2 relative">
+            <img
+              className="h-full w-full object-cover rounded-lg shadow-lg"
+              src="/gettyimages-1270504855-612x612.jpg"
+              alt="Teacher conducting an online lecture"
+            />
+            <div className="absolute inset-0 bg-gradient-to-l from-black/20 to-transparent" />
           </div>
         </div>
       </div>
-
       {/* Features Section */}
       <div className="py-24 bg-gray-50 pt-[150px]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
