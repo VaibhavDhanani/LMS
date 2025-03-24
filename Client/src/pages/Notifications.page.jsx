@@ -32,6 +32,10 @@ const getTypeName = (type) => {
       return 'Lecture Updated';
     case 'lecture_canceled':
       return 'Lecture Canceled';
+    case 'lecture_completed':
+      return 'Lecture Completed';
+    case 'student_enrolled':
+      return 'Student Enrolled';
     case 'announcement':
       return 'Announcement';
     default:
@@ -242,6 +246,8 @@ const NotificationsPage = () => {
                       <option value="lecture_started">Lecture Started</option>
                       <option value="lecture_updated">Lecture Updated</option>
                       <option value="lecture_canceled">Lecture Canceled</option>
+                      <option value="lecture_completed">Lecture Completed</option>
+                      <option value="student_enrolled">Student Enrolled</option>
                       <option value="announcement">Announcement</option>
                     </select>
                   </div>
