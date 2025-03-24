@@ -6,7 +6,7 @@ const ChatbotInterface = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
-  const API_URL = 'http://localhost:5000/api/messages';
+  const API_URL = import.meta.env.VITE_SERVER_URL;
 
   useEffect(() => {
     fetchMessages();
@@ -14,7 +14,7 @@ const ChatbotInterface = () => {
 
   const fetchMessages = async () => {
     try {
-      const response = await fetch(API_URL);
+      const response = await fetch(`${API_URL}/messages`);
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
@@ -40,7 +40,7 @@ const ChatbotInterface = () => {
     setIsTyping(true);
 
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetch(`${API_URL}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

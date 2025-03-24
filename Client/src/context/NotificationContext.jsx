@@ -1,117 +1,105 @@
- // client/src/context/NotificationContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { useAuth } from './AuthContext'; // Assume you have an auth context
-import { fetchNotifications as getNotifications, readNotification, readAllNotifications} from '@/services/notification.service';
+import { useAuth } from './AuthContext';
+import { fetchNotifications as getNotifications, readNotification, readAllNotifications } from '@/services/notification.service';
+
 const NotificationContext = createContext();
 
 export const useNotifications = () => useContext(NotificationContext);
 
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
+  const [unreadNotifications, setUnreadNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [eventSource, setEventSource] = useState(null);
-  const {  user,token } = useAuth();
+  const { user, token } = useAuth();
 
-  // Function to fetch unread notifications
+  // Fetch Notifications
   const fetchNotifications = async () => {
     try {
-      const response = await getNotifications(user.id, token);
-      if(response.success){
+      const response = await getNotifications(token);
+      if (response.success) {
         setNotifications(response.data);
-        setUnreadCount(response.data.length);
+        updateUnreadNotifications(response.data);
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
   };
 
-  // Mark a notification as read
+  // Update Unread Notifications
+  const updateUnreadNotifications = (notificationsList) => {
+    const unread = notificationsList.filter(notification => !notification.isRead);
+    setUnreadNotifications(unread);
+    setUnreadCount(unread.length);
+  };
+
+  // Mark a Notification as Read
   const markAsRead = async (notificationId) => {
     try {
-      const res =await readNotification(notificationId,user.id,token);
-      
-      if(res.success){
-        // Update local state
-        setNotifications(notifications.map(notification => 
-          notification._id === notificationId 
-          ? { ...notification, isRead: true } 
-          : notification
-        ));
+      const res = await readNotification(notificationId, token);
+      if (res.success) {
+        setNotifications(prev => {
+          const updated = prev.map(notification =>
+            notification._id === notificationId ? { ...notification, isRead: true } : notification
+          );
+          updateUnreadNotifications(updated);
+          return updated;
+        });
       }
-      
-      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
   };
 
-  // Mark all notifications as read
+  // Mark All Notifications as Read
   const markAllAsRead = async () => {
     try {
-      const res=await readAllNotifications(user.id,token);
-      if(res.success){
-
-        // Update local state
-        setNotifications(notifications.map(notification => ({ 
-          ...notification, 
-          isRead: true 
-        })));
+      const res = await readAllNotifications(token);
+      if (res.success) {
+        setNotifications(prev => {
+          const updated = prev.map(notification => ({ ...notification, isRead: true }));
+          updateUnreadNotifications(updated);
+          return updated;
+        });
       }
-      
-      setUnreadCount(0);
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
     }
   };
 
-  // Set up SSE connection when user logs in
+  // SSE Connection for Real-time Notifications
   useEffect(() => {
-    if (user) {
-      // Get existing notifications first
+    if (user && token) {
       fetchNotifications();
-      
-      // Set up SSE connection
-      const sse = new EventSource(`http://localhost:5000/api/notifications/stream?token=${token}`, { withCredentials: true });
 
-      console.log('SSE connection established');
-      sse.onopen = () => {
-        console.log('Notification stream connected');
-      };
-      
+      const backendUrl = import.meta.env.VITE_SERVER_URL;
+      const sse = new EventSource(`${backendUrl}/notifications/stream?token=${token}`, { withCredentials: true });
+
+      sse.onopen = () => console.log('Notification stream connected');
+
       sse.onerror = (error) => {
         console.error('SSE connection error:', error);
         sse.close();
-        
-        // Attempt to reconnect after a delay
+
         setTimeout(() => {
-          setEventSource(null); // This will trigger a reconnect via the useEffect
+          setEventSource(null);
         }, 5000);
       };
-      
+
       sse.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data); 
-          // Ignore heartbeat messages
+          const data = JSON.parse(event.data);
           if (data.type === 'heartbeat') return;
-          
-          // Handle new notifications
+
           if (data._id) {
-            // Add new notification to state if it doesn't already exist
             setNotifications(prev => {
-              // Check if notification already exists
-              const exists = prev.some(n => n._id === data._id);
-              if (!exists) {
-                // Show browser notification for time-sensitive alerts
+              if (!prev.some(n => n._id === data._id)) {
                 if (data.isTimeSensitive && Notification.permission === 'granted') {
-                  new Notification(data.title, {
-                    body: data.message,
-                    icon: '/favicon.ico'
-                  });
+                  new Notification(data.title, { body: data.message, icon: '/favicon.ico' });
                 }
-                
-                // Add to state and update counter
-                setUnreadCount(count => count + 1);
-                return [data, ...prev];
+                const updated = [data, ...prev];
+                updateUnreadNotifications(updated);
+                return updated;
               }
               return prev;
             });
@@ -120,35 +108,29 @@ export const NotificationProvider = ({ children }) => {
           console.error('Error processing SSE message:', err);
         }
       };
-      
+
       setEventSource(sse);
-      
-      // Request browser notification permission
+
       if (Notification.permission === 'default') {
         Notification.requestPermission();
       }
-      
-      // Clean up on unmount
-      return () => {
-        if (sse) {
-          sse.close();
-        }
-      };
+
+      return () => sse.close();
     }
-    
-    // Clean up SSE when user logs out
+
     return () => {
       if (eventSource) {
         eventSource.close();
         setEventSource(null);
       }
     };
-  }, [ user]);
+  }, [user, token]);
 
   return (
     <NotificationContext.Provider
       value={{
         notifications,
+        unreadNotifications,
         unreadCount,
         fetchNotifications,
         markAsRead,

@@ -1,12 +1,50 @@
 import db from "@/apis/database";
 
-export const getUser = async (userId, authToken) => {
-  const response = await db.get(`/users/${userId}`, {
-    headers: { Authorization: `Bearer ${authToken}` },
-  });
-  console.log("service", response.data);
-  return response.data.data;
+export const updateWishlist =async(courseId,isAdding,token)=>{
+  try{
+    const response = await db.put(`/users/wishlists/${courseId}`, { isAdding }, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    return {
+        success: true,
+        message: response.data.message || "Wishlist updated successfully",
+        data: response.data.data,
+    };
+  }catch(e){
+    console.error('Error updating wishlist:', e);
+    return {
+        success: false,
+        message: "Failed to update wishlist. Please try again later.",
+        data: null,
+    };
+  }
 };
+export const getUser = async (userId,authToken) => {
+    const response = await db.get(`/users/${userId}`,{
+        headers: { Authorization: `Bearer ${authToken}` }
+    })
+    // console.log("service" ,response.data)
+    return response.data.data
+}
+export const getUserInfo = async (token) => {
+    try {
+    const response = await db.get(`/users/info`,{
+        headers: { authorization: `Bearer ${token}` },
+        });
+        return {
+          success: true,
+          message: response.data.message ,
+          data: response.data.data,
+        };
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        return {
+          success: false,
+          message: "Failed to fetch user. Please try again later.",
+          data: null,
+        };
+      }
+}
 
 export const updateUser = async (user, authToken) => {
   if (!user._id) {
@@ -20,30 +58,21 @@ export const updateUser = async (user, authToken) => {
   return response.data.data;
 };
 
-export const updateUserPassword = async (user, {currentPassword,newPassword,confirmPassword},authToken) => {
-  if (!user._id) {
-    console.log(user);
-    // console.error("User ID is missing");
-    return {
-      success: false,
-      message: "User Id missing",
-      data: null,
-    };
-  }
-
+export const updateUserPassword = async ( {currentPassword,newPassword,confirmPassword},token) => {
+  
   try {
-    const response = await db.put(`/users/password/${user._id}`, {currentPassword,newPassword,confirmPassword}, {
-      headers: { Authorization: `Bearer ${authToken}` },
+    const response = await db.put(`/users/password`, {currentPassword,newPassword,confirmPassword}, {
+      headers: { Authorization: `Bearer ${token}` },
     });
     return {
       success: true,
       message: response.data.message,
-      data: response.data.message,
+      data: response.data.data,
     };
   } catch (error) {
     return {
         success: false,
-        message: error,
+        message: error.response.data.message,
         data: null,
       };
   }

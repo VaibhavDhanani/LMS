@@ -20,6 +20,25 @@ export const getCourse = async (courseId, token) => {
   }
 };
 
+export const getTrendingCourse = async () => {
+  try {
+    const response = await db.get(`/courses/trending`
+  );
+    return {
+      success: true,
+      message: response.data.message || "Courses fetched successfully",
+      data: response.data.data,
+    };
+  } catch (error) {
+    console.error("Error fetching courses:", error);
+    return {
+      success: false,
+      message: "Failed to fetch courses. Please try again later.",
+      data: [],
+    };
+  }
+};
+
 export const getAllCourse = async () => {
   try {
     const response = await db.get(`/courses`
@@ -39,9 +58,9 @@ export const getAllCourse = async () => {
   }
 };
 
-export const getInstructorCourse = async (instructorId, token,params={}) => {
+export const getInstructorCourse = async ( token,params={}) => {
   try {
-    const response = await db.get(`/courses/users/${instructorId}`, {
+    const response = await db.get(`/courses/users`, {
       headers: { authorization: `Bearer ${token}` },
       params
     });
@@ -61,9 +80,9 @@ export const getInstructorCourse = async (instructorId, token,params={}) => {
   }
 };
 
-export const getStudentEnrolledCourses = async (userId, token) => {
+export const getStudentEnrolledCourses = async ( token) => {
   try {
-    const response = await db.get(`/courses/enrolled/${userId}`, {
+    const response = await db.get(`/courses/enrolled`, {
       headers: { authorization: `Bearer ${token}` },
     });
     return {

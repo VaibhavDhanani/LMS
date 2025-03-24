@@ -8,17 +8,19 @@ import {
   deleteCourse,
   getStudentCourse,
   updateCourseStatus,
+  getTrendingCourses,
 } from "../controllers/course.controller.js";
-
+import authenticateToken from "../middlewares/auth.middleware.js";
 const router = express.Router();
 
-router.post("/courses", createCourse);
-router.get("/courses", getAllCourses);
+router.post("/courses", authenticateToken,createCourse);
+router.get("/courses/users",authenticateToken, getInstructorCourse);
+router.get("/courses/enrolled",authenticateToken, getStudentCourse);
+router.get("/courses/trending", getTrendingCourses);
 router.get("/courses/:id", getCourseById);
-router.put("/courses/:id/status", updateCourseStatus);
-router.get("/courses/users/:id", getInstructorCourse);
-router.get("/courses/enrolled/:id", getStudentCourse);
-router.put("/courses/:id", updateCourse);
-router.delete("/courses/:id", deleteCourse);
+router.get("/courses", getAllCourses);
+router.put("/courses/:id/status",authenticateToken, updateCourseStatus);
+router.put("/courses/:id",authenticateToken, updateCourse);
+router.delete("/courses/:id",authenticateToken, deleteCourse);
 
 export default router;

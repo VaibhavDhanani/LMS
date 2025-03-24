@@ -7,7 +7,6 @@ export const createCourseDraft = async (req, res) => {
       title,
       subtitle,
       description,
-      instructor,
       details,
       learnPoints,
       technologies,
@@ -26,7 +25,7 @@ export const createCourseDraft = async (req, res) => {
       title,
       subtitle,
       description,
-      instructor,
+      instructor:req.user.id,
       details,
       learnPoints,
       technologies,
@@ -62,9 +61,9 @@ export const getAllCourseDrafts = async (req, res) => {
 };
 
 export const getUserCourseDrafts = async (req, res) => {
-  const { instructorId } = req.params;
+  const  instructor  = req.user.id;
   try {
-      const drafts = await CourseDraft.find({ instructorId }).populate("instructor", "username email");
+      const drafts = await CourseDraft.find({ instructor }).populate("instructor", "username email");
       res.status(200).json({data: drafts});
   } catch (error) {
       res.status(500).json({ error: 'Unable to fetch drafts for user' });

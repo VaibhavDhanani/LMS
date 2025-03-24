@@ -598,7 +598,7 @@ const handleProducerClosed = (producerId) => {
   };
 
   return (
-    <div className="p-4 flex flex-col items-center">
+    <div className="p-4 flex flex-col items-center pt-24">
       <h2 className="text-xl font-bold mb-4">Live Lecture Stream</h2>
 
       <div className="w-full max-w-2xl">

@@ -21,9 +21,9 @@ export const scheduleLecture = async (lecture, token) => {
   }
 };
 
-export const fetchLectures = async (userId, token) => {
+export const fetchLectures = async ( token) => {
   try {
-    const response = await db.get(`/lectures/instructor/${userId}`, {
+    const response = await db.get(`/lectures/instructor`, {
       headers: { authorization: `Bearer ${token}` },
     });
 
@@ -42,9 +42,9 @@ export const fetchLectures = async (userId, token) => {
     };
   }
 };
-export const fetchStudentLectures = async (userId, token) => {
+export const fetchStudentLectures = async ( token) => {
   try {
-    const response = await db.get(`/lectures/student/${userId}`, {
+    const response = await db.get(`/lectures/student`, {
       headers: { authorization: `Bearer ${token}` },
     });
 
@@ -106,7 +106,7 @@ export const deleteLecture = async(lectureId,token) => {
   }
 };
 
-export const startLecture = async (lectureId, userId, token) => {
+export const startLecture = async (lectureId, token) => {
   try {
     const response = await db.post(
       `/lectures/startlecture/${lectureId}`, 
@@ -133,11 +133,10 @@ export const startLecture = async (lectureId, userId, token) => {
 };
 
 
-export const joinLecture = async (lectureId, userId, token) => {
+export const joinLecture = async (lectureId,  token) => {
   try {
     const response = await db.post(
-      `/lectures/join/${lectureId}`,
-      { userId },
+      `/lectures/join/${lectureId}`,{},
       {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -157,7 +156,33 @@ export const joinLecture = async (lectureId, userId, token) => {
       };
     }
   };
-
+  export const endLecture = async (lectureId, token) => {
+    try {
+      const response = await db.post(
+        `/lectures/endlecture/${lectureId}`, 
+        {}, // Empty request body
+        {
+          headers: { Authorization: `Bearer ${token}` }, // Corrected header format
+        }
+      );
+  
+      return {
+        success: true,
+        message: response.data.message || "Lecture completed successfully",
+        data: response.data,
+      };
+    } catch (error) {
+      console.error("Error occurred while ending lecture:", error);
+  
+      return {
+        success: false,
+        message: error.response?.data?.message || "Failed to start lecture. Please try again later.",
+        data: null,
+      };
+    }
+  };
+  
+  
 export const getRoomToken = async (lectureId, token) => {
   try {
     const response = await db.post(

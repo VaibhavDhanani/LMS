@@ -13,7 +13,7 @@ const Layout = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative">
+    <div className="min-h-screen flex flex-col relative ">
       <Navigationbar />
       <div className="flex-1 bg-gray-100">{children}</div>
       <Footer />
@@ -74,7 +74,7 @@ const Layout = ({ children }) => {
           isChatOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full pt-16">
           {/* Chat Header */}
           <div className="bg-blue-500 text-white p-4 flex justify-between items-center">
             <div className="flex items-center space-x-2">

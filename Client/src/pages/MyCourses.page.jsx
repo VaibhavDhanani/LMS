@@ -45,6 +45,7 @@ const MyCourses = () => {
 
   const handleScheduleClick = (courseId, e) => {
     e.stopPropagation();
+    
     setSelectedCourseId(courseId);
     setIsScheduleModalOpen(true);
     setActiveDropdownId(null);
@@ -52,7 +53,7 @@ const MyCourses = () => {
 
   const fetchCourses = async () => {
     try {
-      const draftResponse = await getDrafts(user.id, token);
+      const draftResponse = await getDrafts( token);
       const drafts = draftResponse.success
         ? draftResponse.data.map(course => ({
           ...course,
@@ -60,7 +61,7 @@ const MyCourses = () => {
         }))
         : [];
 
-      const publishedResponse = await getInstructorCourse(user.id, token);
+      const publishedResponse = await getInstructorCourse( token);
       const published = publishedResponse.success
         ? publishedResponse.data.map(course => ({
           ...course,
@@ -77,7 +78,7 @@ const MyCourses = () => {
   };
 
   useEffect(() => {
-    if (user?.id && token) {
+    if (user?._id && token) {
       fetchCourses();
     }
   }, [user, token]);
@@ -85,7 +86,7 @@ const MyCourses = () => {
   const handleAddCourse = async () => {
     if (newCourseTitle.trim()) {
       try {
-        await createDraft({ title: newCourseTitle, instructor: user.id }, token);
+        await createDraft({ title: newCourseTitle }, token);
         setNewCourseTitle('');
         setIsModalOpen(false);
         fetchCourses();
@@ -143,7 +144,7 @@ const MyCourses = () => {
   });
 
   return (
-    <div className="w-full py-8 px-4 md:px-8">
+    <div className="w-full py-8 px-4 md:px-8 pt-24">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
           <h1 className="text-3xl font-bold mb-2">My Courses</h1>
@@ -182,10 +183,10 @@ const MyCourses = () => {
 
         <div className="grid grid-cols-1 gap-6">
           {filteredCourses.map((course) => (
-            <MyCourseComponents.Card
+            <div
               key={course._id}
               onClick={() => navigate(course.isPublished ? `/courses-analytics/${course._id}` : `/draft/${course._id}`)}
-              className="w-full"
+              className="bg-white rounded-lg shadow hover:shadow-md transition-shadow w-full"
             >
               <div className="flex flex-col md:flex-row">
                 <div className="w-full md:w-48 h-48">
@@ -302,7 +303,7 @@ const MyCourses = () => {
                   </div>
                 </div>
               </div>
-            </MyCourseComponents.Card>
+            </div>
           ))}
         </div>
       </div>
@@ -333,8 +334,8 @@ const MyCourses = () => {
       <ScheduleLectureModal
         isOpen={isScheduleModalOpen}
         onClose={() => setIsScheduleModalOpen(false)}
-        courseId={selectedCourseId}
-        instructorId={user.id}
+        course={selectedCourseId}
+        instructorId={user._id}
         token={token}
         onScheduleSuccess={() => {
           setSelectedCourseId(null);

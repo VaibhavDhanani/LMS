@@ -3,21 +3,22 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getAllCourse } from "@/services/course.service.jsx";
 import { useNotifications } from '@/context/NotificationContext';
-
+import { Search, Bell, ChevronDown, BookOpen, CreditCard, Video, LogOut } from 'lucide-react';
+import ProfileDropdown from './ProfileDropDown';
 const Navigationbar = () => {
   const [allCourses, setAllCourses] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { unreadNotifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const fetchAllCourses = async () => {
     try {
       const authToken = localStorage.getItem("authToken");
       const { data } = await getAllCourse(authToken);
-      // console.log(courses)
       return data;
     } catch (error) {
       console.error("Error fetching courses:", error);
@@ -33,7 +34,6 @@ const Navigationbar = () => {
     getCourses();
   }, []);
 
-  // Handle search functionality
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.trim() === '') {
@@ -44,16 +44,14 @@ const Navigationbar = () => {
 
     const filteredCourses = allCourses.filter(course =>
       course?.title?.toLowerCase().includes(query.toLowerCase()) ||
-      course?.description?.toLowerCase().includes(query.toLowerCase())
+      course?.description?.toLowerCase().includes(query.toLowerCase())||
+      course?.instructor.name?.toLowerCase().includes(searchQuery.toLowerCase())||
+      course?.instructor.email?.toLowerCase().includes(searchQuery.toLowerCase())
     );
     setSearchResults(filteredCourses);
     setIsSearching(true);
   };
 
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-
-  // Close search results when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (!event.target.closest('.search-container')) {
@@ -70,21 +68,14 @@ const Navigationbar = () => {
     };
   }, [isNotificationsOpen]);
 
-  // Handle notification click
   const handleNotificationClick = (notification) => {
-    // Stop the click event from bubbling up
-
     markAsRead(notification._id);
-
-    // Navigate to the relevant page based on notification type
     if (notification.link) {
       navigate(notification.link);
     }
-
     setIsNotificationsOpen(false);
   };
 
-  // Format notification time
   const formatNotificationTime = (timestamp) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -103,272 +94,208 @@ const Navigationbar = () => {
   };
 
   return (
-    <div className="navbar bg-base-100 border border-black">
-      <div className="flex-1">
-        <Link to={'/'} className="btn btn-ghost text-xl">
-          LMS
-        </Link>
-      </div>
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <Link to="/" className="flex items-center space-x-2">
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
+              LearnSpace
+            </span>
+          </Link>
 
-      {user && user.isInstructor && (
-        <>
-          <div className="flex-1">
-            <a
-              className="btn btn-ghost text-xl"
-              onClick={() => navigate('/mycourses')}
-            >
-              My Courses
-            </a>
+          {/* Main Navigation */}
+          <div className="hidden lg:flex items-center space-x-8">
+            {user && user.isInstructor ? (
+              <>
+                <Link to="/mycourses" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
+                  <BookOpen className="w-5 h-5" />
+                  <span>My Courses</span>
+                </Link>
+                <Link to="/sales" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
+                  <CreditCard className="w-5 h-5" />
+                  <span>Sales</span>
+                </Link>
+              </>
+            ) : user && (
+              <>
+                <Link to="/mylearnings" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
+                  <BookOpen className="w-5 h-5" />
+                  <span>My Learnings</span>
+                </Link>
+                <Link to="/transactions" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
+                  <CreditCard className="w-5 h-5" />
+                  <span>Transactions</span>
+                </Link>
+              </>
+            )}
+            {user && (
+              <Link to="/livelectures/section" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
+                <Video className="w-5 h-5" />
+                <span>Live Lectures</span>
+              </Link>
+            )}
           </div>
-          <div className="flex-1">
-            <a
-              className="btn btn-ghost text-xl"
-              onClick={() => navigate('/sales')}
-            >
-              Sales
-            </a>
-          </div>
-        </>
-      )}
-      {user && !user.isInstructor && (
-        <>
-          <div className="flex-1">
-            <a
-              className="btn btn-ghost text-xl"
-              onClick={() => navigate('/mylearnings')}
-            >
-              My Learnings
-            </a>
-          </div>
-          <div className="flex-1">
-            <a
-              className="btn btn-ghost text-xl"
-              onClick={() => navigate('/transactions')}
-            >
-              Transactions
-            </a>
-          </div>
-        </>
-      )}
-      {user && (
-        <div className="flex-1">
-          <a
-            className="btn btn-ghost text-xl"
-            onClick={() => navigate('/livelectures/section')}
-          >
-            Live Lectures
-          </a>
-        </div>
-      )}
 
-      <div className="flex-none gap-2">
-        <div className="form-control relative search-container">
-          <input
-            type="text"
-            placeholder="Search courses..."
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-            onFocus={() => setIsSearching(true)}
-            className="input input-bordered w-24 md:w-auto"
-          />
-
-          {/* Search Results Dropdown */}
-          {isSearching && searchResults.length > 0 && (
-            <div className="absolute top-full mt-1 w-full bg-base-100 shadow-lg rounded-lg border border-gray-200 max-h-64 overflow-y-auto z-50">
-              {searchResults.map((course) => (
-                <div
-                  key={course._id || course.id}
-                  className="p-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => {
-                    navigate(`/courses/${course._id || course.id}`);
-                    setIsSearching(false);
-                    setSearchQuery('');
+          {/* Right Section */}
+          <div className="flex items-center space-x-4">
+            {/* Search */}
+            <div className="relative search-container">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search courses..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setIsSearching(false);
+                      navigate(`/courses?q=${encodeURIComponent(searchQuery.trim())}`);
+                    }
                   }}
-                >
-                  <div className="font-medium">
-                    {course.title || 'Untitled Course'}
-                  </div>
-                  {course.instructor && (
-                    <div className="text-sm text-gray-500">
-                      {typeof course.instructor === 'object'
-                        ? course.instructor.email || 'Unknown Instructor'
-                        : course.instructor}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+                  onFocus={() => setIsSearching(true)}
+                  className="pl-10 pr-10 py-2 w-full md:w-64 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
 
-          {isSearching && searchQuery && searchResults.length === 0 && (
-            <div className="absolute top-full mt-1 w-full bg-base-100 shadow-lg rounded-lg border border-gray-200 p-2">
-              No courses found
-            </div>
-          )}
-        </div>
-
-        {/* Notifications */}
-        {user && (
-          <div className="dropdown dropdown-end notification-container">
-            <div
-              tabIndex={0}
-              role="button"
-              className="btn btn-ghost btn-circle"
-              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-            >
-              <div className="indicator">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                  />
-                </svg>
-                {unreadCount > 0 && (
-                  <span className="badge badge-sm badge-primary indicator-item">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
+                {/* Clear Button */}
+                {searchQuery && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSearchResults([]);
+                      setIsSearching(false);
+                      navigate('/courses', { replace: true }); // Clears query from URL
+                    }}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    ✕
+                  </button>
                 )}
               </div>
-            </div>
-            {isNotificationsOpen && (
-              <div className="mt-3 z-[1] card card-compact dropdown-content w-80 bg-base-100 shadow-lg">
-                <div className="card-body">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-lg">Notifications</h3>
-                    {unreadCount > 0 && (
-                      <button
-                        onClick={markAllAsRead}
-                        className="text-xs text-blue-500 hover:text-blue-700"
-                      >
-                        Mark all as read
-                      </button>
-                    )}
-                  </div>
-                  <div className="divider my-0"></div>
-                  {notifications.length === 0 ? (
-                    <div className="py-4 text-center text-gray-500">
-                      No notifications
-                    </div>
-                  ) : (
-                    <div className="max-h-96 overflow-y-auto">
-                      {notifications.map((notification) => (
-                        <button
-                          key={notification._id}
-                          onClick={() => handleNotificationClick(notification)}
-                          className={`w-full text-left p-2 hover:bg-gray-100 cursor-pointer border-b ${!notification.isRead ? 'bg-blue-50' : ''
-                            }`}
-                        >
-                          <div className="flex justify-between">
-                            <h4
-                              className={`font-medium ${!notification.isRead ? 'font-bold text-blue-800' : ''
-                                }`}
-                            >
-                              {notification.title || 'Notification'}
-                            </h4>
-                            <span className="text-xs text-gray-500">
-                              {formatNotificationTime(notification.createdAt)}
-                            </span>
-                          </div>
-                          <p className="text-sm">{notification.message}</p>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <div className="card-actions mt-2">
-                    <button
-                      className="btn btn-primary btn-sm btn-block"
+
+
+              {isSearching && searchResults.length > 0 && (
+                <div className="absolute top-full mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto">
+                  {searchResults.map((course) => (
+                    <div
+                      key={course._id || course.id}
+                      className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                       onClick={() => {
-                        navigate('/notifications');
-                        setIsNotificationsOpen(false);
+                        navigate(`/courses/${course._id || course.id}`);
+                        setIsSearching(false);
+                        setSearchQuery('');
                       }}
                     >
-                      View All
-                    </button>
-                  </div>
+                      <div className="font-medium text-gray-900">
+                        {course.title || 'Untitled Course'}
+                      </div>
+                      {course.instructor && (
+                        <div className="text-sm text-gray-500">
+                          {typeof course.instructor === 'object'
+                            ? `${course.instructor.name}(${course.instructor.email})`  || 'Unknown Instructor'
+                            : course.instructor}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              )}
 
-
-        <div className="dropdown dropdown-end">
-          <div
-            tabIndex={0}
-            role="button"
-            className="btn btn-ghost btn-circle avatar"
-          >
-            <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-gray-200">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-6 h-6 text-gray-600"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
-                />
-              </svg>
+              {isSearching && searchQuery && searchResults.length === 0 && (
+                <div className="absolute top-full mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 p-4 text-center text-gray-500">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  Search for "{searchQuery}"
+                </div>
+              )}
             </div>
 
+            {/* Notifications */}
+            {user && (
+              <div className="relative notification-container">
+                <button
+                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                  className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors rounded-full hover:bg-gray-100"
+                >
+                  <Bell className="w-6 h-6" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full min-w-[1.25rem] h-5 flex items-center justify-center">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </button>
 
-          </div>
-          <ul
-            tabIndex={0}
-            className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow"
-          >
-            {user ? (
-              <>
-                <li>
-                  <a href={user.isInstructor ? "/instructor/profile" : "/user/profile"} className="justify-between">
-                    Profile
-                  </a>
-                </li>
-                <li>
-                  <a>WishList</a>
-                </li>
-                <li>
-                  <button onClick={logout}>Logout</button>
-                </li>
-              </>
-            ) : (
-              <>
-                <li>
-                  <a href="/auth">Login/Sign Up</a>
-                </li>
-              </>
+                {isNotificationsOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+                    <div className="p-4 border-b border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-gray-900">Notifications</h3>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={markAllAsRead}
+                            className="text-sm text-blue-600 hover:text-blue-800"
+                          >
+                            Mark all as read
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="max-h-96 overflow-y-auto">
+                      {unreadNotifications.length === 0 ? (
+                        <div className="p-4 text-center text-gray-500">
+                          No notifications
+                        </div>
+                      ) : (
+                        unreadNotifications.map((notification) => (
+                          <button
+                            key={notification._id}
+                            onClick={() => handleNotificationClick(notification)}
+                            className={`w-full text-left p-4 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${!notification.isRead ? 'bg-blue-50' : ''
+                              }`}
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <h4 className={`font-medium ${!notification.isRead ? 'text-blue-900' : 'text-gray-900'
+                                  }`}>
+                                  {notification.title || 'Notification'}
+                                </h4>
+                                <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                              </div>
+                              <span className="text-xs text-gray-500 ml-2">
+                                {formatNotificationTime(notification.createdAt)}
+                              </span>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="p-4 border-t border-gray-200">
+                      <button
+                        onClick={() => {
+                          navigate('/notifications');
+                          setIsNotificationsOpen(false);
+                        }}
+                        className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors"
+                      >
+                        View Past Notifications
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
-          </ul>
-        </div>
 
-        {user ? (
-          <button
-            onClick={logout}
-            className="btn btn-error ml-4 hidden md:block"
-          >
-            Logout
-          </button>
-        ) : (
-          <a href="/auth">
-            <button
-              className="btn btn-error ml-4 hidden md:block"
-            >Login</button>
-          </a>
-        )}
+            {/* User Menu */}
+            <div className="relative">
+                <ProfileDropdown></ProfileDropdown>
+                              
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </nav >
   );
 };
 

@@ -6,9 +6,12 @@ const stripe = new Stripe(stripeSecretKey);
 import Transaction from '../models/transaction.js';
 import User from '../models/user.js';
 import Course from '../models/course.js';
+import notificationManager from "../utills/notificationManager.js";
+
 router.post('/verify/:id', async (req, res) => {
     const sessionId = req.params.id;
-    const { userId, courseId } = req.body;
+    const userId = req.user.id;
+    const { courseId } = req.body;
 
     try {
         // Fetch the session object from Stripe
@@ -57,6 +60,7 @@ router.post('/verify/:id', async (req, res) => {
           // Fetch the user and course objects from the database
           const user = await User.findById(session.metadata.userId);
           const course = await Course.findById(session.metadata.courseId);
+
           // Add course to user's enrolledCourses if not already enrolled
           if (!user.enrolledCourses.includes(session.metadata.courseId)) {
             user.enrolledCourses.push(session.metadata.courseId);
@@ -68,6 +72,14 @@ router.post('/verify/:id', async (req, res) => {
             course.enrolledStudents.push(session.metadata.userId);
             await course.save();
           }
+          const notification = await notificationManager.createNotification({
+            type: 'student_enrolled',
+            course : course._id,
+            user: course.instructor,
+            title: course.title,
+            message: `A new student has been enrolled for course ${course.title}`,
+            isTimeSensitive: false,
+          });
         }
     
 
@@ -90,7 +102,8 @@ router.post('/verify/:id', async (req, res) => {
 
 
 router.post('/', async (req, res) => {
-  const {course,user} = req.body;
+  const user = req.user; 
+  const {course} = req.body;
   const { price, discountEnabled,discount } = course.pricing;
   const discountedPrice = price * (discountEnabled ? 1- (discount/100)  : 1);
   const lineItems = [
