@@ -35,15 +35,13 @@ app.use(
 app.use("/api/stripe", webhookRoutes);
 app.use("/api/payment", authenticateToken, paymentRoutes);
 app.use("/api/auth", authRoutes);
-app.use("/api", courseRoutes,ChatRoutes);
+app.use("/api", courseRoutes,reviewRoutes,ChatRoutes);
 app.use(
   "/api",
   authenticateToken,
-  
   userRoutes,
   courseDraft,
   enrollmentRoutes,
-  reviewRoutes,
   transactionRoutes,
   lectureRoutes,
   notificationRoutes

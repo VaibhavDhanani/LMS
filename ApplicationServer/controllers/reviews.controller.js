@@ -163,3 +163,19 @@ export const getReviewsByLearner = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+
+export const getLatestReviews = async (req, res) => {
+  try {
+
+    // Find reviews for the course, sort by createdAt in descending order (latest first)
+    const reviews = await Review.find()
+    .sort({ createdAt: -1 }) // Sort by newest
+    .limit(5) // Limit to 5 latest reviews
+    .populate('learnerId', 'name profilePicture')
+    .populate('courseId', 'title'); // Populate learnerId with only name and profilePicture
+  
+    res.status(200).json({data:reviews});
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch reviews" });
+  }
+};
