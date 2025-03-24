@@ -22,10 +22,10 @@ export const getCourseTransactions = async (courseId, token, params = {}) => {
     }
   };
 
-export const getOverallSalesData = async (userId,token,params ={})=>{
+export const getOverallSalesData = async (token,params ={})=>{
   try {
 
-    const response = await db.get(`/transactions/instructor/${userId}`, {
+    const response = await db.get(`/transactions/instructor`, {
       headers: {
         Authorization: `Bearer ${token}`
       },
@@ -46,10 +46,10 @@ export const getOverallSalesData = async (userId,token,params ={})=>{
   }
 }
 
-export const getUserTransactions = async (userId,token)=>{
+export const getUserTransactions = async (token)=>{
   try{
 
-    const response = await db.get(`/transactions/user/${userId}`, {
+    const response = await db.get(`/transactions/user`, {
       headers: {
         Authorization: `Bearer ${token}`
       }

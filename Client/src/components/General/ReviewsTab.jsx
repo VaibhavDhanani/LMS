@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Star, ChevronDown, ChevronUp } from 'lucide-react';
+import { User,Star, ChevronDown, ChevronUp } from 'lucide-react';
 import { createReview } from "@/services/review.service.jsx";
 import { useAuth } from "@/context/AuthContext.jsx";
 import { toast } from 'react-toastify';
@@ -10,9 +10,8 @@ export const ReviewsTab = ({ course }) => {
     const [userRating, setUserRating] = useState(0);
     const [hoverRating, setHoverRating] = useState(0);
     const [reviewComment, setReviewComment] = useState('');
-    const { user } = useAuth();
-
-    const isEnrolled = course.enrolledStudents?.includes(user?.id);
+    const { user, token } = useAuth();
+    const isEnrolled = course.enrolledStudents?.includes(user?._id);
     const isInstructor = course.instructor._id === user?.id;
 
     const handleSubmitReview = async (e) => {
@@ -33,12 +32,11 @@ export const ReviewsTab = ({ course }) => {
             content: reviewComment,
             rating: userRating,
             courseId: course._id,
-            learnerId: user.id
+            learnerId: user._id
         };
 
-        const authToken = localStorage.getItem("authToken");
         try {
-            const createdReview = await createReview(review, authToken);
+            const createdReview = await createReview(review, token);
             console.log({ createdReview });
 
             // Success toast
@@ -70,12 +68,14 @@ export const ReviewsTab = ({ course }) => {
                             <div key={review._id} className="bg-base-100 shadow-xl rounded-xl p-6">
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-3">
-                                        <div className="avatar">
-                                            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                                {review.learnerId || "John Doe"}
-                                            </div>
+                                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                            {user.profilePicture ? (
+                                                <img src={user.profilePicture} alt="User Avatar" className="w-full h-full rounded-full" />
+                                            ) : (
+                                                <User className="w-6 h-6 text-gray-500" />
+                                            )}
                                         </div>
-                                        <span className="font-semibold">{review.learnerId || "John doe"}</span>
+                                        <span className="font-semibold">{review.learnerId.name || "user"}</span>
                                     </div>
                                     <div className="flex text-yellow-500">
                                         {[...Array(5)].map((_, i) => (
@@ -111,12 +111,14 @@ export const ReviewsTab = ({ course }) => {
                                 <div key={review._id} className="bg-base-100 shadow-xl rounded-xl p-6">
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="avatar">
-                                                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                                    {review.learnerId || "Vaibhav"}
-                                                </div>
-                                            </div>
-                                            <span className="font-semibold">{review.learnerId}</span>
+                                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                            {user.profilePicture ? (
+                                                <img src={user.profilePicture} alt="User Avatar" className="w-full h-full rounded-full" />
+                                            ) : (
+                                                <User className="w-6 h-6 text-gray-500" />
+                                            )}
+                                        </div>
+                                            <span className="font-semibold">{review.learnerId?.name}</span>
                                         </div>
                                         <div className="flex text-yellow-500">
                                             {[...Array(5)].map((_, i) => (

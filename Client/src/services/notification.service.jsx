@@ -1,7 +1,7 @@
 import db from "@/apis/database"
-export const fetchNotifications = async (userId, token) => {
+export const fetchNotifications = async (token) => {
     try {
-        const response = await db.get(`/notifications/${userId}`,
+        const response = await db.get(`/notifications`,
             {
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -22,9 +22,9 @@ export const fetchNotifications = async (userId, token) => {
         }
     }
 }
-export const readNotification = async(id,userId,token) =>{
+export const readNotification = async(id,token) =>{
     try {
-        const response = await db.put(`/notifications/${id}/read/${userId}`, {},
+        const response = await db.put(`/notifications/${id}/read`, {},
             {
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -46,16 +46,15 @@ export const readNotification = async(id,userId,token) =>{
     }
 }
 
-export const readAllNotifications = async(userId,token)=>{
+export const readAllNotifications = async(token)=>{
     try {
-        const response = await db.put(`/notifications/read-all/${userId}`, {},
+        const response = await db.put(`/notifications/read-all`, {},
             {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             }
         )
-        console.log(response);
         return {
             success: true,
             message: response.data.message || "All notifications marked as read successfully",

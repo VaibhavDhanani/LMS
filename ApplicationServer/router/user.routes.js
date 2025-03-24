@@ -6,17 +6,21 @@ import {
   updateUser,
   deleteUser,
   validateUser,
-  updateUserPassword
+  updateUserPassword,
+  getUserInfo,
+  updateWishlist
 } from "../controllers/user.controller.js";
 
 const router = express.Router();
 
 router.post("/users", createUser);
+router.put("/users/wishlists/:courseId", updateWishlist );
 router.post("/users/validate",validateUser);
+router.get("/users/info", getUserInfo);
 router.get("/users", getAllUsers);
 router.get("/users/:id", getUserById);
+router.put("/users/password", updateUserPassword);
 router.put("/users/:id", updateUser);
-router.put("/users/password/:id", updateUserPassword);
 router.delete("/users/:id", deleteUser);
 
 export default router;

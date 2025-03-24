@@ -14,10 +14,10 @@ const VideoPlay = ({ thumbnail, src }) => {
   // Handles video progress and shows quiz at the specified timestamp
   const handleProgress = ({ playedSeconds }) => {
     setProgressTime(playedSeconds);
-    if (Math.floor(playedSeconds) === quizTimestamp && !quizAnswered) {
-      setShowQuiz(true);
-      playerRef.current?.getInternalPlayer()?.pause();
-    }
+    // if (Math.floor(playedSeconds) === quizTimestamp && !quizAnswered) {
+    //   setShowQuiz(true);
+    //   playerRef.current?.getInternalPlayer()?.pause();
+    // }
   };
 
   // Handles quiz submission and resumes video playback

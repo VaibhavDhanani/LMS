@@ -158,7 +158,7 @@ export const getCourseTransactions = async (courseId, year) => {
 
 export const getSalesData = async (req, res) => {
   try {
-    const { id: instructor } = req.params;
+    const instructor = req.user.id;
     const { year } = req.query;
     
     // Fetch all courses created by the instructor
@@ -247,11 +247,11 @@ export const getTransactionsByCourse = async (req, res) => {
 
 export const getUserTransactions = async (req, res) => {
   try {
-
     // Fetch user transactions, populate course details, and sort by latest transaction
-    const transactions = await Transaction.find(req.params)
-      .populate('courseId', 'title') // Populating only the course title
-      .sort({ createdAt: -1 });
+    const userId= req.user.id;
+    const transactions = await Transaction.find({userId})
+    .populate('courseId', 'title') // Populating only the course title
+    .sort({ createdAt: -1 });
     // Return response
     res.status(200).json({
       success: true,

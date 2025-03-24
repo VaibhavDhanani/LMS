@@ -9,10 +9,10 @@ import {
 
 const router = express.Router();
 
+router.get("/transactions/user", getUserTransactions );
 router.get("/transactions", getTransactions);
 router.get("/transactions/course/:id", getTransactionsByCourse );
-router.get("/transactions/instructor/:id", getSalesData );
-router.get("/transactions/user/:userId", getUserTransactions );
+router.get("/transactions/instructor", getSalesData );
 
 router.post("/transactions",createTransaction);
 

@@ -16,15 +16,6 @@ export const Modal = ({ isOpen, onClose, title, children }) => {
     );
   };
   
-  export const Card = ({ children, onClick, className }) => (
-    <div
-      onClick={onClick}
-      className={`bg-white rounded-lg shadow hover:shadow-md transition-shadow ${className}`}
-    >
-      {children}
-    </div>
-  );
-  
   export const Button = ({ children, onClick, variant = 'default', disabled, className = '', size = 'default' }) => {
     const baseStyles = 'rounded-md font-medium transition-colors focus:outline-none';
     const variants = {
