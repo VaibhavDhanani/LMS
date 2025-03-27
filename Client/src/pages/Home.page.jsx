@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Play, Star, Video, Users, FileText, Cpu, BarChart, CreditCard, Sparkles, ChevronRight, ArrowRight, MessageCircle, Bell } from 'lucide-react';
+import { BookOpen, Play, Star, Video, User, FileText, Cpu, BarChart, CreditCard, Sparkles, ChevronRight, ArrowRight, MessageCircle, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { getTrendingCourse } from '@/services/course.service';
@@ -270,7 +270,7 @@ function HomePage() {
             {latestReviews.map((review) => (
               <blockquote
                 key={review._id}
-                className="bg-white p-8 rounded-xl shadow-sm border border-gray-100"
+                className="bg-white p-8 rounded-xl shadow-sm border border-gray-300"
               >
                 <div className="relative">
                   {/* Review Content */}
@@ -287,16 +287,20 @@ function HomePage() {
                   </div>
                 </div>
                 <footer className="flex items-center">
-                  <img
-                    src={review.learnerId?.profilePicture || "https://via.placeholder.com/100"}
-                    alt={review.learnerId?.name || "Anonymous"}
-                    className="w-12 h-12 rounded-full mr-4"
-                  />
+                <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                  {review.learnerId.profilePicture ? (
+                  <img src={review.learnerId.profilePicture} alt="User Avatar" className="w-full h-full rounded-full" />
+                  ) : (
+                  <User className="w-6 h-6 text-gray-500 " />
+                  )}
+                  </div>
                   <div>
                     <cite className="font-semibold text-gray-900 not-italic">
                       {review.learnerId?.name || "Anonymous"}
                     </cite>
                     <p className="text-gray-600">student of {review.courseId.title} </p>
+                  </div>
                   </div>
                 </footer>
               </blockquote>

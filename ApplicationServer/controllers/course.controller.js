@@ -99,7 +99,7 @@ export const getCourseById = async (req, res) => {
     const course = await Course.findById(req.params.id)
     .populate({
       path: "instructor",
-      select: "name email profilePicture reviews biography",
+      select: "name email profilePicture reviews biography createdCourses",
     })
     .populate({
       path: "reviews",

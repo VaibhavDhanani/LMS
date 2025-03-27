@@ -1,62 +1,65 @@
-import { useAuth } from '@/context/AuthContext';
-import { AnimatePresence, motion } from 'framer-motion';
-import Cookies from 'js-cookie';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { LoginForm } from './LoginForm';
-import { SignupForm } from './SignupForm';
-import { login as loginService, register as registerService } from '@/services/auth.service';
-import { toast } from 'react-toastify';  // Importing toast
-import 'react-toastify/dist/ReactToastify.css'; // Importing styles
-
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { AnimatePresence, motion } from "framer-motion";
+import { LoginForm } from "./LoginForm";
+import { SignupForm } from "./SignupForm";
+import { login as loginService, register as registerService } from "@/services/auth.service";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { googleSignUp,googleLogin } from "@/services/auth.service";
+import { useGoogleLogin } from "@react-oauth/google";
 export const AuthForm = () => {
-  const { login } = useAuth();
+  const { login, user } = useAuth(); // Get user from context
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    role: '',
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    role: "",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      navigate("/"); // Redirect to homepage or dashboard
+      toast.info("You are already logged in.");
+    }
+  }, [user, navigate]);
 
   const handleToggle = () => {
     setIsLogin((prev) => !prev);
     setFormData({
-      name: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      role: '',
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      role: "",
     });
-    setError('');
+    setError("");
   };
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
     try {
       const response = await loginService(formData);
-      
-      // Check if login was successful
       if (response.success) {
-        login(response.data.token);  // Assuming `token` is in the `data` object
-        localStorage.setItem('authToken', response.data.token);
-        Cookies.set('authToken', response.data.token, { expires: 1 });
-        toast.success('Login successful!'); // Display success message
-        navigate('/'); 
+        login(response.data.token);
+        toast.success("Login successful!");
+        navigate("/");
       } else {
-        // Handle failure case
-        setError(response.message || 'An unexpected error occurred.');
-        toast.error(response.message || 'An unexpected error occurred.'); // Display error message
+        setError(response.message || "An unexpected error occurred.");
+        toast.error(response.message || "An unexpected error occurred.");
       }
     } catch (error) {
-      setError(error.message || 'An unexpected error occurred.');
-      toast.error(error.message || 'An unexpected error occurred.'); // Display error message
+      setError(error.message || "An unexpected error occurred.");
+      toast.error(error.message || "An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
@@ -65,34 +68,93 @@ export const AuthForm = () => {
   const handleSignUpSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-  
+    setError("");
+
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match.');
+      setError("Passwords do not match.");
       setLoading(false);
-      toast.error('Passwords do not match.'); // Display error message
+      toast.error("Passwords do not match.");
       return;
     }
-  
+
     try {
       const response = await registerService(formData);
-  
-      // Check if registration was successful
       if (response.success) {
-        toast.success('Signup successful! Please log in.'); // Display success message
-        setIsLogin(true); // Switch to login form
+        toast.success("Signup successful!");
+        login(response.data.token);
+        navigate("/");
       } else {
-        // Handle failure case
-        setError(response.message || 'An unexpected error occurred.');
-        toast.error(response.message || 'An unexpected error occurred.'); // Display error message
+        setError(response.message || "An unexpected error occurred.");
+        toast.error(response.message || "An unexpected error occurred.");
       }
     } catch (error) {
-      setError(error.message || 'An unexpected error occurred.');
-      toast.error(error.message || 'An unexpected error occurred.'); // Display error message
+      setError(error.message || "An unexpected error occurred.");
+      toast.error(error.message || "An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
   };
+
+  const googleSignin = useGoogleLogin({
+    onSuccess: async (response) => {
+      try {
+        const res = await googleSignUp(response.access_token, formData.role); // Await API call
+  
+        if (res.success) {
+          toast.success("Signup successful!");
+          login(res.data.token);
+          navigate("/");
+        } else {
+          setError(res.message || "An unexpected error occurred.");
+          toast.error(res.message || "An unexpected error occurred.");
+        }
+      } catch (error) {
+        setError(error.message || "An unexpected error occurred.");
+        toast.error(error.message || "An unexpected error occurred.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: () => {
+      console.log("Google Login Failed");
+      setLoading(false);
+    },
+  });
+  
+  const googleSignupSubmit = () => {
+    setLoading(true);
+    googleSignin();
+  };
+
+  const googleLog = useGoogleLogin({
+    onSuccess: async (response) => {
+      try {
+        const res = await googleLogin(response.access_token); // Await API call
+
+        if (res.success) {
+          toast.success("Signup successful!");
+          login(res.data.token);
+          navigate("/");
+        } else {
+          setError(res.message || "An unexpected error occurred.");
+          toast.error(res.message || "An unexpected error occurred.");
+        }
+      } catch (error) {
+        setError(error.message || "An unexpected error occurred.");
+        toast.error(error.message || "An unexpected error occurred.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: () => {
+      console.log("Google Login Failed");
+      setLoading(false);
+    },
+  });
+  const googleLoginSubmit= ()=>{
+    setLoading(true);
+    googleLog();
+  }
   
 
   const handleChange = (e) => {
@@ -104,7 +166,7 @@ export const AuthForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-base-200 flex items-center justify-center p-5">
+    <div className="min-h-screen bg-base-200 flex items-center justify-center p-5 pt-24">
       <div className="flex flex-col md:flex-row w-full max-w-4xl bg-base-100 shadow-xl">
         <AnimatePresence mode="wait">
           {isLogin ? (
@@ -117,7 +179,7 @@ export const AuthForm = () => {
               className="hidden md:block md:w-1/2 bg-cover bg-center"
               style={{
                 backgroundImage:
-                  'url(https://tecdn.b-cdn.net/img/Photos/new-templates/bootstrap-login-form/draw2.svg)',
+                  'url(/draw2.svg)',
               }}
             ></motion.div>
           ) : (
@@ -130,7 +192,7 @@ export const AuthForm = () => {
               className="hidden md:block md:w-1/2 bg-cover bg-center"
               style={{
                 backgroundImage:
-                  'url(https://tecdn.b-cdn.net/img/Photos/new-templates/bootstrap-login-form/draw2.webp)',
+                  'url(/draw3.webp)',
               }}
             ></motion.div>
           )}
@@ -140,7 +202,7 @@ export const AuthForm = () => {
           <div className="form-control">
             <label className="label cursor-pointer">
               <span className="label-text">
-                {isLogin ? 'Want to Signup' : 'Want to Login'}
+                {isLogin ? "Want to Signup" : "Want to Login"}
               </span>
               <input
                 type="checkbox"
@@ -167,6 +229,7 @@ export const AuthForm = () => {
                   formData={formData}
                   handleChange={handleChange}
                   handleSubmit={handleLoginSubmit}
+                  handleGoogleSubmit={googleLoginSubmit}
                   loading={loading}
                 />
               </motion.div>
@@ -183,6 +246,7 @@ export const AuthForm = () => {
                   formData={formData}
                   handleChange={handleChange}
                   handleSubmit={handleSignUpSubmit}
+                  handleGoogleSubmit={googleSignupSubmit}
                   loading={loading}
                 />
               </motion.div>

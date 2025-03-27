@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { User, Settings, Heart, LogOut, LogIn, ChevronDown } from 'lucide-react';
 
 const ProfileDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, login, logout } = useAuth();
-
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const toggleDropdown = () => setIsOpen(!isOpen);
 
   const handleLogout = async () => {
@@ -18,9 +18,9 @@ const ProfileDropdown = () => {
     }
   };
 
-  const handleLogin = async () => {
+  const handleLogin =  () => {
     try {
-      await login();
+    navigate('/auth');
       // Redirect will be handled by AuthContext
     } catch (error) {
       console.error('Login failed:', error);

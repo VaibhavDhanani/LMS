@@ -69,8 +69,8 @@ export const ReviewsTab = ({ course }) => {
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                            {user.profilePicture ? (
-                                                <img src={user.profilePicture} alt="User Avatar" className="w-full h-full rounded-full" />
+                                            {review.learnerId.profilePicture ? (
+                                                <img src={review.learnerId.profilePicture} alt="User Avatar" className="w-full h-full rounded-full" />
                                             ) : (
                                                 <User className="w-6 h-6 text-gray-500" />
                                             )}
@@ -112,8 +112,8 @@ export const ReviewsTab = ({ course }) => {
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                            {user.profilePicture ? (
-                                                <img src={user.profilePicture} alt="User Avatar" className="w-full h-full rounded-full" />
+                                            {review.learnerId.profilePicture ? (
+                                                <img src={review.learnerId.profilePicture} alt="User Avatar" className="w-full h-full rounded-full" />
                                             ) : (
                                                 <User className="w-6 h-6 text-gray-500" />
                                             )}

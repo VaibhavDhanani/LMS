@@ -25,27 +25,25 @@ export const InstructorTab = ({ course }) => {
                 <h2 className="text-2xl lg:text-3xl font-bold">
                   {instructor.name || "Name not available"}
                 </h2>
-                <p className="text-gray-600 mt-1 text-lg">
+                {/* <p className="text-gray-600 mt-1 text-lg">
                   {instructor.title || "Title not provided"}
-                </p>
+                </p> */}
               </div>
               
               {/* Stats Section */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
-                <div className="bg-base-200 p-4 rounded-lg">
+                {/* <div className="bg-base-200 p-4 rounded-lg">
                   <div className="text-sm text-gray-600">Student Rating</div>
                   <div className="text-2xl font-bold text-primary mt-1">
                     {instructor.rating !== undefined ? instructor.rating : "N/A"}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">Out of 5.0</div>
-                </div>
+                </div> */}
                 
                 <div className="bg-base-200 p-4 rounded-lg">
-                  <div className="text-sm text-gray-600">Total Students</div>
+                  <div className="text-sm text-gray-600">Total Courses</div>
                   <div className="text-2xl font-bold mt-1">
-                    {instructor.totalStudents !== undefined
-                        ? instructor.totalStudents.toLocaleString()
-                        : "N/A"}
+                    {instructor.createdCourses?.length}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">&nbsp;</div>
                 </div>
