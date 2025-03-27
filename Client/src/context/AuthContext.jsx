@@ -33,13 +33,15 @@ export const AuthProvider = ({ children }) => {
   // Login function
   const login = async (authToken) => {
     setLoading(true);
-    try {
-      // Verify the token is valid by decoding it
-      const decodedUser = jwtDecode(authToken);
-      
-      // Set token in state and storage
-      setToken(authToken);
-      localStorage.setItem("authToken", authToken);
+    if(authToken){
+
+      try {
+        // Verify the token is valid by decoding it
+        const decodedUser = jwtDecode(authToken);
+        
+        // Set token in state and storage
+        setToken(authToken);
+        localStorage.setItem("authToken", authToken);
       Cookies.set("authToken", authToken, { expires: 7 });
       
       // Fetch user info and wait for it to complete
@@ -53,6 +55,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       return { success: false, error: error.message }; // Return failure with error message
     }
+  }
   };
 
   // Logout function

@@ -137,9 +137,7 @@ export const publishCourseDraft = async (req, res) => {
     }
 
     // Validate required fields for course creation
-    if (!draft.title || !draft.subtitle || !draft.description 
-      //|| !draft.instructor
-      ) {
+    if (!draft.title || !draft.subtitle || !draft.description || !draft.instructor) {
       return res.status(400).json({ message: "Missing required fields in the draft." });
     }
 
@@ -148,7 +146,7 @@ export const publishCourseDraft = async (req, res) => {
       title: draft.title,
       subtitle: draft.subtitle,
       description: draft.description,
-      instructor: draft.instructor,
+      instructor: draft.instructor, // Instructor ID
       details: draft.details,
       learnPoints: draft.learnPoints || [],
       technologies: draft.technologies || [],
@@ -167,6 +165,13 @@ export const publishCourseDraft = async (req, res) => {
 
     const newCourse = new Course(courseData);
     await newCourse.save();
+
+    // Add course ID to the instructor's createdCourses list
+    await User.findByIdAndUpdate(
+      draft.instructor,
+      { $push: { createdCourses: newCourse._id } },
+      { new: true }
+    );
 
     // Optional: Delete the draft after publishing
     await CourseDraft.findByIdAndDelete(id);

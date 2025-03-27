@@ -1,14 +1,14 @@
 import db from "@/apis/database";
-
+import { useAuth } from "@/context/AuthContext";
 const API_URL = import.meta.env.VITE_SERVER_URL;
 
+// const {token }= useAuth();
 // console.log(API_URL)
-const token = localStorage.getItem("authToken")
 
-export async function fetchMessages() {
+export async function fetchMessages(token) {
   try {
-    const response = await db.get(`${API_URL}/messages`,{
-      headers: { authorization: `Bearer ${token}`}
+    const response = await db.get(`/messages`,{
+      headers: { authorization: `Bearer ${token}` },
     });
     
     return response.data;
@@ -19,7 +19,7 @@ export async function fetchMessages() {
 }
 
 
-export async function sendMessage(message) {
+export async function sendMessage(message,token) {
   try {
     const response = await db.post(`${API_URL}/messages`, 
       { message },

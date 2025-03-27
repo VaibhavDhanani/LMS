@@ -22,27 +22,13 @@ import NotificationsPage from './pages/Notifications.page.jsx';
 import ProfilePage from './pages/Profile/Profile.page.jsx';
 import SecuritySettings from './pages/Profile/SecuritySettings.jsx';
 import Wishlist from './pages/Profile/Wishlist.jsx';
+import { NotFound } from './components/General/NotFound.jsx';
 const AppRoutes = () => (
+
   <Routes>
-    {/* Public Routes */}
-    <Route
-      path="/"
-      element={
-        <Layout>
-          <HomePage />
-        </Layout>
-      }
-    />
-      <Route path="/courses/:id" element={
-        <Layout><CoursePreviewPage /></Layout>} />
-    <Route
-      path="/auth"
-      element={
-        <Layout>
-          <AuthForm />
-        </Layout>
-      }
-    />
+    <Route path="/" element={<Layout> <HomePage /> </Layout>}/>
+    <Route path="/courses/:id" element={<Layout><CoursePreviewPage /></Layout>} />
+    <Route path="/auth" element={<Layout> <AuthForm /> </Layout>}/>
 
     <Route path="/courses" element={
           <Layout><CoursePage/></Layout>}/>
@@ -68,7 +54,7 @@ const AppRoutes = () => (
         <Route path="/mycourses" element={<MyCourses />} />
         <Route path="/draft/:id" element={<DraftForm />} />
         <Route path="/courseform/:id" element={<CourseForm />} />
-        <Route path="/livelectures/section" element={<ManageLiveLectures />} />
+        <Route path="/livelecture/section" element={<ManageLiveLectures />} />
         <Route path="/livelecture/:id" element={<LectureStreaming />} />
         <Route path="/livelecture/view/:id" element={<LiveLecture/>} />
         {/* <Route path="/aihelp" element={<ChatbotInterface />}/> */}
@@ -78,9 +64,10 @@ const AppRoutes = () => (
 
       </Route>
     </Route>
-        <Route path="/lectureroom" element={<LectureRoom />} />
+    <Route path='*' element={<NotFound/>}/>;
+        {/* <Route path="/lectureroom" element={<LectureRoom />} />
         <Route path="/lectureroom1" element={<LectureRoom1 />} />
-
+ */}
     {/* Future Feature Placeholder */}
     {/* <Route path="/chat" element={<Layout><VideoChat /></Layout>} /> */}
   </Routes>

@@ -191,7 +191,7 @@ const MyCourses = () => {
               <div className="flex flex-col md:flex-row">
                 <div className="w-full md:w-48 h-48">
                   <img
-                    src={course.thumbnail || "/api/placeholder/400/320"}
+                    src={course.thumbnail}
                     alt={course.title}
                     className="w-full h-full object-cover"
                   />

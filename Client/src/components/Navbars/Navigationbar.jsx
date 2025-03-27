@@ -130,7 +130,7 @@ const Navigationbar = () => {
               </>
             )}
             {user && (
-              <Link to="/livelectures/section" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
+              <Link to="/livelecture/section" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
                 <Video className="w-5 h-5" />
                 <span>Live Lectures</span>
               </Link>

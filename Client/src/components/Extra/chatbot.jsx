@@ -1,15 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import { marked } from "marked";
 import { fetchMessages, sendMessage } from "@/services/chat.service";
+import { useAuth } from "@/context/AuthContext";
 
 const ChatbotInterface = () => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
-  const token = localStorage.getItem("authToken");
+  const {token} = useAuth();
 
-  const loadMessages = async (token) => {
+  const loadMessages = async () => {
     try {
       const data = await fetchMessages(token);
       setMessages(data);
@@ -48,7 +49,7 @@ const ChatbotInterface = () => {
 
     try {
       // Send message to backend
-      await sendMessage(inputMessage);
+      await sendMessage(inputMessage,token);
       await loadMessages();
     } catch (error) {
       console.error("Error sending message:", error);

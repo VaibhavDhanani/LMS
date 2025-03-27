@@ -6,7 +6,7 @@ import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { storage } from "@/apis/firebase.config";
 
 const ProfilePage = () => {
-  const { user } = useAuth();
+  const { user,token } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -60,7 +60,6 @@ const ProfilePage = () => {
     setLoading(true);
     
     try {
-      const token = localStorage.getItem("authToken");
       await updateUser(formData, token);
       setIsEditing(false);
     } catch (error) {
