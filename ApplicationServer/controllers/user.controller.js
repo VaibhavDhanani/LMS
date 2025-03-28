@@ -44,10 +44,23 @@ export const updateWishlist =async(req, res, ) => {
   export const getUserInfo = async (req, res) => {
     try {
       const user = await User.findById(req.user.id)
-        .select("-password") // Exclude password
-        .populate("enrolledCourses", "title description pricing thumbnail") // Populate enrolled courses with selected fields
-        .populate("wishlist", "title description pricing thumbnail"); // Populate wishlist with selected fields
-  
+        .select("-password")
+        .populate({
+          path: "enrolledCourses",
+          select: "title subtitle pricing thumbnail instructor curriculum",
+          populate: {
+            path: "instructor",  // Populate the instructor field inside enrolledCourses
+            select: "name"  // Only fetch the instructor's name
+          }
+        })
+        .populate({
+          path: "wishlist",
+          select: "title subtitle pricing thumbnail instructor curriculum enrolledStudents details topics rating subtitle",
+          populate: {
+            path: "instructor",  // Populate the instructor field inside enrolledCourses
+            select: "name"  // Only fetch the instructor's name
+          }
+        });
       if (!user) return res.status(404).json({ message: "User not found" });
   
       res.status(200).json({ message: "User Found", data: user });

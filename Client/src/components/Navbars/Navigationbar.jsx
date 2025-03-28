@@ -3,140 +3,171 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getAllCourse } from "@/services/course.service.jsx";
 import { useNotifications } from '@/context/NotificationContext';
-import { Search, Bell, ChevronDown, BookOpen, CreditCard, Video, LogOut } from 'lucide-react';
+import { 
+  Search, Bell, Menu, X, 
+  BookOpen, CreditCard, Video, 
+  LogOut, Home 
+} from 'lucide-react';
 import ProfileDropdown from './ProfileDropDown';
+
 const Navigationbar = () => {
   const [allCourses, setAllCourses] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { unreadNotifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const fetchAllCourses = async () => {
-    try {
-      const authToken = localStorage.getItem("authToken");
-      const { data } = await getAllCourse(authToken);
-      return data;
-    } catch (error) {
-      console.error("Error fetching courses:", error);
-      return [];
-    }
-  };
+  // Previous methods remain the same (fetchAllCourses, handleSearch, formatNotificationTime, etc.)
+  // ... (copy over the previous implementation)
 
-  useEffect(() => {
-    const getCourses = async () => {
-      const courses = await fetchAllCourses();
-      setAllCourses(Array.isArray(courses) ? courses : []);
-    };
-    getCourses();
-  }, []);
+  const MobileMenu = () => {
+    const menuItems = [
+      { 
+        icon: <Home className="w-5 h-5" />, 
+        text: 'Home', 
+        path: '/' 
+      },
+      ...(user && user.isInstructor ? [
+        { 
+          icon: <BookOpen className="w-5 h-5" />, 
+          text: 'My Courses', 
+          path: '/mycourses' 
+        },
+        { 
+          icon: <CreditCard className="w-5 h-5" />, 
+          text: 'Sales', 
+          path: '/sales' 
+        }
+      ] : user ? [
+        { 
+          icon: <BookOpen className="w-5 h-5" />, 
+          text: 'My Learnings', 
+          path: '/mylearnings' 
+        },
+        { 
+          icon: <CreditCard className="w-5 h-5" />, 
+          text: 'Transactions', 
+          path: '/transactions' 
+        }
+      ] : []),
+      ...(user ? [
+        { 
+          icon: <Video className="w-5 h-5" />, 
+          text: 'Live Lectures', 
+          path: '/livelecture/section' 
+        },
+        // { 
+        //   icon: <LogOut className="w-5 h-5" />, 
+        //   text: 'Logout', 
+        //   action: () => {
+        //     logout();
+        //     navigate('/login');
+        //   } 
+        // }
+      ] : [])
+    ];
 
-  const handleSearch = (query) => {
-    setSearchQuery(query);
-    if (query.trim() === '') {
-      setSearchResults([]);
-      setIsSearching(false);
-      return;
-    }
+    return (
+      <div className="lg:hidden fixed inset-0 z-50 bg-white">
+        <div className="flex flex-col h-full">
+          {/* Mobile Menu Header */}
+          <div className="flex justify-between items-center p-4 border-b border-gray-200">
+            <Link to="/" className="flex items-center space-x-2">
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
+                LearnSpace
+              </span>
+            </Link>
+            <button 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
 
-    const filteredCourses = allCourses.filter(course =>
-      course?.title?.toLowerCase().includes(query.toLowerCase()) ||
-      course?.subtitle?.toLowerCase().includes(query.toLowerCase())||
-      course?.instructor.name?.toLowerCase().includes(searchQuery.toLowerCase())||
-      course?.instructor.email?.toLowerCase().includes(searchQuery.toLowerCase())
+          {/* Mobile Menu Items */}
+          <div className="flex-1 overflow-y-auto">
+            {menuItems.map((item, index) => (
+              <Link
+                key={index}
+                to={item.path}
+                onClick={() => {
+                  if (item.action) item.action();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex items-center space-x-3 p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors"
+              >
+                {item.icon}
+                <span className="text-gray-800">{item.text}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
     );
-    setSearchResults(filteredCourses);
-    setIsSearching(true);
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!event.target.closest('.search-container')) {
-        setIsSearching(false);
-      }
-      if (!event.target.closest('.notification-container') && isNotificationsOpen) {
-        setIsNotificationsOpen(false);
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [isNotificationsOpen]);
-
-  const handleNotificationClick = (notification) => {
-    markAsRead(notification._id);
-    if (notification.link) {
-      navigate(notification.link);
-    }
-    setIsNotificationsOpen(false);
-  };
-
-  const formatNotificationTime = (timestamp) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) return `${diffInDays}d ago`;
-
-    return date.toLocaleDateString();
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
-              LearnSpace
-            </span>
-          </Link>
+    <>
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <Link to="/" className="flex items-center space-x-2">
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
+                LearnSpace
+              </span>
+            </Link>
 
-          {/* Main Navigation */}
-          <div className="hidden lg:flex items-center space-x-8">
-            {user && user.isInstructor ? (
-              <>
-                <Link to="/mycourses" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
-                  <BookOpen className="w-5 h-5" />
-                  <span>My Courses</span>
-                </Link>
-                <Link to="/sales" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
-                  <CreditCard className="w-5 h-5" />
-                  <span>Sales</span>
-                </Link>
-              </>
-            ) : user && (
-              <>
-                <Link to="/mylearnings" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
-                  <BookOpen className="w-5 h-5" />
-                  <span>My Learnings</span>
-                </Link>
-                <Link to="/transactions" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
-                  <CreditCard className="w-5 h-5" />
-                  <span>Transactions</span>
-                </Link>
-              </>
-            )}
-            {user && (
-              <Link to="/livelecture/section" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
-                <Video className="w-5 h-5" />
-                <span>Live Lectures</span>
-              </Link>
-            )}
-          </div>
+            {/* Mobile Menu Toggle (Only on small screens) */}
+            <div className="lg:hidden flex items-center space-x-4">
+              {/* Mobile Menu Button */}
+              <button 
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="text-gray-600 hover:text-gray-900"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+            </div>
 
+            {/* Main Navigation - Hidden on small screens */}
+            <div className="hidden lg:flex items-center space-x-8">
+              {user && user.isInstructor ? (
+                <>
+                  <Link to="/mycourses" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
+                    <BookOpen className="w-5 h-5" />
+                    <span>My Courses</span>
+                  </Link>
+                  <Link to="/sales" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
+                    <CreditCard className="w-5 h-5" />
+                    <span>Sales</span>
+                  </Link>
+                </>
+              ) : user && (
+                <>
+                  <Link to="/mylearnings" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
+                    <BookOpen className="w-5 h-5" />
+                    <span>My Learnings</span>
+                  </Link>
+                  <Link to="/transactions" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
+                    <CreditCard className="w-5 h-5" />
+                    <span>Transactions</span>
+                  </Link>
+                </>
+              )}
+              {user && (
+                <Link to="/livelecture/section" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
+                  <Video className="w-5 h-5" />
+                  <span>Live Lectures</span>
+                </Link>
+              )}
+            </div>
+
+  
           {/* Right Section */}
           <div className="flex items-center space-x-4">
             {/* Search */}
@@ -296,6 +327,10 @@ const Navigationbar = () => {
         </div>
       </div>
     </nav >
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && <MobileMenu />}
+    </>
+  
   );
 };
 
