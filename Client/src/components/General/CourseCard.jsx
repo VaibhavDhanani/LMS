@@ -117,15 +117,29 @@ const CourseCard = ({ course }) => {
         )}
       </div>
       <div className="p-4">
-        <div className="flex items-center space-x-2 mb-2">
-          {course.topics && course.topics.length > 0 ? (
-            <span className="text-sm text-blue-600 font-medium">{course.topics[0]}</span>
-          ) : (
-            <span className="text-sm text-blue-600 font-medium">General</span>
-          )}
-          {course.details?.level && (
-            <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">{course.details.level}</span>
-          )}
+        <div className="p-4">
+          <div className="flex items-center space-x-2 mb-2">
+            {/* Display Topics */}
+            {course.topics && course.topics.length > 0 && (
+              <>
+                {course.topics.slice(0, 1).map((topic, index) => (
+                  <span key={index} className="text-sm text-blue-600 font-medium bg-blue-100 px-2 py-1 rounded-full">
+                    {topic}
+                  </span>
+                ))}
+                {course.topics.length > 1 && (
+                  <span className="text-sm text-gray-600 font-medium">
+                    +{course.topics.length - 1} more
+                  </span>
+                )}
+              </>
+            )}
+
+            {/* Display Level if available */}
+            {course.details?.level && (
+              <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">{course.details.level}</span>
+            )}
+          </div>
         </div>
 
         <div className="flex justify-between items-center">

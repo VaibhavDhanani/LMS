@@ -45,10 +45,14 @@ const CoursePage = () => {
       // console.log(courses);
       filtered = filtered.filter(course => 
         course.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.description?.toLowerCase().includes(searchQuery.toLowerCase())||
-        course.instructor.name?.toLowerCase().includes(searchQuery.toLowerCase())||
-        course.instructor.email?.toLowerCase().includes(searchQuery.toLowerCase())
+        course.subtitle?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        // course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.instructor.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.instructor.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (Array.isArray(course.topics) && course.topics.some(topic => topic.toLowerCase().includes(searchQuery.toLowerCase())))||
+        (Array.isArray(course.technologies) && course.technologies.some(tech => tech.toLowerCase().includes(searchQuery.toLowerCase())))
       );
+      
     }
 
     // ✅ Apply category filter
