@@ -30,7 +30,7 @@ const CourseCard = ({ course }) => {
       }
       return `${minutes} min`;
     }
-    return "Self-paced";
+    return "0h:0m";
   };
 
   // Check if course is in user's wishlist whenever user changes

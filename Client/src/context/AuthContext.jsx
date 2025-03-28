@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
   const fetchUserInfo = async (authToken) => {
     try {
       const response = await getUserInfo(authToken);
-      
+      console.log(response.data);
       if (response.success) {
         const userData = response.data;
         setUser(userData); // Store full user data in context
@@ -78,6 +78,7 @@ export const AuthProvider = ({ children }) => {
         try {
           setToken(storedToken);
           await fetchUserInfo(storedToken); // Wait for user info fetch
+
         } catch (error) {
           console.error("Error initializing auth:", error);
           logout();
