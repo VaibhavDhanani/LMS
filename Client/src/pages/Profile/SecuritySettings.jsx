@@ -162,12 +162,12 @@ const SecuritySettings = () => {
                     Use a strong password with at least 8 characters, including numbers and special characters
                   </p>
                 </li>
-                <li className="flex items-start">
+                {/* <li className="flex items-start">
                   <Shield className="w-5 h-5 text-indigo-600 mr-2 mt-0.5" />
                   <p className="text-sm text-gray-600">
                     Enable two-factor authentication for additional security
                   </p>
-                </li>
+                </li> */}
                 <li className="flex items-start">
                   <Shield className="w-5 h-5 text-indigo-600 mr-2 mt-0.5" />
                   <p className="text-sm text-gray-600">

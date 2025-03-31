@@ -47,7 +47,7 @@ export const updateWishlist =async(req, res, ) => {
         .select("-password")
         .populate({
           path: "enrolledCourses",
-          select: "title subtitle pricing thumbnail instructor curriculum",
+          select: "title subtitle pricing thumbnail instructor curriculum details",
           populate: {
             path: "instructor",  // Populate the instructor field inside enrolledCourses
             select: "name"  // Only fetch the instructor's name

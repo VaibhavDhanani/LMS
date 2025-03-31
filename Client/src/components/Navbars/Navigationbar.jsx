@@ -20,6 +20,84 @@ const Navigationbar = () => {
   const { unreadNotifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  
+  const fetchAllCourses = async () => {
+    try {
+      const authToken = localStorage.getItem("authToken");
+      const { data } = await getAllCourse(authToken);
+      return data;
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+      return [];
+    }
+  };
+
+  useEffect(() => {
+    const getCourses = async () => {
+      const courses = await fetchAllCourses();
+      setAllCourses(Array.isArray(courses) ? courses : []);
+    };
+    getCourses();
+  }, []);
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query.trim() === '') {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    const filteredCourses = allCourses.filter(course =>
+      course?.title?.toLowerCase().includes(query.toLowerCase()) ||
+      course?.subtitle?.toLowerCase().includes(query.toLowerCase())||
+      course?.instructor.name?.toLowerCase().includes(searchQuery.toLowerCase())||
+      course?.instructor.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setSearchResults(filteredCourses);
+    setIsSearching(true);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.search-container')) {
+        setIsSearching(false);
+      }
+      if (!event.target.closest('.notification-container') && isNotificationsOpen) {
+        setIsNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isNotificationsOpen]);
+
+  const handleNotificationClick = (notification) => {
+    markAsRead(notification._id);
+    if (notification.link) {
+      navigate(notification.link);
+    }
+    setIsNotificationsOpen(false);
+  };
+
+  const formatNotificationTime = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays}d ago`;
+
+    return date.toLocaleDateString();
+  };
 
   // Previous methods remain the same (fetchAllCourses, handleSearch, formatNotificationTime, etc.)
   // ... (copy over the previous implementation)

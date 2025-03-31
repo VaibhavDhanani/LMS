@@ -28,7 +28,6 @@ const CourseCard = ({ course }) => {
     return `${minutes} min`;
   };
 
-  
   const getTotalLectures = () => {
     if (!course.curriculum) return 0;
     return course.curriculum.reduce((total, section) => {
@@ -69,14 +68,14 @@ const CourseCard = ({ course }) => {
           </div>
         </div>
 
-        <div className="mb-4">
+        {/* <div className="mb-4">
           <h3 className="text-md font-semibold mb-2">Course Sections:</h3>
           <ul className="list-disc list-inside text-sm text-gray-600">
             {course.curriculum?.map((section, index) => (
               <li key={index}>{section.section} - {section.lectures.length} lectures</li>
             ))}
           </ul>
-        </div>
+        </div> */}
 
         <button 
           className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"

@@ -21,7 +21,7 @@ export const ScheduleLectureModal = ({
     duration: '',
     description: ''
   });
-  console.log(course);
+  // console.log(course);
   useEffect(() => {
     if (existingLecture) {
       setScheduleForm({
