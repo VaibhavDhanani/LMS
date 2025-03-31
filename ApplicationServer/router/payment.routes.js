@@ -7,7 +7,7 @@ import Transaction from '../models/transaction.js';
 import User from '../models/user.js';
 import Course from '../models/course.js';
 import notificationManager from "../utills/notificationManager.js";
-
+const Frontend = process.env.FRONTEND_URI;
 router.post('/verify/:id', async (req, res) => {
     const sessionId = req.params.id;
     const userId = req.user.id;
@@ -121,8 +121,8 @@ router.post('/', async (req, res) => {
     payment_method_types: ['card'],
     line_items: lineItems,
     mode: 'payment',
-    success_url: `http://localhost:5173/courses/${course._id}?status=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `http://localhost:5173/courses/${course._id}?status=cancel&session_id={CHECKOUT_SESSION_ID}`,
+    success_url: `http://${Frontend}/courses/${course._id}?status=success&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `http://${Frontend}/courses/${course._id}?status=cancel&session_id={CHECKOUT_SESSION_ID}`,
     metadata: {
       courseId: course._id, // Pass courseId
       userId: user.id, 

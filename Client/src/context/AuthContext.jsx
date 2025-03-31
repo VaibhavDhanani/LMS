@@ -16,7 +16,6 @@ export const AuthProvider = ({ children }) => {
   const fetchUserInfo = async (authToken) => {
     try {
       const response = await getUserInfo(authToken);
-      console.log(response.data);
       if (response.success) {
         const userData = response.data;
         setUser(userData); // Store full user data in context
