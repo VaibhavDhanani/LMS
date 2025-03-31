@@ -11,6 +11,8 @@ import { getInstructorCourse, updateCourseStatus } from '../services/course.serv
 import * as MyCourseComponents from '../components/MyCoursePage/components.jsx';
 import { MoreVertical, Calendar, List, ToggleLeft, ToggleRight } from 'lucide-react';
 import {ScheduleLectureModal} from '../forms/liveLecture.jsx';
+
+
 const MyCourses = () => {
   const [draftCourses, setDraftCourses] = useState([]);
   const [publishedCourses, setPublishedCourses] = useState([]);
@@ -268,7 +270,7 @@ const MyCourses = () => {
                                   className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    navigate(`/livelectures/section`);
+                                    navigate(`/livelecture/section`);
                                   }}
                                 >
                                   <List className="w-4 h-4" />
