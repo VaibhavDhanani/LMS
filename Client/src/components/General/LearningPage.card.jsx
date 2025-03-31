@@ -28,13 +28,15 @@ const CourseCard = ({ course }) => {
     return `${minutes} min`;
   };
 
-  // Count total lectures
+  
   const getTotalLectures = () => {
     if (!course.curriculum) return 0;
     return course.curriculum.reduce((total, section) => {
       return total + section.lectures.length;
     }, 0);
   };
+
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
       <div className="relative">
@@ -61,24 +63,24 @@ const CourseCard = ({ course }) => {
             <span className="text-sm">Lectures: {getTotalLectures()}</span>
           </div>
 
-          {/* <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <PlayCircle className="w-5 h-5 text-purple-500" />
             <span className="text-sm">Course Level: {course.details?.level || 'Not Specified'}</span>
-          </div> */}
+          </div>
         </div>
 
-        {/* <div className="mb-4">
+        <div className="mb-4">
           <h3 className="text-md font-semibold mb-2">Course Sections:</h3>
           <ul className="list-disc list-inside text-sm text-gray-600">
             {course.curriculum?.map((section, index) => (
-              <li key={index}>{section.title} - {section.lectures.length} lectures</li>
+              <li key={index}>{section.section} - {section.lectures.length} lectures</li>
             ))}
           </ul>
-        </div> */}
+        </div>
 
         <button 
           className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-          onClick={() => navigate(`/course/${course._id}`)}
+          onClick={() => navigate(`/courses/${course._id}`)}
         >
           Continue Learning
         </button>
