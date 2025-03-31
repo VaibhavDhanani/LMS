@@ -143,7 +143,7 @@ const CourseAnalyticsPage = () => {
 
   return (
     <div className="p-6 bg-gray-50">
-      <header className="mb-8 flex flex-wrap justify-between items-center gap-4">
+      <header className="mb-8 flex flex-wrap justify-between items-center gap-4 mt-14">
         <h1 className="text-3xl font-bold text-gray-800">{course.title}</h1>
 
         <div className="flex flex-wrap items-center gap-3">
