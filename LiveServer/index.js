@@ -128,10 +128,19 @@ io.on('connection', (socket) => {
     try {
       console.log(`Creating ${direction} transport for client: ${socket.id}`);
       const transport = await router.createWebRtcTransport({
-        listenIps: [{ ip: '0.0.0.0', announcedIp: publicIp }], 
+        listenIps: [{ ip: '0.0.0.0', announcedIp: publicIp }],
         enableUdp: true,
         enableTcp: true,
         preferUdp: true,
+        // Add TURN server configuration
+        iceServers: [
+          { urls: ['stun:stun.l.google.com:19302'] },
+          {
+            urls: ['turn:your-turn-server.com:3478'],
+            username: 'username',
+            credential: 'credential'
+          }
+        ]
       });
 
       mediasoupTransports.set(transport.id, transport);
