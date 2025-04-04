@@ -121,8 +121,8 @@ router.post('/', async (req, res) => {
     payment_method_types: ['card'],
     line_items: lineItems,
     mode: 'payment',
-    success_url: `http://${Frontend}/courses/${course._id}?status=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `http://${Frontend}/courses/${course._id}?status=cancel&session_id={CHECKOUT_SESSION_ID}`,
+    success_url: `${Frontend}/courses/${course._id}?status=success&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${Frontend}/courses/${course._id}?status=cancel&session_id={CHECKOUT_SESSION_ID}`,
     metadata: {
       courseId: course._id, // Pass courseId
       userId: user.id, 
