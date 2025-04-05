@@ -66,8 +66,7 @@ const CourseDetailsStep = ({ formData, updateFormData }) => {
                     </label>
                 </div>
                 
-                {/* Total Hours */}
-                <div className="form-control w-full">
+                {/* <div className="form-control w-full">
                     <label htmlFor="total-hours" className="label">
                         <span className="label-text text-base-content/80 font-medium">Total Hours</span>
                     </label>
@@ -91,10 +90,10 @@ const CourseDetailsStep = ({ formData, updateFormData }) => {
               Approximate course duration in hours
             </span>
                     </label>
-                </div>
+                </div> */}
                 
                 {/* Number of Lectures */}
-                <div className="form-control w-full">
+                {/* <div className="form-control w-full">
                     <label htmlFor="total-lectures" className="label">
                         <span className="label-text text-base-content/80 font-medium">Number of Lectures</span>
                     </label>
@@ -117,8 +116,9 @@ const CourseDetailsStep = ({ formData, updateFormData }) => {
             <span className="label-text-alt text-base-content/60">
               Total number of course lectures
             </span>
-                    </label>
-                </div>
+            </label>
+            </div> */}
+            
             </div>
             
             <div className="alert alert-info bg-info/10 text-info mt-6">

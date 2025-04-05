@@ -98,7 +98,7 @@ export const publishDraft = async (id, draft, token) => {
     console.error("Error publishing draft:", error);
     return {
       success: false,
-      message: "Failed to publish draft. Please try again later.",
+      message: error.response.data.message||"Failed to publish draft. Please try again later.",
       data: null,
     };
   }

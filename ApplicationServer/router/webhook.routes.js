@@ -49,6 +49,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
 
 const enrollUser = async (session) => {
+  
   const courseId = session.metadata.courseId;
   const userId = session.metadata.userId;
   const paymentStatus = session.payment_status;

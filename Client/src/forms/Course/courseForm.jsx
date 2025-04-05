@@ -133,7 +133,7 @@ const CourseForm = () => {
             goToStep={setCurrentStep}
         />
         <main className="flex-1 p-6 transition-all duration-300">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto pt-16">
             <div className="card bg-base-100 shadow-xl">
               <div className="card-body">
                 {renderStep()}

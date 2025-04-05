@@ -51,7 +51,7 @@ const FormSidebar = ({ formSteps, currentStep, goToStep }) => (
                 </ul>
             </div>
             
-            <div className="mt-6 p-4 bg-base-100 rounded-xl shadow-lg">
+            {/* <div className="mt-6 p-4 bg-base-100 rounded-xl shadow-lg">
                 <div className="flex flex-col gap-2">
                     <h3 className="text-sm font-semibold text-base-content">Course Progress</h3>
                     <progress
@@ -63,7 +63,7 @@ const FormSidebar = ({ formSteps, currentStep, goToStep }) => (
                         {Math.round(((currentStep + 1) / formSteps.length) * 100)}% completed
                     </p>
                 </div>
-            </div>
+            </div> */}
         </div>
     </aside>
 );

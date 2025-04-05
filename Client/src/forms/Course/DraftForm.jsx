@@ -120,11 +120,13 @@ const CourseForm = () => {
       if (!saveResponse.success) throw new Error(saveResponse.message);
   
       const publishResponse = await publishDraft(id, formData, token);
+      
       if (publishResponse.success) {
         toast.success("Course published successfully!");
         navigate("/mycourses");
       } else {
-        throw new Error(publishResponse.message);
+        toast.error(publishResponse.message||"Failed to publish the course. Please try again.");
+        setError(publishResponse.message||"Failed to publish the course. Please try again.");
       }
     } catch (err) {
       toast.error("Failed to publish the course. Please try again.");
@@ -173,7 +175,7 @@ const CourseForm = () => {
       <div className="flex min-h-screen bg-base-200">
         <FormSidebar formSteps={formSteps} currentStep={currentStep} goToStep={setCurrentStep} />
         <main className="flex-1 p-6">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto pt-16">
             <div className="card bg-base-100 shadow-xl">
               <div className="card-body">
                 {/* Progress Indicator */}
@@ -182,7 +184,7 @@ const CourseForm = () => {
                     <p className="text-sm text-base-content/70">
                       Step {currentStep + 1} of {formSteps.length}
                     </p>
-                    <span className="text-sm text-base-content/70">{saveStatus}</span>
+                    {/* <span className="text-sm text-base-content/70">{saveStatus}</span> */}
                   </div>
                   <progress
                       className="progress progress-primary w-full"

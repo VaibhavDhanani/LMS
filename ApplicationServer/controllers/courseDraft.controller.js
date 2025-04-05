@@ -1,5 +1,6 @@
 import CourseDraft from "../models/courseDraft.js"; // Adjust the path to your model
 import Course from "../models/course.js";
+import User from "../models/user.js";
 // Create a new course draft
 export const createCourseDraft = async (req, res) => {
   try {
@@ -136,17 +137,34 @@ export const publishCourseDraft = async (req, res) => {
       return res.status(404).json({ message: "Draft not found." });
     }
 
-    // Validate required fields for course creation
-    if (!draft.title || !draft.subtitle || !draft.description || !draft.instructor) {
-      return res.status(400).json({ message: "Missing required fields in the draft." });
+    // Define required fields to check
+    const requiredFields = [
+      'title',
+      'subtitle',
+      'description',
+      'instructor',
+      'details',
+      'pricing',
+      'curriculum',
+      'thumbnail',
+      'promotionalVideo'
+    ];
+
+    // Check for missing fields
+    const missingFields = requiredFields.filter((field) => !draft[field]);
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        message: `Missing required fields in the draft: ${missingFields.join(', ')}`,
+      });
     }
 
-    // Create the new course using the draft data
+    // Prepare course data
     const courseData = {
       title: draft.title,
       subtitle: draft.subtitle,
       description: draft.description,
-      instructor: draft.instructor, // Instructor ID
+      instructor: draft.instructor,
       details: draft.details,
       learnPoints: draft.learnPoints || [],
       technologies: draft.technologies || [],
@@ -163,25 +181,28 @@ export const publishCourseDraft = async (req, res) => {
       reviews: []
     };
 
+    // Save new course
     const newCourse = new Course(courseData);
     await newCourse.save();
 
-    // Add course ID to the instructor's createdCourses list
+    // Update instructor's createdCourses
     await User.findByIdAndUpdate(
       draft.instructor,
       { $push: { createdCourses: newCourse._id } },
       { new: true }
     );
 
-    // Optional: Delete the draft after publishing
+    // Delete the draft
     await CourseDraft.findByIdAndDelete(id);
 
     res.status(201).json({
       message: "Course published successfully.",
       data: newCourse,
     });
+
   } catch (error) {
     console.error("Error publishing draft:", error);
     res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
+
