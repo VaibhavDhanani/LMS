@@ -1,69 +1,99 @@
-// webhook.routes.js
-
 import { configDotenv } from 'dotenv';
 configDotenv();
 import express from 'express';
 import Stripe from 'stripe';
-
 const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRETKEY);
-
-router.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
-  console.log("Raw Body:", req.body.toString());
-  console.log("Headers:", req.headers);
-  console.log("1. Webhook endpoint hit!"); // Debug log
-
+import User from '../models/user.js';
+import Course from '../models/course.js';
+import notificationManager from '../utills/notificationManager.js';
+router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  console.log("2. Webhook Secret:", endpointSecret); // Debug log
-  
   const sig = req.headers['stripe-signature'];
-  console.log("3. Stripe Signature:", sig); // Debug log
-  
   let event;
 
   try {
-    // Verify the webhook signature
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-    console.log("4. Event constructed successfully:", event.type); // Debug log
 
-    // Handle the event
     switch (event.type) {
-      case 'checkout.session.completed':
-        const session = event.data.object;
-        console.log('5. Payment succeeded:', session); // Debug log
-        console.log('6. Metadata:', session.metadata); // Debug log
-
-        // Example: Update enrollment in the database
-        enrollUser(session);
+      case 'payment_intent.created':
+        // console.log("Payment Intent Created:", event.data.object.id);
         break;
 
       case 'payment_intent.succeeded':
-        console.log('7. Payment Intent succeeded:', event.data.object);
+        // console.log("Payment Intent Succeeded:", event.data.object.id);
+        break;
+
+      case 'checkout.session.completed':
+        const session = event.data.object;
+        // console.log('Checkout Session Completed:', session.id);
+        // console.log('Metadata:', session.metadata);
+
+        // Only enroll if payment was successful
+        if (session.payment_status === 'paid') {
+          await enrollUser(session); // Call async function
+        }
         break;
 
       default:
-        console.log(`8. Unhandled event type ${event.type}`);
+        console.log(`Unhandled event type ${event.type}`);
     }
 
-    // Respond with 200 OK to acknowledge receipt of the event
-    console.log("9. Sending success response"); // Debug log
     res.status(200).json({ received: true });
-    
+
   } catch (err) {
-    console.error('10. Webhook Error:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    console.error('Webhook Error:', err.message);
+    res.status(400).send(`Webhook Error: ${err.message}`);
   }
 });
 
-// Example function for enrollment logic
-const enrollUser = (session) => {
-  console.log("11. Enrolling user"); // Debug log
-  // Extract relevant data
+
+const enrollUser = async (session) => {
   const courseId = session.metadata.courseId;
   const userId = session.metadata.userId;
   const paymentStatus = session.payment_status;
 
-  console.log(`12. Enrollment details: courseId=${courseId}, userId=${userId}, status=${paymentStatus}`);
+  try {
+    const user = await User.findById(userId);
+    const course = await Course.findById(courseId);
+
+    if (!user || !course) {
+      console.error('User or Course not found');
+      return;
+    }
+
+    // Add course to user if not already enrolled
+    if (!user.enrolledCourses.includes(courseId)) {
+      user.enrolledCourses.push(courseId);
+      await user.save();
+      // console.log(`User ${userId} enrolled in course ${courseId}`);
+    } else {
+      // console.log(`User ${userId} already enrolled in course ${courseId}`);
+    }
+
+    // Add user to course if not already added
+    if (!course.enrolledStudents.includes(userId)) {
+      course.enrolledStudents.push(userId);
+      await course.save();
+    }
+
+    // Optional: Send notification to instructor
+    await notificationManager.createNotification({
+      type: 'student_enrolled',
+      course: course._id,
+      user: course.instructor,
+      title: course.title,
+      message: `A new student has been enrolled for course ${course.title}`,
+      isTimeSensitive: false,
+    });
+
+    // console.log('Enrollment completed and notification sent');
+
+  } catch (error) {
+    console.error('Error during enrollment:', error.message);
+  }
 };
 
+
 export default router;
+

@@ -1,5 +1,7 @@
 import express from 'express'
 const router = express.Router();
+import { configDotenv } from 'dotenv';
+configDotenv();
 import Stripe from 'stripe';
 const stripeSecretKey = process.env.STRIPE_SECRETKEY;
 const stripe = new Stripe(stripeSecretKey);
@@ -7,6 +9,7 @@ import Transaction from '../models/transaction.js';
 import User from '../models/user.js';
 import Course from '../models/course.js';
 import notificationManager from "../utills/notificationManager.js";
+
 const Frontend = process.env.FRONTEND_URI;
 router.post('/verify/:id', async (req, res) => {
     const sessionId = req.params.id;
@@ -52,32 +55,32 @@ router.post('/verify/:id', async (req, res) => {
         // Save the transaction in the database
         await newTransaction.save();
 
-        if(paymentStatus === 'paid'){
+        // if(paymentStatus === 'paid'){
 
-          // Fetch the user and course objects from the database
-          const user = await User.findById(session.metadata.userId);
-          const course = await Course.findById(session.metadata.courseId);
+        //   // Fetch the user and course objects from the database
+        //   const user = await User.findById(session.metadata.userId);
+        //   const course = await Course.findById(session.metadata.courseId);
 
-          // Add course to user's enrolledCourses if not already enrolled
-          if (!user.enrolledCourses.includes(session.metadata.courseId)) {
-            user.enrolledCourses.push(session.metadata.courseId);
-            await user.save();
-          }
+        //   // Add course to user's enrolledCourses if not already enrolled
+        //   if (!user.enrolledCourses.includes(session.metadata.courseId)) {
+        //     user.enrolledCourses.push(session.metadata.courseId);
+        //     await user.save();
+        //   }
           
-          // Add user to course's enrolledStudents if not already added
-          if (!course.enrolledStudents.includes(session.metadata.userId)) {
-            course.enrolledStudents.push(session.metadata.userId);
-            await course.save();
-          }
-          const notification = await notificationManager.createNotification({
-            type: 'student_enrolled',
-            course : course._id,
-            user: course.instructor,
-            title: course.title,
-            message: `A new student has been enrolled for course ${course.title}`,
-            isTimeSensitive: false,
-          });
-        }
+        //   // Add user to course's enrolledStudents if not already added
+        //   if (!course.enrolledStudents.includes(session.metadata.userId)) {
+        //     course.enrolledStudents.push(session.metadata.userId);
+        //     await course.save();
+        //   }
+        //   const notification = await notificationManager.createNotification({
+        //     type: 'student_enrolled',
+        //     course : course._id,
+        //     user: course.instructor,
+        //     title: course.title,
+        //     message: `A new student has been enrolled for course ${course.title}`,
+        //     isTimeSensitive: false,
+        //   });
+        // }
     
 
         // Return the newly created transaction details
