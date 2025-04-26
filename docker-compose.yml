@@ -1,0 +1,47 @@
+version: '3'
+
+services:
+  client:
+    build:
+      context: ./Client
+      dockerfile: Dockerfile
+    container_name: lms-client
+    ports:
+      - "5173:5173"
+    env_file:
+      - ./Client/.env.docker
+    networks:
+      - lms-network
+    depends_on:
+      - appserver
+      - liveserver
+
+  appserver:
+    build:
+      context: ./ApplicationServer
+      dockerfile: Dockerfile
+    container_name: lms-appserver
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./ApplicationServer/.env.docker
+    networks:
+      - lms-network
+    depends_on:
+      - liveserver
+
+  liveserver:
+    build:
+      context: ./LiveServer
+      dockerfile: Dockerfile
+    container_name: lms-liveserver
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./LiveServer/.env.docker
+    networks:
+      - lms-network
+
+networks:
+  lms-network:
+    driver: bridge
