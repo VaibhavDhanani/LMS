@@ -165,6 +165,16 @@ To use live video features in the application:
 
 ---
 
+## Some Glimpse 
+![image](https://github.com/user-attachments/assets/a97eb536-5719-43bf-a796-d1c5710ff187)
+![image](https://github.com/user-attachments/assets/24e431e6-be77-43c8-a901-a34f4efbd4d4)
+![image](https://github.com/user-attachments/assets/5238bd62-3bee-4ff1-96d6-babe3e015eb9)
+![image](https://github.com/user-attachments/assets/0570bac4-8a62-4d92-8475-444aacaae4f4)
+![image](https://github.com/user-attachments/assets/85d4e991-5d76-4bce-ad62-c27bce07dbfa)
+![image](https://github.com/user-attachments/assets/e17925f3-9b3f-4557-a5f2-1044c4d73f10)
+![image](https://github.com/user-attachments/assets/da9b003e-61a4-476b-ac60-ad741975fb09)
+
+---
 ## 🔒 Security & Optimization
 
 - HTTPS via Nginx reverse proxy
