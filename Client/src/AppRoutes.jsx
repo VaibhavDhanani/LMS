@@ -11,7 +11,7 @@ import LectureRoom1 from "./components/Extra/demo.jsx";
 import ViewLecturePage from "./pages/Course/ViewLecture.page.jsx";
 import MyLearningPage from "@/pages/MyLearnings.page.jsx";
 import ManageLiveLectures from "./pages/LiveLecture/liveLectureSection.jsx";
-import LectureStreaming from "./pages/LiveLecture/lectureStreaming.page.jsx";
+import LectureStreaming from "./pages/LiveLecture/lectureStreaming.jsx";
 import LiveLecture from "./pages/LiveLecture/livelecture.jsx";
 import CourseAnalyticsPage from "./pages/Course/Course.page.jsx";
 import SalesAnalyticsPage from "./pages/SalesAnalytics.page.jsx";

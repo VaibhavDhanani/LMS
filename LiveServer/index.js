@@ -19,33 +19,13 @@ const io = new Server(server, {
   },
 });
 
-let router;
-const mediasoupTransports = new Map();
-const rooms = new Map();
-const consumersMap = new Map(); 
-// Initialize Mediasoup worker and router
-(async () => {
-  const worker = await createWorker();
-  router = await worker.createRouter({
-    mediaCodecs: [
-      {
-        kind: 'audio',
-        mimeType: 'audio/opus',
-        clockRate: 48000,
-        channels: 2,
-      },
-      {
-        kind: 'video',
-        mimeType: 'video/VP8',
-        clockRate: 90000,
-      },
-    ],
-  });
-  console.log('Router initialized');
-})();
+
+const rooms = new Map(); // roomId -> { producers: Set, consumers: Set }
+
+await initMediasoupWorker(publicIp);
 
 io.on('connection', (socket) => {
-  console.log(`user connected: ${socket.id}`);
+  console.log(`Client connected: ${socket.id}`);
 
   socket.on('createRoom', ({ roomId }, callback) => {
     if (!rooms.has(roomId)) {
