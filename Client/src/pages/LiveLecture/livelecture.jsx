@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Device } from 'mediasoup-client';
 import io from 'socket.io-client';
-import { getRoomToken } from '../../services/lecture.service';
 import { useAuth } from '@/context/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { toast } from "react-toastify";
@@ -12,6 +11,7 @@ const SocketURL = import.meta.env.VITE_SOCKET_URL;
 
 const LiveLecture = () => {
   // State management
+  const [roomId, setRoomId] = useState(useParams().id );
   const [remoteStream, setRemoteStream] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('connecting'); // 'connecting', 'connected', 'waiting', 'error', 'reconnecting'
   const [error, setError] = useState(null);
@@ -24,13 +24,11 @@ const LiveLecture = () => {
   const deviceRef = useRef(null);
   const consumersRef = useRef(new Map());
   const recvTransportRef = useRef(null);
-  const roomTokenRef = useRef(null);
   const connectionAttemptsRef = useRef(0);
   const MAX_RECONNECT_ATTEMPTS = 3;
 
   // Hooks
   const { user, token } = useAuth();
-  const { id } = useParams();
   const navigate = useNavigate();
 
 
@@ -41,13 +39,9 @@ const LiveLecture = () => {
         setError(null);
         setJoinedRoom(false);
 
-        // Get room token
-        const response = await getRoomToken(id, token);
-        const roomToken = response.data.roomToken;
-        roomTokenRef.current = roomToken;
 
         // Connect to WebRTC server
-        await connectToServer(roomToken);
+        await connectToServer(roomId);
       } catch (error) {
         console.error('Error initializing lecture:', error);
         setError(`Failed to connect: ${error.message || 'Unknown error'}`);
@@ -61,10 +55,10 @@ const LiveLecture = () => {
     return () => {
       cleanup();
     };
-  }, [id, token]);
+  }, [token]);
 
 
-  const connectToServer = async (roomToken) => {
+  const connectToServer = async (roomId) => {
     try {
       // Setup socket connection
       const newSocket = io(SocketURL, {
@@ -76,7 +70,7 @@ const LiveLecture = () => {
       socketRef.current = newSocket;
 
       // Setup socket event listeners
-      setupSocketListeners(newSocket, roomToken);
+      setupSocketListeners(newSocket, roomId);
 
       return newSocket;
     } catch (error) {
@@ -85,7 +79,7 @@ const LiveLecture = () => {
     }
   };
 
-  const setupSocketListeners = (socket, roomToken) => {
+  const setupSocketListeners = (socket, roomId) => {
     socket.on('connect', async () => {
       console.log('Socket connected, setting up device');
       connectionAttemptsRef.current = 0;
@@ -96,7 +90,7 @@ const LiveLecture = () => {
         deviceRef.current = deviceInstance;
 
         // Then join the lecture room
-        await joinLecture(socket, roomToken, deviceInstance);
+        await joinLecture(socket, roomId, deviceInstance);
 
         setJoinedRoom(true);
         
@@ -209,13 +203,13 @@ const LiveLecture = () => {
     }
   };
 
-  const joinLecture = async (socket, roomToken, deviceInstance) => {
+  const joinLecture = async (socket, roomId, deviceInstance) => {
     try {
       // Join the lecture room
       const joinResponse = await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('Join request timed out')), 10000);
 
-        socket.emit('joinLecture', { roomId: roomToken }, (response) => {
+        socket.emit('joinLecture', { roomId: roomId ,userInfo: user}, (response) => {
           clearTimeout(timeout);
           if (response.error) reject(new Error(response.error));
           else resolve(response);
@@ -523,14 +517,9 @@ const handleProducerClosed = (producerId) => {
       setError(null);
       setJoinedRoom(false);
 
-      // Use existing room token if available
-      if (!roomTokenRef.current) {
-        const response = await getRoomToken(id, token);
-        roomTokenRef.current = response.data.roomToken;
-      }
 
       // Connect to server and join lecture
-      await connectToServer(roomTokenRef.current);
+      await connectToServer(roomId);
     } catch (error) {
       console.error('Reconnection failed:', error);
       setError(`Failed to reconnect: ${error.message}`);
@@ -615,10 +604,10 @@ const handleProducerClosed = (producerId) => {
       <div className="w-full max-w-2xl">
         {renderContent()}
       </div>
-      {socketRef.current && roomTokenRef.current && (
+      {socketRef.current  && (
         <LectureChat 
           socket={socketRef.current} 
-          roomId={roomTokenRef.current} 
+          roomId={roomId}
           isHost={false} // Consumer is not the host
         />
       )}

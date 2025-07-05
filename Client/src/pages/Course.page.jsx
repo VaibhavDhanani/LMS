@@ -10,7 +10,6 @@ const CoursePage = () => {
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -55,29 +54,31 @@ const CoursePage = () => {
       );
     }
 
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter(course => course.category === selectedCategory);
-    }
 
+    const getFinalPrice = (course) => {
+      return course.pricing?.discountEnabled
+        ? course.pricing.price * (1 - course.pricing.discount / 100)
+        : course.pricing?.price || 0;
+    };
     switch (sortBy) {
       case "newest":
         filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         break;
       case "popular":
-        filtered.sort((a, b) => (b.enrollments || 0) - (a.enrollments || 0));
+        filtered.sort((a, b) => (b.enrolledStudents.length || 0) - (a.enrolledStudents.length || 0));
         break;
       case "price-low":
-        filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
+        filtered.sort((a, b) => getFinalPrice(a) - getFinalPrice(b));
         break;
       case "price-high":
-        filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
+        filtered.sort((a, b) => getFinalPrice(b) - getFinalPrice(a));
         break;
       default:
         break;
     }
 
     setFilteredCourses(filtered);
-  }, [searchQuery, selectedCategory, sortBy, courses]);
+  }, [searchQuery,sortBy, courses]);
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
@@ -102,17 +103,6 @@ const CoursePage = () => {
             />
           </div>
           <div className="flex gap-4">
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Categories</option>
-              <option value="development">Development</option>
-              <option value="business">Business</option>
-              <option value="design">Design</option>
-              <option value="marketing">Marketing</option>
-            </select>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}

@@ -20,7 +20,7 @@ const SocketURL = import.meta.env.VITE_SOCKET_URL;
 const LectureStreaming = () => {
   const [device, setDevice] = useState(null);
   const [localStream, setLocalStream] = useState(null);
-  const [roomId, setRoomId] = useState('');
+  const [roomId, setRoomId] = useState(useParams().id );
   const [socket, setSocket] = useState(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
@@ -30,21 +30,14 @@ const LectureStreaming = () => {
   const audioProducerRef = useRef(null);
   const streamRef = useRef(null);
   const socketRef = useRef(null);  
-  const roomTokenRef = useRef(null);
   
   const navigate = useNavigate();
-  const { id } = useParams();
+
   const {  token } = useAuth();
 
   useEffect(() => {
     const initLecture = async () => {
       try {
-        const response = await getRoomToken(id, token);
-        const roomToken = response.data.roomToken;
-        setRoomId(roomToken);
-        roomTokenRef.current = roomToken;
-  
-        // console.log(SocketURL);  
         const newSocket = io(SocketURL);
         setSocket(newSocket);
         socketRef.current = newSocket;
@@ -54,9 +47,9 @@ const LectureStreaming = () => {
   
           // Emit an event to create the room
           setupDevice(newSocket);
-          newSocket.emit("createRoom", { roomId: roomToken }, (ack) => {
+          newSocket.emit("createRoom", { roomId: roomId }, (ack) => {
             if (ack.success) {
-              console.log("Room created successfully:", roomToken);
+              console.log("Room created successfully:", roomId);
             } else {
               console.error("Error creating room:", ack.error);
             }
@@ -184,7 +177,7 @@ const LectureStreaming = () => {
     try {
       stopStreaming();
       
-      socketRef.current.emit("endLecture", { roomId: roomTokenRef.current });
+      socketRef.current.emit("endLecture", { roomId: roomId });
       socketRef.current.disconnect();
       
       const response = await endLecture(id,token);
@@ -268,10 +261,10 @@ const LectureStreaming = () => {
           </Button>
         </div>
       </div>
-      {socketRef.current && roomTokenRef.current && (
+      {socketRef.current && (
         <LectureChat 
           socket={socketRef.current} 
-          roomId={roomTokenRef.current} 
+          roomId={roomId} 
           isHost={true} // Consumer is not the host
         />
       )}
