@@ -9,6 +9,7 @@ export const useLiveLectureConsumer = ({ roomId, user, onLectureEnded }) => {
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [error, setError] = useState(null);
   const [joinedRoom, setJoinedRoom] = useState(false);
+  const [participants, setParticipants] = useState([]);
 
   const socketRef = useRef(null);
   const deviceRef = useRef(null);
@@ -63,6 +64,10 @@ export const useLiveLectureConsumer = ({ roomId, user, onLectureEnded }) => {
         setConnectionStatus('error');
         setError('Failed to reconnect after multiple attempts.');
       }
+    });
+    
+    socket.on('updateParticipantList', ({ participants }) => {
+      setParticipants(participants);
     });
 
     socket.on('newProducer', async ({ producerInfo }) => {
@@ -230,5 +235,7 @@ export const useLiveLectureConsumer = ({ roomId, user, onLectureEnded }) => {
     socket: socketRef.current,
     joinedRoom,
     handleReconnect,
+    participants,
+
   };
 };

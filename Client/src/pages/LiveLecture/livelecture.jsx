@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { Loader2 } from 'lucide-react';
 import { useLiveLectureConsumer } from '@/hooks/useLiveLectureConsumer';
 import LectureChat from '@/components/LiveLecture/LectureChat';
+import ParticipantList from "@/components/LiveLecture/ParticipantList";
 
 const LiveLecture = () => {
   const { id: roomId } = useParams();
@@ -19,6 +20,7 @@ const LiveLecture = () => {
     socket,
     joinedRoom,
     handleReconnect,
+    participants
   } = useLiveLectureConsumer({
     roomId,
     user,
@@ -80,10 +82,17 @@ const LiveLecture = () => {
   };
 
   return (
-    <div className="p-4 flex flex-col items-center pt-24">
+    <div className="flex min-h-screen pt-24">
+  <div className="w-64 bg-white shadow-lg border-r border-gray-200 overflow-y-auto">
+    <ParticipantList participants={participants} currentUserEmail={user.email}/>
+  </div>
+
+  <div className="flex-1 flex flex-col items-center px-4" style={{ marginRight: '174px' }}>
+    {/* <div className="p-4 flex flex-col items-center pt-24"> */}
       <h2 className="text-xl font-bold mb-4">Live Lecture Stream</h2>
       <div className="w-full max-w-2xl">{renderContent()}</div>
       {socket && <LectureChat socket={socket} roomId={roomId} isHost={false} />}
+    </div>
     </div>
   );
 };
