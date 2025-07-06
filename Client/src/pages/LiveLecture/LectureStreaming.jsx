@@ -1,4 +1,3 @@
-// components/LectureStreaming.jsx
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useLectureSocket } from "@/hooks/useLectureSocket";
@@ -15,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import LectureChat from "@/components/LiveLecture/LectureChat";
 import { Video, VideoOff, Mic, MicOff, Play, PhoneOff } from "lucide-react";
+import ParticipantList from "@/components/LiveLecture/ParticipantList";
 
 const LectureStreaming = () => {
   const { id: roomId } = useParams();
@@ -31,7 +31,20 @@ const LectureStreaming = () => {
     startStreaming,
     stopStreaming,
     endLecture: emitEndLecture,
+    participants,
   } = useLectureSocket(roomId, handleLectureEnd);
+
+  const prevParticipantsRef = useRef([]);
+
+  useEffect(() => {
+    // Show toast when a new user joins
+    const prevIds = prevParticipantsRef.current.map((p) => p.socketId);
+    const newJoin = participants.find((p) => !prevIds.includes(p.socketId));
+    if (newJoin) {
+      toast.info(`${newJoin.name || "A user"} joined the lecture.`);
+    }
+    prevParticipantsRef.current = participants;
+  }, [participants]);
 
   function handleLectureEnd() {
     toast.warn("Lecture has ended.");
@@ -65,13 +78,22 @@ const LectureStreaming = () => {
     }
   };
 
-  return (
-    <div className="p-4 max-w-2xl mx-auto pt-24">
-      <h2 className="text-2xl font-bold mb-4">Lecture Room</h2>
-      <div className="relative rounded-lg overflow-hidden bg-gray-100">
+// Alternative layout structure for LectureStreaming if you want full-width participant list
+
+return (
+  <div className="flex min-h-screen pt-24">
+    {/* Sidebar - Participants (Fixed to left side) */}
+    <div className="w-64 bg-white shadow-lg border-r border-gray-200 left-0 top-24 bottom-0 overflow-y-auto">
+      <ParticipantList participants={participants} />
+    </div>
+
+    {/* Main Content - Video (with left margin to account for fixed sidebar) */}
+    <div className="flex-1 flex flex-col items-center px-4 py-6" style={{ marginRight: '174px' }}>
+      <h2 className="text-2xl font-bold mb-4 text-center">Lecture Room</h2>
+      <div className="relative w-full max-w-[720px] aspect-video rounded-lg overflow-hidden bg-gray-100 shadow-sm">
         <video
           id="local-video"
-          className="w-full aspect-video bg-black"
+          className="w-full h-full bg-black"
           autoPlay
           playsInline
           muted
@@ -96,27 +118,32 @@ const LectureStreaming = () => {
       </div>
 
       {socket && (
-        <LectureChat socket={socket} roomId={roomId} isHost={true} />
+        <div className="w-full max-w-[720px] mt-6">
+          <LectureChat socket={socket} roomId={roomId} isHost={true} />
+        </div>
       )}
-
-      <Dialog open={showEndConfirmation} onOpenChange={setShowEndConfirmation}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>End Lecture?</DialogTitle>
-          </DialogHeader>
-          <p>This action will end the lecture for everyone.</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEndConfirmation(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={confirmEndLecture}>
-              Confirm
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
-  );
+
+    {/* End Confirmation Dialog */}
+    <Dialog open={showEndConfirmation} onOpenChange={setShowEndConfirmation}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>End Lecture?</DialogTitle>
+        </DialogHeader>
+        <p>This action will end the lecture for everyone.</p>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowEndConfirmation(false)}>
+            Cancel
+          </Button>
+          <Button variant="destructive" onClick={confirmEndLecture}>
+            Confirm
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </div>
+);
+
 };
 
 export default LectureStreaming;

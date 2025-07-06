@@ -10,6 +10,7 @@ export function useLectureSocket(roomId, onLectureEnded) {
   const [device, setDevice] = useState(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [localStream, setLocalStream] = useState(null);
+  const [participants, setParticipants] = useState([]);
 
   const socketRef = useRef(null);
   const streamRef = useRef(null);
@@ -26,6 +27,21 @@ export function useLectureSocket(roomId, onLectureEnded) {
     });
 
     socketInstance.on("lectureEnded", onLectureEnded);
+
+    // 🔔 New user joined
+    socketInstance.on("userJoined", ({ user }) => {
+      console.log("New user joined:", user);
+      setParticipants((prev) => {
+        const exists = prev.some((p) => p.socketId === user.socketId);
+        return exists ? prev : [...prev, user];
+      });
+    });
+
+    // 🔁 Entire participant list updated
+    socketInstance.on("updateParticipantList", ({ participants }) => {
+      console.log("Updated participant list:", participants);
+      setParticipants(participants);
+    });
 
     return () => {
       if (streamRef.current) {
@@ -99,6 +115,7 @@ export function useLectureSocket(roomId, onLectureEnded) {
     socket,
     isStreaming,
     localStream,
+    participants,
     startStreaming,
     stopStreaming,
     endLecture,

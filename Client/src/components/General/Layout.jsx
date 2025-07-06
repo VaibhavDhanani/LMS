@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import Navigationbar from "../Navbars/Navigationbar";
-import Footer from "../Footer/Footer"; 
+import Footer from "../Footer/Footer";
 import { useAuth } from "@/context/AuthContext";
-import ChatbotInterface from "../Extra/chatbot"; // Removed lazy loading
+import ChatbotInterface from "../Extra/chatbot";
 import { useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 
@@ -14,7 +14,7 @@ const Layout = ({ children }) => {
   const toggleChat = () => {
     if (!user) {
       toast.error('Login to chat with AI.');
-      navigate("/auth"); // Redirect to login if user is not logged in
+      navigate("/auth");
       return;
     }
     setIsChatOpen((prev) => !prev);
@@ -30,7 +30,12 @@ const Layout = ({ children }) => {
   return (
     <div className="min-h-screen flex flex-col relative">
       <Navigationbar />
-      <div className="flex-1 bg-gray-100">{children}</div>
+      
+      {/* Main content area - removed bg-gray-100 and flex-1 constraints */}
+      <div className="flex-grow">
+        {children}
+      </div>
+      
       <Footer />
 
       {/* Chat Button - Always Visible */}
@@ -67,11 +72,6 @@ const Layout = ({ children }) => {
                 <div className="flex items-center space-x-2">
                   <h3 className="font-medium text-lg">Get help from our AI Assistant</h3>
                 </div>
-                {/* <button onClick={toggleChat} className="text-white hover:text-gray-200 p-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button> */}
               </div>
               <div className="flex-1 overflow-hidden">
                 <ChatbotInterface />

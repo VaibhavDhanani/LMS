@@ -34,7 +34,6 @@ export async function initMediasoupWorker(ip) {
   console.log('Mediasoup router initialized');
 }
 
-// Setup Mediasoup-related socket handlers
 export function registerMediasoupHandlers(io, socket, rooms) {
   if (!router) {
     console.error('Router is not ready. Skipping mediasoup handlers.');
