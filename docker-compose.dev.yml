@@ -1,0 +1,49 @@
+services:
+  server:
+    container_name: application-server
+    build: 
+      context: ./ApplicationServer
+      args:
+        MODE: development
+    env_file:
+      - ./ApplicationServer/.env
+    environment:
+      - NODE_ENV=development
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./ApplicationServer:/app
+      - /app/node_modules
+
+  liveserver:
+    container_name: live-server
+    build: 
+      context: ./LiveServer
+      args:
+        MODE: development
+    env_file:
+      - ./LiveServer/.env
+    environment:
+      - NODE_ENV=development
+    ports:
+      - "3000:3000"
+    depends_on:
+      - server
+    volumes:
+      - ./LiveServer:/app
+      - /app/node_modules
+
+  client:
+    container_name: client
+    build:
+      context: ./Client
+      dockerfile: Dockerfile.dev
+    env_file:
+      - ./Client/.env
+    ports:
+      - "5173:5173"
+    depends_on:
+      - server
+    volumes:
+      - ./Client:/app
+      - /app/node_modules

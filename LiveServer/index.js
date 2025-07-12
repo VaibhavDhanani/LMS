@@ -110,5 +110,5 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Live Server running at http://localhost:${PORT}`);
 });

@@ -98,7 +98,7 @@ export const AuthForm = () => {
   const googleSignin = useGoogleLogin({
     onSuccess: async (response) => {
       try {
-        const res = await googleSignUp(response.access_token, formData.role); // Await API call
+        const res = await googleSignUp(response.access_token, formData.role); 
   
         if (res.success) {
           toast.success("Signup successful!");

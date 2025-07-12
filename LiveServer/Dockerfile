@@ -3,12 +3,14 @@ FROM node:latest
 WORKDIR /app
 
 COPY package*.json ./
-
 RUN npm install
 
 COPY . .
 
-# Expose the port your WebRTC server runs on
-EXPOSE 8080
+EXPOSE 3000
 
-CMD ["node", "index.js"]
+ARG MODE=development
+
+ENV NODE_ENV=${MODE}
+
+CMD ["sh", "-c", "npm run $NODE_ENV"]
