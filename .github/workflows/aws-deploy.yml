@@ -38,25 +38,25 @@ jobs:
           docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME_CLIENT }}:${{ env.TAG }} -f Client/Dockerfile.prod ./Client
           docker push ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME_CLIENT }}:${{ env.TAG }}
 
-#   deploy:
-#     name: Deploy to EC2
-#     needs: build-and-push
-#     runs-on: ubuntu-latest
+  deploy:
+    name: Deploy to EC2
+    needs: build-and-push
+    runs-on: ubuntu-latest
 
-#     steps:
-#       - name: Setup SSH
-#         uses: webfactory/ssh-agent@v0.9.0
-#         with:
-#           ssh-private-key: ${{ secrets.EC2_KEY }}
+    steps:
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
 
-#       - name: SSH and Deploy on EC2
-#         run: |
-#           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-#             docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME_SERVER }}:${{ env.TAG }}
-#             docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME_LIVESERVER }}:${{ env.TAG }}
-#             docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME_CLIENT }}:${{ env.TAG }}
+      - name: SSH and Deploy on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME_SERVER }}:${{ env.TAG }}
+            docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME_LIVESERVER }}:${{ env.TAG }}
+            docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME_CLIENT }}:${{ env.TAG }}
 
-#             cd ~/lms  
-#             docker compose down
-#             docker compose up -d --remove-orphans
-#           EOF
+            cd ~/lms  
+            docker compose down
+            docker compose up -d --remove-orphans
+          EOF
