@@ -23,6 +23,22 @@ jobs:
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
+      - name: Generate .env.production for Client
+        run: |
+          cat <<EOF > Client/.env.production
+          VITE_APIKEY=${{ secrets.VITE_APIKEY }}
+          VITE_AUTH_DOMAIN=${{ secrets.VITE_AUTH_DOMAIN }}
+          VITE_PROJECTID=${{ secrets.VITE_PROJECTID }}
+          VITE_STORAGEBUCKET=${{ secrets.VITE_STORAGEBUCKET }}
+          VITE_MESSAGINGSENDERID=${{ secrets.VITE_MESSAGINGSENDERID }}
+          VITE_APPID=${{ secrets.VITE_APPID }}
+          VITE_MEASUREMENTID=${{ secrets.VITE_MEASUREMENTID }}
+          VITE_SERVER_URL=${{ secrets.VITE_SERVER_URL }}
+          VITE_SOCKET_URL=${{ secrets.VITE_SOCKET_URL }}
+          VITE_STRIPE_PUBLISHKEY=${{ secrets.VITE_STRIPE_PUBLISHKEY }}
+          VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          EOF
+
       - name: Build & Push ApplicationServer
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME_SERVER }}:${{ env.TAG }} -f ApplicationServer/Dockerfile.prod ./ApplicationServer
@@ -57,6 +73,7 @@ jobs:
             docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME_CLIENT }}:${{ env.TAG }}
 
             cd ~/lms  
+            docker compose pull
             docker compose down
             docker compose up -d --remove-orphans
           EOF
