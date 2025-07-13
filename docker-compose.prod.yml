@@ -4,11 +4,11 @@ services:
     build: 
       context: ./ApplicationServer
       args:
-        MODE: ${MODE}
+        MODE: production
     env_file:
       - ./ApplicationServer/.env
     environment:
-      - NODE_ENV=${MODE}
+      - NODE_ENV=production
     ports:
       - "5000:5000"
 
@@ -17,13 +17,13 @@ services:
     build: 
       context: ./LiveServer
       args:
-        MODE: ${MODE}
+        MODE: production
     ports:
-      - "3000:3000"      
+      - "3000:3000"
     env_file:
       - ./LiveServer/.env
     environment:
-      - NODE_ENV=${MODE}
+      - NODE_ENV=production
     depends_on:
       - server
 
@@ -31,10 +31,11 @@ services:
     container_name: client
     build:
       context: ./Client
-      dockerfile: Dockerfile.dev  
+      dockerfile: Dockerfile.prod  
     ports:
-      - "5173:5173"   
+      - "80:80"  
     env_file:
       - ./Client/.env
     depends_on:
       - server
+      - liveserver

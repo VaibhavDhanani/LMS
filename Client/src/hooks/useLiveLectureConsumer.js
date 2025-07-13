@@ -26,7 +26,7 @@ export const useLiveLectureConsumer = ({ roomId, user, onLectureEnded }) => {
 
   const connectToServer = async (roomId) => {
     try {
-      const socket = io(SocketURL, { transports: ['websocket'] });
+      const socket = io(SocketURL);
       socketRef.current = socket;
 
       setupSocketListeners(socket, roomId);

@@ -1,6 +1,6 @@
 services:
   server:
-    container_name: application-server
+    container_name: application-server-dev
     build: 
       context: ./ApplicationServer
       args:
@@ -16,7 +16,7 @@ services:
       - /app/node_modules
 
   liveserver:
-    container_name: live-server
+    container_name: live-server-dev
     build: 
       context: ./LiveServer
       args:
@@ -34,7 +34,7 @@ services:
       - /app/node_modules
 
   client:
-    container_name: client
+    container_name: client-dev
     build:
       context: ./Client
       dockerfile: Dockerfile.dev
