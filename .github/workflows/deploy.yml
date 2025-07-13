@@ -1,191 +1,191 @@
-name: Deploy to EC2
+# name: Deploy to EC2
 
-on:
-  push:
-    branches: [ main ]  # Runs deployment on push to the main branch
+# on:
+#   push:
+#     branches: [ main ]  # Runs deployment on push to the main branch
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v3
 
-      # Configure SSH
-      - name: Configure SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+#       # Configure SSH
+#       - name: Configure SSH
+#         run: |
+#           mkdir -p ~/.ssh
+#           echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+#           chmod 600 ~/.ssh/id_rsa
+#           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      # Setup Server Environment (Node.js, Nginx, PM2)
-      - name: Setup Environment
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
-            sudo apt update -y
-            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-            sudo apt install -y nodejs nginx git
-            sudo npm install -g pm2
+#       # Setup Server Environment (Node.js, Nginx, PM2)
+#       - name: Setup Environment
+#         run: |
+#           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENVSSH'
+#             sudo apt update -y
+#             curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+#             sudo apt install -y nodejs nginx git
+#             sudo npm install -g pm2
             
-            # Increase Node.js memory limit globally
-            echo 'export NODE_OPTIONS="--max-old-space-size=4096"' >> ~/.bashrc
-            # Also add to profile to ensure it's available in non-interactive sessions
-            echo 'export NODE_OPTIONS="--max-old-space-size=4096"' >> ~/.profile
-            # Source the updated profile for this session
-            export NODE_OPTIONS="--max-old-space-size=4096"
-          ENVSSH
+#             # Increase Node.js memory limit globally
+#             echo 'export NODE_OPTIONS="--max-old-space-size=4096"' >> ~/.bashrc
+#             # Also add to profile to ensure it's available in non-interactive sessions
+#             echo 'export NODE_OPTIONS="--max-old-space-size=4096"' >> ~/.profile
+#             # Source the updated profile for this session
+#             export NODE_OPTIONS="--max-old-space-size=4096"
+#           ENVSSH
 
-      # Create LMS Directory and Set Permissions
-      - name: Create Project Directory
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << DIRSSH
-            sudo mkdir -p /home/${{ secrets.EC2_USER }}/LMS
-            sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} /home/${{ secrets.EC2_USER }}/LMS
-          DIRSSH
+#       # Create LMS Directory and Set Permissions
+#       - name: Create Project Directory
+#         run: |
+#           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << DIRSSH
+#             sudo mkdir -p /home/${{ secrets.EC2_USER }}/LMS
+#             sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} /home/${{ secrets.EC2_USER }}/LMS
+#           DIRSSH
 
-      # Clone Project from GitHub
-      - name: Clone and Setup Project
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << CLONESSH
-            cd /home/${{ secrets.EC2_USER }}
+#       # Clone Project from GitHub
+#       - name: Clone and Setup Project
+#         run: |
+#           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << CLONESSH
+#             cd /home/${{ secrets.EC2_USER }}
 
-            # Backup .env files before pulling the latest code
-            if [ -d "LMS/ApplicationServer" ]; then
-              cp LMS/ApplicationServer/.env ~/application-server.env.backup 2>/dev/null || echo "No application server .env to backup"
-            fi
+#             # Backup .env files before pulling the latest code
+#             if [ -d "LMS/ApplicationServer" ]; then
+#               cp LMS/ApplicationServer/.env ~/application-server.env.backup 2>/dev/null || echo "No application server .env to backup"
+#             fi
             
-            if [ -d "LMS/LiveServer" ]; then
-              cp LMS/LiveServer/.env ~/live-server.env.backup 2>/dev/null || echo "No live server .env to backup"
-            fi
+#             if [ -d "LMS/LiveServer" ]; then
+#               cp LMS/LiveServer/.env ~/live-server.env.backup 2>/dev/null || echo "No live server .env to backup"
+#             fi
 
-            # Pull the latest code from GitHub
-            sudo rm -rf LMS
-            git clone ${{ secrets.REPO_URL }} LMS
+#             # Pull the latest code from GitHub
+#             sudo rm -rf LMS
+#             git clone ${{ secrets.REPO_URL }} LMS
 
-            # Restore the .env files after deployment
-            if [ -f ~/application-server.env.backup ]; then
-              cp ~/application-server.env.backup LMS/ApplicationServer/.env
-            fi
+#             # Restore the .env files after deployment
+#             if [ -f ~/application-server.env.backup ]; then
+#               cp ~/application-server.env.backup LMS/ApplicationServer/.env
+#             fi
             
-            if [ -f ~/live-server.env.backup ]; then
-              cp ~/live-server.env.backup LMS/LiveServer/.env
-            fi
+#             if [ -f ~/live-server.env.backup ]; then
+#               cp ~/live-server.env.backup LMS/LiveServer/.env
+#             fi
 
-            # Ensure correct permissions
-            sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} LMS
-          CLONESSH
+#             # Ensure correct permissions
+#             sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} LMS
+#           CLONESSH
       
-      # Install Dependencies and Build Project
-      - name: Install Dependencies and Build
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << BUILDSSH
-            cd /home/${{ secrets.EC2_USER }}/LMS
+#       # Install Dependencies and Build Project
+#       - name: Install Dependencies and Build
+#         run: |
+#           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << BUILDSSH
+#             cd /home/${{ secrets.EC2_USER }}/LMS
           
-            echo "Setting up Client..."
-            cd Client
-            # Explicitly set NODE_OPTIONS in this session
-            export NODE_OPTIONS="--max-old-space-size=4096"
-            npm install
+#             echo "Setting up Client..."
+#             cd Client
+#             # Explicitly set NODE_OPTIONS in this session
+#             export NODE_OPTIONS="--max-old-space-size=4096"
+#             npm install
             
-            # Add specific memory setting for the build process
-            NODE_OPTIONS="--max-old-space-size=4096" npm run build
-            cd ..
+#             # Add specific memory setting for the build process
+#             NODE_OPTIONS="--max-old-space-size=4096" npm run build
+#             cd ..
           
-            echo "Setting up Application Server..."
-            cd ApplicationServer
-            npm install
-            cd ..
+#             echo "Setting up Application Server..."
+#             cd ApplicationServer
+#             npm install
+#             cd ..
           
-            echo "Setting up Live Server..."
-            cd LiveServer
-            npm install
-            cd ..
-          BUILDSSH
+#             echo "Setting up Live Server..."
+#             cd LiveServer
+#             npm install
+#             cd ..
+#           BUILDSSH
 
-      # Configure Nginx
-      - name: Configure Nginx
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << NGINXSSH
-            sudo tee /etc/nginx/sites-available/default > /dev/null << 'EOF'
-            server {
-                listen 80 default_server;
-                listen [::]:80 default_server;
+#       # Configure Nginx
+#       - name: Configure Nginx
+#         run: |
+#           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << NGINXSSH
+#             sudo tee /etc/nginx/sites-available/default > /dev/null << 'EOF'
+#             server {
+#                 listen 80 default_server;
+#                 listen [::]:80 default_server;
                 
-                root /home/${{ secrets.EC2_USER }}/LMS/Client/dist;
-                index index.html;
+#                 root /home/${{ secrets.EC2_USER }}/LMS/Client/dist;
+#                 index index.html;
                 
-                location / {
-                    try_files \$uri \$uri/ /index.html;
-                }
+#                 location / {
+#                     try_files \$uri \$uri/ /index.html;
+#                 }
                 
-                # Application Server API
-                location /api {
-                    proxy_pass http://localhost:5000;
-                    proxy_http_version 1.1;
-                    proxy_set_header Upgrade \$http_upgrade;
-                    proxy_set_header Connection 'upgrade';
-                    proxy_set_header Host \$host;
-                    proxy_cache_bypass \$http_upgrade;
-                }
+#                 # Application Server API
+#                 location /api {
+#                     proxy_pass http://localhost:5000;
+#                     proxy_http_version 1.1;
+#                     proxy_set_header Upgrade \$http_upgrade;
+#                     proxy_set_header Connection 'upgrade';
+#                     proxy_set_header Host \$host;
+#                     proxy_cache_bypass \$http_upgrade;
+#                 }
                 
-                # Live Server
-                location /socket.io {
-                    proxy_pass http://localhost:3000;
-                    proxy_http_version 1.1;
-                    proxy_set_header Upgrade \$http_upgrade;
-                    proxy_set_header Connection 'upgrade';
-                    proxy_set_header Host \$host;
-                    proxy_cache_bypass \$http_upgrade;
-                }
-            }
-            EOF
+#                 # Live Server
+#                 location /socket.io {
+#                     proxy_pass http://localhost:3000;
+#                     proxy_http_version 1.1;
+#                     proxy_set_header Upgrade \$http_upgrade;
+#                     proxy_set_header Connection 'upgrade';
+#                     proxy_set_header Host \$host;
+#                     proxy_cache_bypass \$http_upgrade;
+#                 }
+#             }
+#             EOF
             
-            sudo nginx -t
-            sudo systemctl reload nginx
-          NGINXSSH
+#             sudo nginx -t
+#             sudo systemctl reload nginx
+#           NGINXSSH
 
-      # Start Backend and Live Server Using PM2
-      - name: Start Applications
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << STARTSSH
-            cd /home/${{ secrets.EC2_USER }}/LMS
+#       # Start Backend and Live Server Using PM2
+#       - name: Start Applications
+#         run: |
+#           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << STARTSSH
+#             cd /home/${{ secrets.EC2_USER }}/LMS
             
-            # Set environment variable for node memory
-            export NODE_OPTIONS="--max-old-space-size=4096"
+#             # Set environment variable for node memory
+#             export NODE_OPTIONS="--max-old-space-size=4096"
           
-            echo "Starting Application Server..."
-            cd ApplicationServer
-            pm2 describe application-server > /dev/null
-            if [ $? -eq 0 ]; then
-              pm2 restart application-server --node-args="--max-old-space-size=4096"
-            else
-              pm2 start app.js --name application-server --node-args="--max-old-space-size=4096"
-            fi
-            cd ..
+#             echo "Starting Application Server..."
+#             cd ApplicationServer
+#             pm2 describe application-server > /dev/null
+#             if [ $? -eq 0 ]; then
+#               pm2 restart application-server --node-args="--max-old-space-size=4096"
+#             else
+#               pm2 start app.js --name application-server --node-args="--max-old-space-size=4096"
+#             fi
+#             cd ..
           
-            echo "Starting Live Server..."
-            cd LiveServer
-            pm2 describe live-server > /dev/null
-            if [ $? -eq 0 ]; then
-              pm2 restart live-server --node-args="--max-old-space-size=4096"
-            else
-              pm2 start server.js --name live-server --node-args="--max-old-space-size=4096"
-            fi
+#             echo "Starting Live Server..."
+#             cd LiveServer
+#             pm2 describe live-server > /dev/null
+#             if [ $? -eq 0 ]; then
+#               pm2 restart live-server --node-args="--max-old-space-size=4096"
+#             else
+#               pm2 start server.js --name live-server --node-args="--max-old-space-size=4096"
+#             fi
             
-            # Save PM2 configuration
-            pm2 save
-          STARTSSH
+#             # Save PM2 configuration
+#             pm2 save
+#           STARTSSH
 
-      # Fix Permissions
-      - name: Fix Permissions
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << PERMSSH
-            sudo find /home/${{ secrets.EC2_USER }}/LMS -type d -exec chmod 755 {} \;
-            sudo find /home/${{ secrets.EC2_USER }}/LMS -type f -exec chmod 644 {} \;
-            sudo chmod -R +x /home/${{ secrets.EC2_USER }}/LMS/ApplicationServer/node_modules/.bin
-            sudo chmod -R +x /home/${{ secrets.EC2_USER }}/LMS/LiveServer/node_modules/.bin
-            sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} /home/${{ secrets.EC2_USER }}/LMS
-            sudo systemctl restart nginx
-          PERMSSH
+#       # Fix Permissions
+#       - name: Fix Permissions
+#         run: |
+#           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << PERMSSH
+#             sudo find /home/${{ secrets.EC2_USER }}/LMS -type d -exec chmod 755 {} \;
+#             sudo find /home/${{ secrets.EC2_USER }}/LMS -type f -exec chmod 644 {} \;
+#             sudo chmod -R +x /home/${{ secrets.EC2_USER }}/LMS/ApplicationServer/node_modules/.bin
+#             sudo chmod -R +x /home/${{ secrets.EC2_USER }}/LMS/LiveServer/node_modules/.bin
+#             sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} /home/${{ secrets.EC2_USER }}/LMS
+#             sudo systemctl restart nginx
+#           PERMSSH
