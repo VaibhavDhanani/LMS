@@ -3,12 +3,9 @@ services:
     container_name: application-server
     build: 
       context: ./ApplicationServer
-      args:
-        MODE: production
+      dockerfile: Dockerfile.prod
     env_file:
       - ./ApplicationServer/.env
-    environment:
-      - NODE_ENV=production
     ports:
       - "5000:5000"
 
@@ -16,14 +13,11 @@ services:
     container_name: live-server
     build: 
       context: ./LiveServer
-      args:
-        MODE: production
+      dockerfile: Dockerfile.prod    
     ports:
       - "3000:3000"
     env_file:
       - ./LiveServer/.env
-    environment:
-      - NODE_ENV=production
     depends_on:
       - server
 

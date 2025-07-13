@@ -3,12 +3,9 @@ services:
     container_name: application-server-dev
     build: 
       context: ./ApplicationServer
-      args:
-        MODE: development
+      dockerfile: Dockerfile.dev
     env_file:
       - ./ApplicationServer/.env
-    environment:
-      - NODE_ENV=development
     ports:
       - "5000:5000"
     volumes:
@@ -19,12 +16,10 @@ services:
     container_name: live-server-dev
     build: 
       context: ./LiveServer
-      args:
-        MODE: development
+      dockerfile: Dockerfile.dev
     env_file:
       - ./LiveServer/.env
-    environment:
-      - NODE_ENV=development
+
     ports:
       - "3000:3000"
     depends_on:
